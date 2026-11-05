@@ -73,9 +73,10 @@ export interface StaffAccount {
   id: string;
   name: string;
   email: string;
-  role: PortalRole;
+  role: AllRoles;
   department?: string;
   assignedLabs?: string[];
+  studentId?: string;
   isActive?: boolean;
 }
 

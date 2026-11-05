@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import DashboardPage from "./DashboardPage";
 import LoginPage from "./LoginPage";
 import RegisterPage from "./RegisterPage";
-import { secsApi } from "./services/secsApi";
+import { getCurrentUser, getToken, secsApi } from "./services/secsApi";
 import type {
   Announcement,
   AuditIncident,
@@ -11,6 +11,7 @@ import type {
   Lab,
   PortalRole,
   PublicIssue,
+  StaffAccount,
 } from "./workflowTypes";
 
 type Page = "landing" | "login" | "register" | "dashboard";
@@ -168,6 +169,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
   const [portalRole, setPortalRole] = useState<PortalRole>("admin");
+  const [currentUser, setCurrentUser] = useState<StaffAccount | null>(() => getCurrentUser());
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Dynamic Backend Data State
@@ -221,6 +223,21 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Check local session
+    const saved = getCurrentUser();
+    const token = getToken();
+    if (saved && token) {
+      setCurrentUser(saved);
+    }
+    // Optionally verify with server
+    if (token) {
+      secsApi.auth.me().then((user) => {
+        if (user) setCurrentUser(user);
+      }).catch(() => {
+        // Session expired or unverified
+      });
+    }
+
     loadDynamicData();
   }, []);
 
@@ -278,18 +295,31 @@ export default function App() {
   }
 
   function openPortal(role: PortalRole) {
-    setPortalRole(role);
+    if (currentUser) {
+      setPage("dashboard");
+    } else {
+      setPortalRole(role);
+      setPage("login");
+    }
+  }
+
+  function handleLoginSuccess(user: StaffAccount) {
+    setCurrentUser(user);
     setPage("dashboard");
+  }
+
+  async function handleLogout() {
+    await secsApi.auth.logout();
+    setCurrentUser(null);
+    setPage("landing");
   }
 
   if (page === "login") {
     return (
       <LoginPage
+        initialPortal={portalRole}
         onNavigate={(p) => setPage(p)}
-        onLogin={(role) => {
-          setPortalRole(role);
-          setPage("dashboard");
-        }}
+        onLogin={handleLoginSuccess}
       />
     );
   }
@@ -301,15 +331,14 @@ export default function App() {
   if (page === "dashboard") {
     return (
       <DashboardPage
-        initialRole={portalRole}
+        currentUser={currentUser}
+        initialRole={(currentUser?.role as any) || portalRole}
         issues={issues}
         setIssues={setIssues}
         incidents={incidents}
         setIncidents={setIncidents}
-        onLogout={() => {
-          secsApi.auth.logout();
-          setPage("landing");
-        }}
+        onLogout={handleLogout}
+        onNavigateHome={() => setPage("landing")}
       />
     );
   }
@@ -346,18 +375,50 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => document.querySelector("#portal-access")?.scrollIntoView({ behavior: "smooth" })}
-              className="hidden sm:flex text-xs font-semibold px-4 py-2 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05] text-slate-300 hover:text-white transition-all"
-            >
-              Staff Portals
-            </button>
-            <button
-              onClick={() => setPage("login")}
-              className="text-xs font-semibold px-4 py-2 rounded-xl btn-primary"
-            >
-              Portal Sign In →
-            </button>
+            {currentUser ? (
+              <>
+                <div className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-white font-semibold">{currentUser.name}</span>
+                  <span className="text-blue-400 font-mono text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
+                    {currentUser.role}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setPage("dashboard")}
+                  className="text-xs font-semibold px-4 py-2 rounded-xl btn-primary shadow-md shadow-blue-500/20"
+                >
+                  My Workspace →
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="hidden sm:flex text-xs font-semibold px-3 py-2 rounded-xl border border-rose-500/30 text-rose-300 hover:bg-rose-500/10 hover:text-white transition-all"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => document.querySelector("#portal-access")?.scrollIntoView({ behavior: "smooth" })}
+                  className="hidden sm:flex text-xs font-semibold px-4 py-2 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05] text-slate-300 hover:text-white transition-all"
+                >
+                  Staff Portals
+                </button>
+                <button
+                  onClick={() => setPage("register")}
+                  className="hidden sm:flex text-xs font-semibold px-3.5 py-2 rounded-xl border border-white/10 text-slate-300 hover:text-white hover:bg-white/[0.04] transition-all"
+                >
+                  Register
+                </button>
+                <button
+                  onClick={() => setPage("login")}
+                  className="text-xs font-semibold px-4 py-2 rounded-xl btn-primary"
+                >
+                  Sign In →
+                </button>
+              </>
+            )}
             <button
               className="lg:hidden text-slate-400 p-2"
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -382,15 +443,49 @@ export default function App() {
               </a>
             ))}
             <div className="pt-2 flex flex-col gap-2">
-              <button
-                onClick={() => {
-                  setMobileOpen(false);
-                  setPage("register");
-                }}
-                className="w-full text-center py-2.5 rounded-xl border border-white/10 text-xs font-semibold text-white"
-              >
-                Register Student
-              </button>
+              {currentUser ? (
+                <>
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false);
+                      setPage("dashboard");
+                    }}
+                    className="w-full text-center py-2.5 rounded-xl btn-primary text-xs font-semibold"
+                  >
+                    Open Workspace ({currentUser.name})
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false);
+                      handleLogout();
+                    }}
+                    className="w-full text-center py-2.5 rounded-xl border border-rose-500/30 text-rose-300 text-xs font-semibold"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false);
+                      setPage("register");
+                    }}
+                    className="w-full text-center py-2.5 rounded-xl border border-white/10 text-xs font-semibold text-white"
+                  >
+                    Register Student / Faculty
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false);
+                      setPage("login");
+                    }}
+                    className="w-full text-center py-2.5 rounded-xl btn-primary text-xs font-semibold"
+                  >
+                    Sign In
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}

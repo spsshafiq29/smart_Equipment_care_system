@@ -41,6 +41,27 @@ export function setToken(token: string | null) {
   }
 }
 
+export function getCurrentUser(): StaffAccount | null {
+  try {
+    const raw = localStorage.getItem("secs_user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setCurrentUser(user: StaffAccount | null) {
+  try {
+    if (user) {
+      localStorage.setItem("secs_user", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("secs_user");
+    }
+  } catch {
+    // ignore
+  }
+}
+
 function maskEmail(email: string): string {
   const [name = "", domain = ""] = email.split("@");
   if (name.length <= 2) return `${name}***@${domain}`;
@@ -173,6 +194,7 @@ class SECSBackendEngine {
 
     const token = `jwt_mock_${adminUser.id}_${Date.now()}`;
     setToken(token);
+    setCurrentUser(adminUser);
     return {
       message: "Admin account setup successful.",
       accessToken: token,
@@ -224,6 +246,7 @@ class SECSBackendEngine {
 
     const token = `jwt_mock_${user.id}_${Date.now()}`;
     setToken(token);
+    setCurrentUser(user);
     return {
       accessToken: token,
       expiresIn: 86400,
@@ -815,16 +838,25 @@ export const secsApi = {
     setupAdmin: async (payload: { name: string; email: string; password?: string; department?: string }) => {
       return tryApi(
         async () => {
-          const res = await apiRequest<{ message: string; accessToken: string; user: any }>("/api/v1/auth/setup-admin", {
+          const res = await apiRequest<{ message: string; accessToken: string; user: StaffAccount }>("/api/v1/auth/setup-admin", {
             method: "POST",
             body: JSON.stringify(payload),
           });
           if (res?.accessToken) {
             setToken(res.accessToken);
           }
+          if (res?.user) {
+            setCurrentUser(res.user);
+          }
           return res;
         },
-        async () => engine.setupAdmin(payload)
+        async () => {
+          const res = await engine.setupAdmin(payload);
+          if (res?.user) {
+            setCurrentUser(res.user);
+          }
+          return res;
+        }
       );
     },
     forgotPassword: async (email: string) => {
@@ -850,16 +882,25 @@ export const secsApi = {
     login: async (credentials: { email: string; password?: string; portal?: PortalRole }) => {
       return tryApi(
         async () => {
-          const res = await apiRequest<{ accessToken: string; user: any }>("/api/v1/auth/login", {
+          const res = await apiRequest<{ accessToken: string; user: StaffAccount }>("/api/v1/auth/login", {
             method: "POST",
             body: JSON.stringify(credentials),
           });
           if (res?.accessToken) {
             setToken(res.accessToken);
           }
+          if (res?.user) {
+            setCurrentUser(res.user);
+          }
           return res;
         },
-        async () => engine.login(credentials)
+        async () => {
+          const res = await engine.login(credentials);
+          if (res?.user) {
+            setCurrentUser(res.user);
+          }
+          return res;
+        }
       );
     },
     register: async (payload: {
@@ -880,20 +921,21 @@ export const secsApi = {
         async () => engine.register(payload)
       );
     },
-    me: async () => {
+    me: async (): Promise<StaffAccount | null> => {
       return tryApi(
         async () => {
-          const res = await apiRequest<{ data: StaffAccount[] }>("/api/v1/users");
-          return res.data[0] || null;
+          const res = await apiRequest<StaffAccount>("/api/v1/auth/me");
+          if (res) setCurrentUser(res);
+          return res;
         },
         async () => {
-          const users = await engine.getUsers();
-          return users[0] || null;
+          return getCurrentUser();
         }
       );
     },
     logout: async () => {
       setToken(null);
+      setCurrentUser(null);
       return { message: "Signed out." };
     },
   },

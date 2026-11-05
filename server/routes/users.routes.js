@@ -4,7 +4,16 @@ import { sendHigherAuthorityAccountEmail, sendStaffAccountEmail } from '../servi
 
 export function userRoutes(router) {
   // GET /api/v1/users
-  router.get('/api/v1/users', (req, res) => {
+  router.get('/api/v1/users', async (req, res) => {
+    try {
+      const dbRes = await query('SELECT id, name, email, role, department, is_active FROM users ORDER BY created_at DESC');
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+        return res.json({ data: dbRes.rows, total: dbRes.rows.length });
+      }
+    } catch {
+      // ignore
+    }
+
     const safeUsers = memoryDb.tables.users.map((u) => ({
       id: u.id,
       name: u.name,

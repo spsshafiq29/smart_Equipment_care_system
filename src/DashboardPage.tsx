@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetSt
 import { secsApi } from "./services/secsApi";
 import type { AuditIncident, Budget, BudgetStatus, Lab, PortalRole, PublicIssue, StaffAccount } from "./workflowTypes";
 
-type Role = PortalRole;
-type Section = "overview" | "reports" | "labs" | "budgets" | "users" | "ledger";
+type Role = PortalRole | "student" | "teacher" | "researcher";
+type Section = "overview" | "my-issues" | "submit-fault" | "reports" | "labs" | "budgets" | "users" | "ledger";
 type TechnicianQueue = "incoming" | "work";
 
 interface Technician {
@@ -24,7 +24,7 @@ const ROLE_META: Record<Role, { label: string; initials: string; title: string; 
   authority: {
     label: "Higher Authority",
     initials: "HA",
-    title: "Institutional Approvals & Oversight",
+    title: "Institutional Approvals & Governance",
     color: "text-amber-400",
     badge: "bg-amber-500/10 border-amber-500/30 text-amber-400",
   },
@@ -42,15 +42,38 @@ const ROLE_META: Record<Role, { label: string; initials: string; title: string; 
     color: "text-indigo-400",
     badge: "bg-indigo-500/10 border-indigo-500/30 text-indigo-400",
   },
+  student: {
+    label: "Student Member",
+    initials: "ST",
+    title: "University Student Portal",
+    color: "text-sky-400",
+    badge: "bg-sky-500/10 border-sky-500/30 text-sky-400",
+  },
+  teacher: {
+    label: "Faculty Member",
+    initials: "FM",
+    title: "Faculty & Departmental In-Charge",
+    color: "text-purple-400",
+    badge: "bg-purple-500/10 border-purple-500/30 text-purple-400",
+  },
+  researcher: {
+    label: "Researcher",
+    initials: "RS",
+    title: "Academic Research Fellow",
+    color: "text-teal-400",
+    badge: "bg-teal-500/10 border-teal-500/30 text-teal-400",
+  },
 };
 
 const NAV_ITEMS: { id: Section; label: string; roles: Role[]; icon: IconName }[] = [
-  { id: "overview", label: "Executive Overview", roles: ["admin", "authority", "accounts", "technician"], icon: "grid" },
+  { id: "overview", label: "Executive Overview", roles: ["admin", "authority", "accounts", "technician", "student", "teacher", "researcher"], icon: "grid" },
+  { id: "my-issues", label: "My Reported Issues", roles: ["student", "teacher", "researcher"], icon: "alert" },
+  { id: "submit-fault", label: "Report Equipment Fault", roles: ["student", "teacher", "researcher"], icon: "alert" },
   { id: "reports", label: "Issue Workflow", roles: ["admin", "authority", "accounts", "technician"], icon: "alert" },
-  { id: "labs", label: "Lab Assignments", roles: ["admin", "authority", "technician"], icon: "lab" },
+  { id: "labs", label: "Lab Directory", roles: ["admin", "authority", "technician", "student", "teacher", "researcher"], icon: "lab" },
   { id: "budgets", label: "Budgets & Payments", roles: ["admin", "authority", "accounts", "technician"], icon: "wallet" },
   { id: "users", label: "Access & Staff Accounts", roles: ["admin", "authority"], icon: "users" },
-  { id: "ledger", label: "Public Audit Ledger", roles: ["admin", "authority", "accounts", "technician"], icon: "shield" },
+  { id: "ledger", label: "Public Audit Ledger", roles: ["admin", "authority", "accounts", "technician", "student", "teacher", "researcher"], icon: "shield" },
 ];
 
 type IconName = "grid" | "lab" | "wallet" | "users" | "shield" | "bell" | "search" | "menu" | "close" | "check" | "alert" | "arrow";
@@ -157,17 +180,66 @@ function formatMoney(amount: number) {
   return `৳${amount.toLocaleString("en-BD")}`;
 }
 
+const STATUS_CONFIG: Record<string, { bg: string; text: string; border: string; dot: string }> = {
+  Resolved: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/30", dot: "bg-emerald-400" },
+  "In Progress": { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/30", dot: "bg-blue-400" },
+  "Under Review": { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/30", dot: "bg-amber-400" },
+  Assigned: { bg: "bg-indigo-500/10", text: "text-indigo-400", border: "border-indigo-500/30", dot: "bg-indigo-400" },
+  "Budget Requested": { bg: "bg-amber-500/10", text: "text-amber-300", border: "border-amber-500/30", dot: "bg-amber-400" },
+  "Payment Review": { bg: "bg-cyan-500/10", text: "text-cyan-300", border: "border-cyan-500/30", dot: "bg-cyan-400" },
+  "Funds Approved": { bg: "bg-teal-500/10", text: "text-teal-300", border: "border-teal-500/30", dot: "bg-teal-400" },
+  "Rejected by Higher Authority": { bg: "bg-rose-500/10", text: "text-rose-400", border: "border-rose-500/30", dot: "bg-rose-400" },
+  "Payment Disputed": { bg: "bg-rose-500/15", text: "text-rose-300", border: "border-rose-500/40", dot: "bg-rose-400" },
+};
+
+const PRIORITY_BADGES: Record<string, { label: string; color: string; badge: string }> = {
+  Critical: { label: "Critical", color: "text-rose-400", badge: "bg-rose-500/15 border-rose-500/30 text-rose-300" },
+  critical: { label: "Critical", color: "text-rose-400", badge: "bg-rose-500/15 border-rose-500/30 text-rose-300" },
+  High: { label: "High", color: "text-orange-400", badge: "bg-orange-500/15 border-orange-500/30 text-orange-300" },
+  high: { label: "High", color: "text-orange-400", badge: "bg-orange-500/15 border-orange-500/30 text-orange-300" },
+  Medium: { label: "Medium", color: "text-amber-400", badge: "bg-amber-500/15 border-amber-500/30 text-amber-300" },
+  medium: { label: "Medium", color: "text-amber-400", badge: "bg-amber-500/15 border-amber-500/30 text-amber-300" },
+  Low: { label: "Low", color: "text-emerald-400", badge: "bg-emerald-500/15 border-emerald-500/30 text-emerald-300" },
+  low: { label: "Low", color: "text-emerald-400", badge: "bg-emerald-500/15 border-emerald-500/30 text-emerald-300" },
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const conf = STATUS_CONFIG[status] || {
+    bg: "bg-slate-800",
+    text: "text-slate-300",
+    border: "border-slate-700",
+    dot: "bg-slate-400",
+  };
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${conf.bg} ${conf.text} ${conf.border}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${conf.dot}`} />
+      {status}
+    </span>
+  );
+}
+
 interface DashboardProps {
-  initialRole: Role;
+  currentUser: StaffAccount | null;
+  initialRole?: Role;
   issues: PublicIssue[];
   setIssues: Dispatch<SetStateAction<PublicIssue[]>>;
   incidents: AuditIncident[];
   setIncidents: Dispatch<SetStateAction<AuditIncident[]>>;
   onLogout: () => void;
+  onNavigateHome?: () => void;
 }
 
-export default function DashboardPage({ initialRole, issues, setIssues, incidents, setIncidents, onLogout }: DashboardProps) {
-  const [role, setRole] = useState<Role>(initialRole);
+export default function DashboardPage({
+  currentUser,
+  initialRole,
+  issues,
+  setIssues,
+  incidents,
+  setIncidents,
+  onLogout,
+  onNavigateHome,
+}: DashboardProps) {
+  const role: Role = (currentUser?.role as Role) || initialRole || "technician";
   const [section, setSection] = useState<Section>("overview");
   const [mobileNav, setMobileNav] = useState(false);
 
@@ -185,6 +257,17 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
   const [technicianQueue, setTechnicianQueue] = useState<TechnicianQueue>("incoming");
   const [showNotifications, setShowNotifications] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Direct Student/Faculty Fault Report state
+  const [newFault, setNewFault] = useState({
+    lab: "",
+    equipmentType: "",
+    assetTag: "",
+    priority: "medium",
+    description: "",
+  });
+  const [faultSubmitting, setFaultSubmitting] = useState(false);
+  const [faultError, setFaultError] = useState("");
 
   // Load all dynamic backend data
   const loadData = async () => {
@@ -236,15 +319,27 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
     );
   }, [technicians]);
 
-  const visibleNav = NAV_ITEMS.filter((item) => item.roles.includes(role));
-  const assignedLabs = role === "technician" ? labs.filter((lab) => lab.technicianId === "tech-1") : labs;
-  const visibleBudgets = role === "technician" ? budgets.filter((budget) => budget.technicianId === "tech-1") : budgets;
+  const currentUserId = currentUser?.id || "tech-1";
+  const currentUserEmail = currentUser?.email || "";
+  const isAcademicUser = role === "student" || role === "teacher" || role === "researcher";
 
-  const technicianAssignedIssues = issues.filter((issue) => issue.assignedTechnicianId === "tech-1");
+  const visibleNav = NAV_ITEMS.filter((item) => item.roles.includes(role));
+  const assignedLabs = role === "technician" ? labs.filter((lab) => lab.technicianId === currentUserId || !lab.technicianId) : labs;
+  const visibleBudgets = role === "technician" ? budgets.filter((budget) => budget.technicianId === currentUserId) : budgets;
+
+  const technicianAssignedIssues = issues.filter(
+    (issue) => issue.assignedTechnicianId === currentUserId || !issue.assignedTechnicianId
+  );
   const technicianIncomingIssues = technicianAssignedIssues.filter((issue) => issue.status === "Assigned");
   const technicianWorkIssues = technicianAssignedIssues
     .filter((issue) => issue.status !== "Assigned")
     .sort((a, b) => Number(a.status === "Resolved") - Number(b.status === "Resolved"));
+
+  const userSubmittedIssues = issues.filter(
+    (issue) =>
+      issue.reporterEmail?.toLowerCase() === currentUserEmail.toLowerCase() ||
+      (currentUser?.name && (issue.reporter || issue.reporterName || "").toLowerCase().includes(currentUser.name.toLowerCase()))
+  );
 
   const roleVisibleIssues =
     role === "technician"
@@ -253,17 +348,59 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
         : technicianQueue === "incoming"
         ? technicianIncomingIssues
         : technicianWorkIssues
+      : isAcademicUser
+      ? userSubmittedIssues
       : issues;
 
   const visibleIssues = roleVisibleIssues.filter((issue) => issue.id.toLowerCase().includes(reportSearch.trim().toLowerCase()));
   const approvedTotal = budgets.filter((budget) => budget.status !== "Pending approval").reduce((sum, budget) => sum + budget.amount, 0);
   const pendingPayments = budgets.filter((budget) => budget.status === "Approved");
 
-  function switchRole(nextRole: Role) {
-    setRole(nextRole);
-    setSection("overview");
-    setMobileNav(false);
-    setNotice(`Switched to ${ROLE_META[nextRole].label} workspace.`);
+  async function handleStudentSubmitFault(e: React.FormEvent) {
+    e.preventDefault();
+    setFaultError("");
+    if (!newFault.lab) {
+      setFaultError("Please select the affected laboratory room.");
+      return;
+    }
+    if (!newFault.equipmentType) {
+      setFaultError("Please select the equipment type.");
+      return;
+    }
+    if (!newFault.description.trim() || newFault.description.trim().length < 5) {
+      setFaultError("Please provide a fault description with at least 5 characters.");
+      return;
+    }
+
+    setFaultSubmitting(true);
+    try {
+      const selectedLab = labs.find((l) => `${l.room} · ${l.name}` === newFault.lab || l.id === newFault.lab);
+      const res = await secsApi.issues.submitIssue({
+        labId: selectedLab?.id,
+        labName: selectedLab ? `${selectedLab.room} · ${selectedLab.name}` : newFault.lab,
+        equipmentType: newFault.equipmentType,
+        assetTag: newFault.assetTag.trim() || undefined,
+        description: newFault.description.trim(),
+        priority: newFault.priority,
+        reporterName: currentUser?.name || "Campus Member",
+        reporterEmail: currentUser?.email || undefined,
+      });
+
+      setNotice(`Equipment fault ticket ${res.issue.id} registered successfully! Dispatched to lab technician.`);
+      setNewFault({
+        lab: "",
+        equipmentType: "",
+        assetTag: "",
+        priority: "medium",
+        description: "",
+      });
+      await loadData();
+      setSection("my-issues");
+    } catch (err: any) {
+      setFaultError(err?.message || "Failed to submit fault report.");
+    } finally {
+      setFaultSubmitting(false);
+    }
   }
 
   // --- Dynamic API Operations ---
@@ -482,22 +619,31 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
           </button>
         </div>
 
-        {/* Workspace Switcher */}
+        {/* Authenticated Identity & RBAC Badge (No arbitrary role switching) */}
         <div className="p-4 border-b border-white/5">
           <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-            Active Staff Workspace
+            Verified Identity
           </label>
-          <select
-            value={role}
-            onChange={(event) => switchRole(event.target.value as Role)}
-            className="w-full rounded-xl px-3 py-2 text-xs font-semibold glass-input bg-[#0b142c] text-white"
-          >
-            <option value="admin">System Admin</option>
-            <option value="authority">Higher Authority</option>
-            <option value="accounts">Accounts Office</option>
-            <option value="technician">Lab Technician</option>
-          </select>
-          <p className="mt-1.5 text-[11px] text-slate-500">Switch workspace to test permission rules.</p>
+          <div className="p-3 rounded-xl bg-slate-900/80 border border-white/10 shadow-inner">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-md text-sm shrink-0">
+                {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : ROLE_META[role]?.initials || "U"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-bold text-white truncate">{currentUser?.name || ROLE_META[role]?.label}</div>
+                <div className="text-[10px] text-slate-400 truncate">{currentUser?.email || "Authenticated Session"}</div>
+              </div>
+            </div>
+            <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between">
+              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${ROLE_META[role]?.badge}`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                {ROLE_META[role]?.label}
+              </span>
+              <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Active
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Navigation Items */}
@@ -524,27 +670,31 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
                     {pendingPayments.length}
                   </span>
                 )}
+                {item.id === "my-issues" && userSubmittedIssues.length > 0 && (
+                  <span className="ml-auto rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 text-[10px] font-bold">
+                    {userSubmittedIssues.length}
+                  </span>
+                )}
               </button>
             );
           })}
         </nav>
 
         {/* Profile Card & Logout */}
-        <div className="border-t border-white/5 p-4">
-          <div className="mb-3 flex items-center gap-3 rounded-xl bg-white/[0.02] border border-white/5 p-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 text-xs font-bold border border-blue-500/30">
-              {ROLE_META[role].initials}
-            </div>
-            <div className="min-w-0">
-              <div className="truncate text-xs font-bold text-white">{ROLE_META[role].label}</div>
-              <div className="truncate text-[10px] text-slate-500">{ROLE_META[role].title}</div>
-            </div>
-          </div>
+        <div className="border-t border-white/5 p-4 space-y-2">
+          {onNavigateHome && (
+            <button
+              onClick={onNavigateHome}
+              className="w-full py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors flex items-center justify-center gap-2"
+            >
+              <span>←</span> Public Landing Page
+            </button>
+          )}
           <button
             onClick={onLogout}
-            className="w-full py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2 rounded-xl text-xs font-semibold text-rose-300 hover:text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all flex items-center justify-center gap-2"
           >
-            <span>←</span> Sign Out to Landing Page
+            <span>⎋</span> Sign Out (Switch Account)
           </button>
         </div>
       </aside>
@@ -649,36 +799,80 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
                     {ROLE_META[role].label} Dashboard
                   </span>
                   <h2 className="text-2xl md:text-3xl font-extrabold font-display text-white tracking-tight mt-2">
-                    {role === "technician"
+                    {isAcademicUser
+                      ? `Welcome, ${currentUser?.name || "Campus Member"}`
+                      : role === "technician"
                       ? "Assigned Laboratory Repair Operations"
                       : role === "accounts"
                       ? "Fiscal Approvals & Disbursement Ledger"
                       : "Campus Infrastructure Control & Oversight"}
                   </h2>
                   <p className="text-slate-400 text-xs md:text-sm mt-2 leading-relaxed">
-                    {role === "technician"
+                    {isAcademicUser
+                      ? "Track your reported laboratory malfunctions in real-time, submit new problem reports, or check current campus laboratory availability."
+                      : role === "technician"
                       ? "Only issues originating in your assigned laboratories appear here. You can request budget for parts, complete repairs, or contest inaccurate payment records."
                       : "End-to-end digital tracking guarantees that no repair, budget release, or technician handover occurs without an immutable database audit trail."}
                   </p>
+                  {isAcademicUser && (
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <button
+                        onClick={() => setSection("submit-fault")}
+                        className="btn-primary text-xs font-semibold px-4 py-2 rounded-xl shadow-md"
+                      >
+                        + Report Equipment Fault
+                      </button>
+                      <button
+                        onClick={() => setSection("my-issues")}
+                        className="border border-white/10 hover:border-white/20 bg-white/[0.03] text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all"
+                      >
+                        Track My Tickets ({userSubmittedIssues.length})
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* 4 Metric Cards */}
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {[
-                  {
-                    label: role === "technician" ? "My Assigned Labs" : "Active Laboratories",
-                    value: role === "technician" ? assignedLabs.length : labs.length,
-                    helper: "Room-level authority",
-                  },
-                  {
-                    label: "Pending Issues",
-                    value: assignedLabs.reduce((sum, lab) => sum + (lab.openIssues || 0), 0),
-                    helper: "Across visible labs",
-                  },
-                  { label: "Approved Budget", value: formatMoney(approvedTotal), helper: "Public ledger verified" },
-                  { label: "Public Disputes", value: incidents.length, helper: "Audit incident trail" },
-                ].map((stat) => (
+                {(isAcademicUser
+                  ? [
+                      {
+                        label: "My Reported Issues",
+                        value: userSubmittedIssues.length,
+                        helper: "Total equipment tickets filed",
+                      },
+                      {
+                        label: "Active In-Progress",
+                        value: userSubmittedIssues.filter((i) => i.status !== "Resolved").length,
+                        helper: "Under technician review",
+                      },
+                      {
+                        label: "Resolved Equipment",
+                        value: userSubmittedIssues.filter((i) => i.status === "Resolved").length,
+                        helper: "Verified & operating",
+                      },
+                      {
+                        label: "Campus Laboratories",
+                        value: labs.length,
+                        helper: "Supported research facilities",
+                      },
+                    ]
+                  : [
+                      {
+                        label: role === "technician" ? "My Assigned Labs" : "Active Laboratories",
+                        value: role === "technician" ? assignedLabs.length : labs.length,
+                        helper: "Room-level authority",
+                      },
+                      {
+                        label: "Pending Issues",
+                        value: assignedLabs.reduce((sum, lab) => sum + (lab.openIssues || 0), 0),
+                        helper: "Across visible labs",
+                      },
+                      { label: "Approved Budget", value: formatMoney(approvedTotal), helper: "Public ledger verified" },
+                      { label: "Public Disputes", value: incidents.length, helper: "Audit incident trail" },
+                    ]
+                ).map((stat) => (
                   <div key={stat.label} className="glass-card p-5 rounded-2xl">
                     <p className="text-xs font-medium text-slate-400">{stat.label}</p>
                     <p className="text-2xl font-extrabold font-display text-white mt-2">{stat.value}</p>
@@ -750,6 +944,268 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ── TAB: MY REPORTED ISSUES (STUDENT / FACULTY WORKSPACE) ── */}
+          {section === "my-issues" && (
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold font-display text-white">My Submitted Fault Reports</h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Live lifecycle tracker for laboratory hardware problems filed under {currentUser?.email || "your account"}.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSection("submit-fault")}
+                  className="btn-primary text-xs font-semibold px-4 py-2.5 rounded-xl self-start md:self-auto shadow-md"
+                >
+                  + Report New Equipment Fault
+                </button>
+              </div>
+
+              {userSubmittedIssues.length > 0 ? (
+                <div className="glass-card rounded-2xl overflow-hidden border border-white/5">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-[#0b142c] text-slate-400 uppercase font-mono text-[11px] border-b border-white/5">
+                        <tr>
+                          <th className="px-5 py-4">Ticket</th>
+                          <th className="px-5 py-4">Equipment Item</th>
+                          <th className="px-5 py-4">Laboratory</th>
+                          <th className="px-5 py-4">Priority</th>
+                          <th className="px-5 py-4">Current Status</th>
+                          <th className="px-5 py-4">Current Stage</th>
+                          <th className="px-5 py-4">Responsible</th>
+                          <th className="px-5 py-4">Reported</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {userSubmittedIssues.map((issue) => {
+                          const pConf = PRIORITY_BADGES[issue.priority] || { badge: "bg-slate-800 text-slate-400" };
+                          return (
+                            <tr key={issue.id} className="hover:bg-white/[0.02] transition-colors">
+                              <td className="px-5 py-3.5 font-mono font-bold text-blue-400">{issue.id}</td>
+                              <td className="px-5 py-3.5 font-semibold text-white">
+                                {issue.item}
+                                {issue.assetTag && (
+                                  <span className="block text-[10px] font-mono text-slate-500">Asset: {issue.assetTag}</span>
+                                )}
+                              </td>
+                              <td className="px-5 py-3.5 text-slate-300">{issue.labName || issue.lab}</td>
+                              <td className="px-5 py-3.5">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${pConf.badge}`}>
+                                  {issue.priority}
+                                </span>
+                              </td>
+                              <td className="px-5 py-3.5">
+                                <StatusBadge status={issue.status} />
+                              </td>
+                              <td className="px-5 py-3.5 text-slate-400">{issue.currentStage}</td>
+                              <td className="px-5 py-3.5 text-slate-300 font-medium">
+                                <span className="px-2 py-1 rounded bg-white/[0.03] border border-white/5">
+                                  {issue.pendingWith}
+                                </span>
+                              </td>
+                              <td className="px-5 py-3.5 text-slate-400">{issue.createdAt || issue.submittedAt || "Recent"}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="glass-card p-12 rounded-2xl text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto text-2xl">
+                    📝
+                  </div>
+                  <h3 className="text-base font-bold text-white">No Equipment Reports On File</h3>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    You have not reported any equipment malfunctions under {currentUser?.email || "this account"}.
+                    When any campus lab device experiences a problem, submit a ticket to dispatch maintenance.
+                  </p>
+                  <button
+                    onClick={() => setSection("submit-fault")}
+                    className="btn-primary text-xs font-semibold px-4 py-2 rounded-xl mt-2"
+                  >
+                    Report First Fault Now
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── TAB: SUBMIT FAULT REPORT (STUDENT / FACULTY WORKSPACE) ── */}
+          {section === "submit-fault" && (
+            <div className="space-y-6 max-w-3xl">
+              <div>
+                <h2 className="text-2xl font-bold font-display text-white">Report Laboratory Equipment Fault</h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Logged in as <strong className="text-blue-400">{currentUser?.name || "Campus Member"}</strong> ({currentUser?.email}). Ticket will automatically route to the assigned lab technician.
+                </p>
+              </div>
+
+              {faultError && (
+                <div className="p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs">
+                  {faultError}
+                </div>
+              )}
+
+              <form onSubmit={handleStudentSubmitFault} className="glass-card p-6 md:p-8 rounded-2xl space-y-5 border border-white/5">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                      Reporter Identity
+                    </label>
+                    <input
+                      type="text"
+                      disabled
+                      value={`${currentUser?.name || "Member"} · ${currentUser?.email || ""}`}
+                      className="w-full rounded-xl px-4 py-2.5 text-xs glass-input bg-[#0b142c] opacity-75 cursor-not-allowed text-slate-300"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                      Academic Department
+                    </label>
+                    <input
+                      type="text"
+                      disabled
+                      value={currentUser?.department || "Campus Department"}
+                      className="w-full rounded-xl px-4 py-2.5 text-xs glass-input bg-[#0b142c] opacity-75 cursor-not-allowed text-slate-300"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                      Laboratory Location *
+                    </label>
+                    <select
+                      required
+                      value={newFault.lab}
+                      onChange={(e) => setNewFault({ ...newFault, lab: e.target.value })}
+                      className="w-full rounded-xl px-4 py-2.5 text-xs glass-input bg-[#0b142c] text-white"
+                    >
+                      <option value="">Select laboratory room</option>
+                      {labs.map((lab) => (
+                        <option key={lab.id} value={`${lab.room} · ${lab.name}`}>
+                          {lab.room} · {lab.name} ({lab.department})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                      Equipment Classification *
+                    </label>
+                    <select
+                      required
+                      value={newFault.equipmentType}
+                      onChange={(e) => setNewFault({ ...newFault, equipmentType: e.target.value })}
+                      className="w-full rounded-xl px-4 py-2.5 text-xs glass-input bg-[#0b142c] text-white"
+                    >
+                      <option value="">Select equipment type</option>
+                      {[
+                        "Microscopes",
+                        "Centrifuges",
+                        "Lab Computers",
+                        "Oscilloscopes",
+                        "Spectrophotometers",
+                        "Power Supplies",
+                        "Autoclaves",
+                        "Imaging Systems",
+                      ].map((eq) => (
+                        <option key={eq} value={eq}>
+                          {eq}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                      Asset Tag or Serial (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. LAB-PC-04 or SPEC-2026"
+                      value={newFault.assetTag}
+                      onChange={(e) => setNewFault({ ...newFault, assetTag: e.target.value })}
+                      className="w-full rounded-xl px-4 py-2.5 text-xs glass-input font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                      Urgency / Priority *
+                    </label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {["low", "medium", "high", "critical"].map((p) => {
+                        const isSelected = newFault.priority === p;
+                        return (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => setNewFault({ ...newFault, priority: p })}
+                            className={`py-2 px-1 text-center rounded-xl text-xs font-bold uppercase transition-all border ${
+                              isSelected
+                                ? p === "critical"
+                                  ? "bg-rose-500/20 border-rose-500 text-rose-300"
+                                  : p === "high"
+                                  ? "bg-orange-500/20 border-orange-500 text-orange-300"
+                                  : p === "medium"
+                                  ? "bg-amber-500/20 border-amber-500 text-amber-300"
+                                  : "bg-emerald-500/20 border-emerald-500 text-emerald-300"
+                                : "border-white/5 bg-white/[0.02] text-slate-400 hover:text-white"
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                    Problem Description *
+                  </label>
+                  <textarea
+                    required
+                    rows={4}
+                    placeholder="Provide specific details of the defect, symptom, or malfunction..."
+                    value={newFault.description}
+                    onChange={(e) => setNewFault({ ...newFault, description: e.target.value })}
+                    className="w-full rounded-xl p-4 text-xs glass-input resize-none leading-relaxed text-white"
+                  />
+                </div>
+
+                <div className="pt-2 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setSection("overview")}
+                    className="text-xs text-slate-400 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={faultSubmitting}
+                    className="btn-primary text-xs font-semibold px-6 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                  >
+                    {faultSubmitting ? "Routing Ticket to Technician..." : "Submit Fault Ticket →"}
+                  </button>
+                </div>
+              </form>
             </div>
           )}
 
@@ -961,22 +1417,41 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
                     </div>
 
                     <div className="mt-5 pt-4 border-t border-white/5 space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-                        Assigned Technician
-                      </label>
-                      <select
-                        value={lab.technicianId || ""}
-                        disabled={role !== "admin"}
-                        onChange={(e) => assignTechnician(lab.id, e.target.value)}
-                        className="w-full rounded-xl px-3 py-2 text-xs glass-input bg-[#0b142c] disabled:opacity-50"
-                      >
-                        <option value="">Awaiting Assignment</option>
-                        {technicians.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name} ({t.department})
-                          </option>
-                        ))}
-                      </select>
+                      {isAcademicUser ? (
+                        <>
+                          <div className="flex items-center justify-between text-xs text-slate-400">
+                            <span>Technician: <strong className="text-white">{lab.technicianName || "Assigned On Demand"}</strong></span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setNewFault((prev) => ({ ...prev, lab: `${lab.room} · ${lab.name}` }));
+                              setSection("submit-fault");
+                            }}
+                            className="w-full text-center py-2 rounded-xl border border-blue-500/30 text-blue-400 hover:bg-blue-500/10 text-xs font-semibold transition-all"
+                          >
+                            Report Fault in this Lab →
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                            Assigned Technician
+                          </label>
+                          <select
+                            value={lab.technicianId || ""}
+                            disabled={role !== "admin"}
+                            onChange={(e) => assignTechnician(lab.id, e.target.value)}
+                            className="w-full rounded-xl px-3 py-2 text-xs glass-input bg-[#0b142c] disabled:opacity-50"
+                          >
+                            <option value="">Awaiting Assignment</option>
+                            {technicians.map((t) => (
+                              <option key={t.id} value={t.id}>
+                                {t.name} ({t.department})
+                              </option>
+                            ))}
+                          </select>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}

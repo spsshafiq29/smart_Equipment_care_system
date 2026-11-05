@@ -15,6 +15,7 @@ export function generateToken(user) {
       email: user.email,
       role: user.role,
       name: user.name,
+      department: user.department || 'General',
       exp: Math.floor(Date.now() / 1000) + 86400,
     })
   ).toString('base64url');
@@ -44,7 +45,13 @@ export function authMiddleware(req, res, next) {
   const token = authHeader.split(' ')[1];
   const verified = verifyToken(token);
   if (verified) {
-    req.user = memoryDb.tables.users.find((u) => u.id === verified.sub) || verified;
+    req.user = memoryDb.tables.users.find((u) => u.id === verified.sub) || {
+      id: verified.sub,
+      email: verified.email,
+      role: verified.role,
+      name: verified.name,
+      department: verified.department || 'General',
+    };
   } else {
     req.user = null;
   }

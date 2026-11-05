@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { secsApi } from "./services/secsApi";
-import type { PortalRole } from "./workflowTypes";
+import type { PortalRole, StaffAccount } from "./workflowTypes";
 
 interface Props {
   onNavigate: (page: "register" | "landing") => void;
-  onLogin: (role: PortalRole) => void;
+  onLogin: (user: StaffAccount) => void;
+  initialPortal?: PortalRole;
 }
 
 const PORTALS: { value: PortalRole; label: string; description: string; icon: string }[] = [
@@ -14,9 +15,9 @@ const PORTALS: { value: PortalRole; label: string; description: string; icon: st
   { value: "technician", label: "Technician", description: "Diagnostics & repair queue", icon: "🔧" },
 ];
 
-export default function LoginPage({ onNavigate, onLogin }: Props) {
+export default function LoginPage({ onNavigate, onLogin, initialPortal }: Props) {
   const [view, setView] = useState<"login" | "setup-admin" | "forgot-password">("login");
-  const [portal, setPortal] = useState<PortalRole>("admin");
+  const [portal, setPortal] = useState<PortalRole>(initialPortal || "admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -83,8 +84,11 @@ export default function LoginPage({ onNavigate, onLogin }: Props) {
         password,
         portal,
       });
-      const userRole = (res?.user?.role as PortalRole) || portal;
-      onLogin(userRole);
+      if (res?.user) {
+        onLogin(res.user);
+      } else {
+        throw new Error("Invalid session credentials.");
+      }
     } catch (err: any) {
       setServerError(err?.message || "Authentication failed. Please verify credentials or register.");
     } finally {
@@ -108,14 +112,16 @@ export default function LoginPage({ onNavigate, onLogin }: Props) {
 
     setLoading(true);
     try {
-      await secsApi.auth.setupAdmin({
+      const res = await secsApi.auth.setupAdmin({
         name: adminName.trim(),
         email: adminEmail.trim(),
         password: adminPassword,
         department: adminDept.trim(),
       });
       setAdminConfigured(true);
-      onLogin("admin");
+      if (res?.user) {
+        onLogin(res.user);
+      }
     } catch (err: any) {
       setServerError(err?.message || "Failed to initialize Admin account.");
     } finally {
