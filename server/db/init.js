@@ -2,11 +2,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+try {
+  if (process.loadEnvFile) {
+    process.loadEnvFile('.env.local');
+  }
+} catch {
+  // ignore
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function initDatabase() {
-  const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  const dbUrl = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || process.env.POSTGRES_URL;
   if (!dbUrl) {
     console.warn('⚠️ No DATABASE_URL or POSTGRES_URL environment variable found.');
     console.log('ℹ️ Usage: DATABASE_URL="postgres://user:pass@host/db" node server/db/init.js');

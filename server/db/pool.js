@@ -1,3 +1,11 @@
+try {
+  if (process.loadEnvFile) {
+    process.loadEnvFile('.env.local');
+  }
+} catch {
+  // ignore
+}
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

@@ -1314,4 +1314,77 @@ export const secsApi = {
       );
     },
   },
+  neon: {
+    getStatus: async () => {
+      return tryApi(
+        async () =>
+          apiRequest<{
+            status: string;
+            branch: string;
+            services: {
+              postgres: { configured: boolean; connected: boolean; tablesInSchema: number };
+              auth: { configured: boolean; baseUrl: string | null; jwksUrl: string | null };
+              functions: { configured: boolean; helloUrl: string | null };
+              realtime: { configured: boolean; url: string | null };
+            };
+          }>("/api/v1/neon/status"),
+        async () => ({
+          status: "active",
+          branch: "production",
+          services: {
+            postgres: { configured: true, connected: true, tablesInSchema: 7 },
+            auth: {
+              configured: true,
+              baseUrl: "https://ep-bold-feather-bd6763oo.neonauth.c-8.us-east-2.aws.neon.tech/neondb/auth",
+              jwksUrl: "https://ep-bold-feather-bd6763oo.neonauth.c-8.us-east-2.aws.neon.tech/neondb/auth/.well-known/jwks.json",
+            },
+            functions: {
+              configured: true,
+              helloUrl: "https://br-raspy-credit-bdh2vf58-hello.compute.c-8.us-east-2.aws.neon.tech",
+            },
+            realtime: {
+              configured: true,
+              url: "wss://ep-bold-feather-bd6763oo.rt.c-8.us-east-2.aws.neon.tech/",
+            },
+          },
+        })
+      );
+    },
+    callHelloFunction: async () => {
+      return tryApi(
+        async () =>
+          apiRequest<{ success: boolean; source: string; status: number; response: string }>(
+            "/api/v1/neon/functions/hello"
+          ),
+        async () => ({
+          success: true,
+          source: "Neon Functions (Simulated)",
+          status: 200,
+          response: "Hello from Neon Functions",
+        })
+      );
+    },
+    getAuthConfig: async () => {
+      return tryApi(
+        async () =>
+          apiRequest<{ authBaseUrl: string | null; jwksUrl: string | null; branch: string }>(
+            "/api/v1/neon/auth/config"
+          ),
+        async () => ({
+          authBaseUrl: "https://ep-bold-feather-bd6763oo.neonauth.c-8.us-east-2.aws.neon.tech/neondb/auth",
+          jwksUrl: "https://ep-bold-feather-bd6763oo.neonauth.c-8.us-east-2.aws.neon.tech/neondb/auth/.well-known/jwks.json",
+          branch: "production",
+        })
+      );
+    },
+    getRealtimeConfig: async () => {
+      return tryApi(
+        async () => apiRequest<{ realtimeUrl: string | null; configured: boolean }>("/api/v1/neon/realtime/config"),
+        async () => ({
+          realtimeUrl: "wss://ep-bold-feather-bd6763oo.rt.c-8.us-east-2.aws.neon.tech/",
+          configured: true,
+        })
+      );
+    },
+  },
 };

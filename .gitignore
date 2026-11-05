@@ -22,3 +22,4 @@ logs/
 # Figma internal platform folders (not needed for GitHub / Vercel)
 .figma/
 .figaro/
+.neon

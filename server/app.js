@@ -5,6 +5,7 @@ import { labRoutes } from './routes/labs.routes.js';
 import { budgetRoutes } from './routes/budgets.routes.js';
 import { userRoutes } from './routes/users.routes.js';
 import { auditRoutes, notificationRoutes, statsRoutes, metaRoutes } from './routes/other.routes.js';
+import { neonRoutes } from './routes/neon.routes.js';
 import { authMiddleware } from './middleware/auth.js';
 import { errorHandler } from './middleware/error.js';
 
@@ -140,6 +141,7 @@ export function createExpressApp() {
   notificationRoutes(app);
   statsRoutes(app);
   metaRoutes(app);
+  neonRoutes(app);
 
   return app;
 }
