@@ -7,11 +7,11 @@ interface Props {
   onLogin: (role: PortalRole) => void;
 }
 
-const PORTALS: { value: PortalRole; label: string; description: string }[] = [
-  { value: "admin", label: "Admin", description: "Labs, assignments and accounts" },
-  { value: "authority", label: "Higher Authority", description: "Approvals and oversight" },
-  { value: "accounts", label: "Accounts", description: "Payments and confirmation" },
-  { value: "technician", label: "Technician", description: "Assigned labs and repairs" },
+const PORTALS: { value: PortalRole; label: string; description: string; icon: string }[] = [
+  { value: "admin", label: "Admin", description: "Facilities & access control", icon: "🛡️" },
+  { value: "authority", label: "Higher Authority", description: "Budget approvals & oversight", icon: "🏛️" },
+  { value: "accounts", label: "Accounts", description: "Disbursements & confirmation", icon: "💳" },
+  { value: "technician", label: "Technician", description: "Diagnostics & repair queue", icon: "🔧" },
 ];
 
 export default function LoginPage({ onNavigate, onLogin }: Props) {
@@ -139,7 +139,7 @@ export default function LoginPage({ onNavigate, onLogin }: Props) {
         setForgotCode(res.code);
         setGeneratedCodeHint(res.code);
       }
-      setSuccessMessage("Verification code generated! Please enter code and your new password.");
+      setSuccessMessage("Verification code dispatched to your email! Please enter the code and choose a new password.");
       setForgotStep(2);
     } catch (err: any) {
       setServerError(err?.message || "Could not generate reset code.");
@@ -170,7 +170,7 @@ export default function LoginPage({ onNavigate, onLogin }: Props) {
       });
       setEmail(forgotEmail.trim());
       setPassword("");
-      setSuccessMessage("Password successfully updated! You can now log in with your new password.");
+      setSuccessMessage("Password successfully updated! You can now log in with your new credentials.");
       setView("login");
       setForgotStep(1);
     } catch (err: any) {
@@ -181,417 +181,503 @@ export default function LoginPage({ onNavigate, onLogin }: Props) {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: "linear-gradient(135deg, #050d1f 0%, #0a1628 60%, #0e1f3a 100%)" }}>
-      {/* Left decorative panel */}
-      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 flex-col justify-between p-12 relative overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-25"
-          style={{
-            backgroundImage: `url(https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=800&h=1200&fit=crop&auto=format)`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(5,13,31,0.88) 0%, rgba(10,22,40,0.6) 100%)" }} />
+    <div className="min-h-screen flex bg-[#050a18] text-slate-100 selection:bg-blue-500/30">
+      {/* ── LEFT SHOWCASE PANEL (Desktop) ── */}
+      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 relative flex-col justify-between p-12 overflow-hidden border-r border-white/5 bg-gradient-to-br from-[#070e24] via-[#09132e] to-[#040814]">
+        {/* Ambient atmospheric glows */}
+        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-400 flex items-center justify-center text-[#050d1f] font-black text-lg">S</div>
-            <div>
-              <div style={{ fontFamily: "var(--font-display)" }} className="text-white text-xl leading-none">
-                SECS
-              </div>
-              <div className="text-amber-400/70 text-[10px] uppercase tracking-widest">Smart Equipment Care System</div>
-            </div>
+        {/* Brand Header */}
+        <div className="relative z-10 flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20 border border-white/10">
+            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+            </svg>
+          </div>
+          <div>
+            <span className="font-display font-extrabold text-xl tracking-tight text-white">SECS</span>
+            <span className="text-xs text-blue-400 font-semibold tracking-wide block uppercase">Smart Equipment Care System</span>
           </div>
         </div>
 
-        <div className="relative z-10">
-          <h2 style={{ fontFamily: "var(--font-display)" }} className="text-4xl xl:text-5xl text-white mb-5 leading-tight">
-            Campus Equipment
-            <br />
-            Management Portal
+        {/* Core Value Statement */}
+        <div className="relative z-10 my-auto py-12 max-w-lg">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-6">
+            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+            Enterprise University Portal
+          </div>
+          
+          <h2 className="text-3xl xl:text-4xl font-extrabold font-display text-white tracking-tight leading-[1.2] mb-6">
+            Integrated Laboratory <br />
+            <span className="gradient-brand">Maintenance & Governance</span>
           </h2>
-          <p className="text-white/60 text-sm max-w-md leading-relaxed">
-            Real-time equipment issue tracking, lab technician coordination, verified budget releases, and public transparency audits across all university faculties.
+
+          <p className="text-slate-400 text-sm leading-relaxed mb-8">
+            Access role-gated operational workflows, manage technician room assignments, approve budget disbursements, and uphold total financial transparency.
           </p>
+
+          <div className="space-y-4">
+            {[
+              { title: "Role-Based Integrity", desc: "Granular access for Admins, Higher Authority, Accounts, and Techs" },
+              { title: "SLA-Driven Escalations", desc: "Automated 24h, 3d, 7d condition checks with Brevo email notifications" },
+              { title: "Public Audit Ledger", desc: "Verifiable transaction records ensuring complete campus accountability" },
+            ].map((feature) => (
+              <div key={feature.title} className="flex items-start gap-3.5 p-3 rounded-xl bg-white/[0.02] border border-white/5">
+                <div className="w-5 h-5 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-white tracking-tight">{feature.title}</h4>
+                  <p className="text-[11px] text-slate-500 leading-normal">{feature.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="relative z-10 flex items-center justify-between text-xs text-white/30 border-t border-white/10 pt-6">
-          <span>University of Information Technology</span>
-          <span>PERN Cloud Architecture</span>
+        {/* Footer info */}
+        <div className="relative z-10 flex items-center justify-between text-xs text-slate-500 border-t border-white/5 pt-6">
+          <span>University IT & Facilities Infrastructure</span>
+          <span className="flex items-center gap-1.5 text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Live Neon DB
+          </span>
         </div>
       </div>
 
-      {/* Right form panel */}
-      <div className="w-full lg:w-7/12 xl:w-1/2 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
+      {/* ── RIGHT AUTHENTICATION PANEL ── */}
+      <div className="flex-1 flex flex-col justify-center items-center px-6 py-12 sm:px-10 lg:px-16 overflow-y-auto">
         <div className="w-full max-w-md">
-          {/* Header */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <span className="text-amber-400 text-xs font-semibold uppercase tracking-widest">
-                {view === "setup-admin" ? "First-Time Deployment" : view === "forgot-password" ? "Security Recovery" : "Staff Access"}
-              </span>
+          {/* Mobile brand header */}
+          <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
+            <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-sm">
+              S
+            </div>
+            <span className="font-display font-extrabold text-lg text-white">SECS Portal</span>
+          </div>
+
+          {/* Form Card */}
+          <div className="glass-card rounded-2xl p-7 sm:p-9 shadow-2xl relative">
+            {/* Top view status label */}
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-400">
+                  {view === "setup-admin" ? "Master Deployment Setup" : view === "forgot-password" ? "Security Recovery" : "Staff Access"}
+                </span>
+                <h1 className="text-2xl font-bold font-display text-white mt-1">
+                  {view === "setup-admin"
+                    ? "Initialize Admin"
+                    : view === "forgot-password"
+                    ? "Reset Password"
+                    : "Sign In to Portal"}
+                </h1>
+              </div>
+
               {view !== "login" && (
                 <button
+                  type="button"
                   onClick={() => {
                     setView("login");
                     setServerError("");
                     setSuccessMessage("");
                   }}
-                  className="text-xs text-white/40 hover:text-white transition-colors"
+                  className="text-xs font-semibold text-slate-400 hover:text-white px-2.5 py-1.5 rounded-lg border border-white/10 hover:border-white/20 transition-all"
                 >
                   ← Back to Login
                 </button>
               )}
             </div>
-            <h1 style={{ fontFamily: "var(--font-display)" }} className="text-2xl md:text-3xl font-bold text-white mt-1">
-              {view === "setup-admin"
-                ? "Setup Admin Account"
-                : view === "forgot-password"
-                ? "Reset Your Password"
-                : "Sign In to Portal"}
-            </h1>
-            <p className="text-white/40 text-xs mt-1">
-              {view === "setup-admin"
-                ? "Initialize the master administrator credentials for this deployment."
-                : view === "forgot-password"
-                ? "Enter your university email to securely set up a new password."
-                : "Select your role and enter your university credentials to continue."}
-            </p>
-          </div>
 
-          {/* Setup admin prompt if not configured */}
-          {adminConfigured === false && view !== "setup-admin" && (
-            <div className="mb-4 p-3 rounded-lg border border-amber-400/30 bg-amber-400/10 flex items-center justify-between text-xs text-amber-300">
-              <span>First-time setup: Admin account is not yet configured.</span>
-              <button
-                onClick={() => setView("setup-admin")}
-                className="underline font-bold hover:text-white ml-2"
-              >
-                Setup Now
-              </button>
-            </div>
-          )}
-
-          {/* Success message banner */}
-          {successMessage && (
-            <div className="mb-4 p-3 rounded-lg border border-green-500/40 bg-green-500/10 text-green-300 text-xs">
-              {successMessage}
-            </div>
-          )}
-
-          {/* Server error alert */}
-          {serverError && (
-            <div className="mb-4 p-3 rounded-lg border border-red-500/40 bg-red-500/10 text-red-300 text-xs">
-              {serverError}
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* VIEW 1: FIRST-TIME ADMIN SETUP                             */}
-          {/* ========================================================= */}
-          {view === "setup-admin" && (
-            <form onSubmit={handleSetupAdmin} className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
-                  Admin Full Name / Username
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. System Administrator"
-                  value={adminName}
-                  onChange={(e) => {
-                    setAdminName(e.target.value);
-                    setErrors((prev) => ({ ...prev, adminName: "" }));
-                  }}
-                  className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
-                    errors.adminName ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
-                  }`}
-                />
-                {errors.adminName && <p className="text-red-400 text-xs mt-1">{errors.adminName}</p>}
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
-                  Admin Email Address
-                </label>
-                <input
-                  type="email"
-                  placeholder="admin@uitc.edu"
-                  value={adminEmail}
-                  onChange={(e) => {
-                    setAdminEmail(e.target.value);
-                    setErrors((prev) => ({ ...prev, adminEmail: "" }));
-                  }}
-                  className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
-                    errors.adminEmail ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
-                  }`}
-                />
-                {errors.adminEmail && <p className="text-red-400 text-xs mt-1">{errors.adminEmail}</p>}
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
-                  Admin Password
-                </label>
-                <input
-                  type={showPass ? "text" : "password"}
-                  placeholder="Create a strong password (min 6 characters)"
-                  value={adminPassword}
-                  onChange={(e) => {
-                    setAdminPassword(e.target.value);
-                    setErrors((prev) => ({ ...prev, adminPassword: "" }));
-                  }}
-                  className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
-                    errors.adminPassword ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
-                  }`}
-                />
-                {errors.adminPassword && <p className="text-red-400 text-xs mt-1">{errors.adminPassword}</p>}
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
-                  Department
-                </label>
-                <input
-                  type="text"
-                  placeholder="Facilities & IT Management"
-                  value={adminDept}
-                  onChange={(e) => setAdminDept(e.target.value)}
-                  className="w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 rounded-lg font-semibold text-[#050d1f] bg-amber-400 hover:bg-amber-300 active:scale-95 transition-all duration-150 disabled:opacity-70 mt-2 flex items-center justify-center gap-2"
-              >
-                {loading ? "Configuring Admin..." : "Initialize Admin & Enter Dashboard →"}
-              </button>
-            </form>
-          )}
-
-          {/* ========================================================= */}
-          {/* VIEW 2: FORGOT PASSWORD                                    */}
-          {/* ========================================================= */}
-          {view === "forgot-password" && (
-            <div className="space-y-4">
-              {forgotStep === 1 ? (
-                <form onSubmit={handleSendResetCode} className="space-y-4">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
-                      Enter Your Registered Email
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="your.email@uitc.edu"
-                      value={forgotEmail}
-                      onChange={(e) => {
-                        setForgotEmail(e.target.value);
-                        setErrors((prev) => ({ ...prev, forgotEmail: "" }));
-                      }}
-                      className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
-                        errors.forgotEmail ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
-                      }`}
-                    />
-                    {errors.forgotEmail && <p className="text-red-400 text-xs mt-1">{errors.forgotEmail}</p>}
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-3 rounded-lg font-semibold text-[#050d1f] bg-amber-400 hover:bg-amber-300 active:scale-95 transition-all duration-150 disabled:opacity-70 flex items-center justify-center gap-2"
-                  >
-                    {loading ? "Generating Code..." : "Send Reset Code →"}
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleConfirmResetPassword} className="space-y-4">
-                  {generatedCodeHint && (
-                    <div className="p-2.5 rounded bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs flex items-center justify-between">
-                      <span>Verification Code: <strong>{generatedCodeHint}</strong></span>
-                      <span className="text-[10px] text-white/40">(Valid for 15m)</span>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
-                      6-Digit Verification Code
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 582914"
-                      value={forgotCode}
-                      onChange={(e) => {
-                        setForgotCode(e.target.value);
-                        setErrors((prev) => ({ ...prev, forgotCode: "" }));
-                      }}
-                      className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
-                        errors.forgotCode ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
-                      }`}
-                    />
-                    {errors.forgotCode && <p className="text-red-400 text-xs mt-1">{errors.forgotCode}</p>}
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
-                      New Password
-                    </label>
-                    <input
-                      type="password"
-                      placeholder="Enter new password (min 6 characters)"
-                      value={newPassword}
-                      onChange={(e) => {
-                        setNewPassword(e.target.value);
-                        setErrors((prev) => ({ ...prev, newPassword: "" }));
-                      }}
-                      className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
-                        errors.newPassword ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
-                      }`}
-                    />
-                    {errors.newPassword && <p className="text-red-400 text-xs mt-1">{errors.newPassword}</p>}
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-3 rounded-lg font-semibold text-[#050d1f] bg-amber-400 hover:bg-amber-300 active:scale-95 transition-all duration-150 disabled:opacity-70 flex items-center justify-center gap-2"
-                  >
-                    {loading ? "Updating Password..." : "Update Password & Return to Login →"}
-                  </button>
-                </form>
-              )}
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* VIEW 3: STANDARD LOGIN                                     */}
-          {/* ========================================================= */}
-          {view === "login" && (
-            <form onSubmit={handleLogin} className="space-y-4">
-              {/* Portal Selector */}
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-2">
-                  Select Portal Role
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {PORTALS.map((item) => (
-                    <button
-                      key={item.value}
-                      type="button"
-                      onClick={() => setPortal(item.value)}
-                      className={`rounded-lg border p-3 text-left transition ${
-                        portal === item.value
-                          ? "border-amber-400 bg-amber-400/10"
-                          : "border-white/10 bg-white/[0.02] hover:border-white/20"
-                      }`}
-                    >
-                      <span className={`block text-sm font-semibold ${portal === item.value ? "text-amber-400" : "text-white/70"}`}>
-                        {item.label}
-                      </span>
-                      <span className="mt-1 block text-[10px] leading-4 text-white/30">{item.description}</span>
-                    </button>
-                  ))}
+            {/* Admin status notification badge */}
+            {adminConfigured === false && view !== "setup-admin" && (
+              <div className="mb-5 p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-between text-xs text-amber-300">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">⚡</span>
+                  <span>Primary Admin account not initialized yet.</span>
                 </div>
+                <button
+                  onClick={() => setView("setup-admin")}
+                  className="px-2.5 py-1 rounded bg-amber-400 text-slate-950 font-bold hover:bg-amber-300 text-[11px] transition-colors"
+                >
+                  Setup
+                </button>
               </div>
+            )}
 
-              {/* Email */}
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
-                  Registered University Email
-                </label>
-                <input
-                  type="email"
-                  placeholder="your.email@uitc.edu"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setErrors((er) => ({ ...er, email: "" }));
-                  }}
-                  className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
-                    errors.email ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
-                  }`}
-                />
-                {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
+            {/* Server feedback alerts */}
+            {successMessage && (
+              <div className="mb-5 p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs flex items-center gap-2.5">
+                <svg className="w-4 h-4 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>{successMessage}</span>
               </div>
+            )}
 
-              {/* Password */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold uppercase tracking-widest text-white/40">Password</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setForgotEmail(email);
-                      setForgotStep(1);
-                      setView("forgot-password");
-                      setServerError("");
-                      setSuccessMessage("");
-                    }}
-                    className="text-xs text-amber-400 hover:text-amber-300 font-medium transition-colors"
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
-                <div className="relative">
+            {serverError && (
+              <div className="mb-5 p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs flex items-center gap-2.5">
+                <svg className="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" strokeWidth={2} />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01" />
+                </svg>
+                <span>{serverError}</span>
+              </div>
+            )}
+
+            {/* ========================================================= */}
+            {/* VIEW 1: FIRST-TIME ADMIN SETUP                             */}
+            {/* ========================================================= */}
+            {view === "setup-admin" && (
+              <form onSubmit={handleSetupAdmin} className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                    Admin Full Name / Username
+                  </label>
                   <input
-                    type={showPass ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={password}
+                    type="text"
+                    placeholder="e.g. System Administrator"
+                    value={adminName}
                     onChange={(e) => {
-                      setPassword(e.target.value);
-                      setErrors((er) => ({ ...er, password: "" }));
+                      setAdminName(e.target.value);
+                      setErrors((prev) => ({ ...prev, adminName: "" }));
                     }}
-                    className={`w-full rounded-lg pl-4 pr-10 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
-                      errors.password ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
+                    className={`w-full rounded-xl px-4 py-2.5 text-sm glass-input ${
+                      errors.adminName ? "border-rose-500 focus:border-rose-500" : ""
                     }`}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPass(!showPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white"
-                  >
-                    {showPass ? "Hide" : "Show"}
-                  </button>
+                  {errors.adminName && <p className="text-rose-400 text-xs mt-1">{errors.adminName}</p>}
                 </div>
-                {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
+
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                    University Email Address
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="admin@uitc.edu"
+                    value={adminEmail}
+                    onChange={(e) => {
+                      setAdminEmail(e.target.value);
+                      setErrors((prev) => ({ ...prev, adminEmail: "" }));
+                    }}
+                    className={`w-full rounded-xl px-4 py-2.5 text-sm glass-input ${
+                      errors.adminEmail ? "border-rose-500 focus:border-rose-500" : ""
+                    }`}
+                  />
+                  {errors.adminEmail && <p className="text-rose-400 text-xs mt-1">{errors.adminEmail}</p>}
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                    Master Password
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Minimum 6 characters"
+                    value={adminPassword}
+                    onChange={(e) => {
+                      setAdminPassword(e.target.value);
+                      setErrors((prev) => ({ ...prev, adminPassword: "" }));
+                    }}
+                    className={`w-full rounded-xl px-4 py-2.5 text-sm glass-input ${
+                      errors.adminPassword ? "border-rose-500 focus:border-rose-500" : ""
+                    }`}
+                  />
+                  {errors.adminPassword && <p className="text-rose-400 text-xs mt-1">{errors.adminPassword}</p>}
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                    Department
+                  </label>
+                  <input
+                    type="text"
+                    value={adminDept}
+                    onChange={(e) => setAdminDept(e.target.value)}
+                    className="w-full rounded-xl px-4 py-2.5 text-sm glass-input"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full mt-2 py-3 rounded-xl btn-primary flex items-center justify-center gap-2 text-sm font-semibold"
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      Provisioning Admin…
+                    </span>
+                  ) : (
+                    "Initialize Master Admin Account →"
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* ========================================================= */}
+            {/* VIEW 2: FORGOT PASSWORD 2-STEP RECOVERY                    */}
+            {/* ========================================================= */}
+            {view === "forgot-password" && (
+              <div>
+                {forgotStep === 1 ? (
+                  <form onSubmit={handleSendResetCode} className="space-y-4">
+                    <p className="text-xs text-slate-400 mb-2 leading-relaxed">
+                      Enter the university email linked to your account. We will dispatch a 6-digit verification code via Brevo SMTP to verify your identity.
+                    </p>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        University Email
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="your.name@uitc.edu"
+                        value={forgotEmail}
+                        onChange={(e) => {
+                          setForgotEmail(e.target.value);
+                          setErrors((prev) => ({ ...prev, forgotEmail: "" }));
+                        }}
+                        className={`w-full rounded-xl px-4 py-2.5 text-sm glass-input ${
+                          errors.forgotEmail ? "border-rose-500" : ""
+                        }`}
+                      />
+                      {errors.forgotEmail && <p className="text-rose-400 text-xs mt-1">{errors.forgotEmail}</p>}
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full py-3 rounded-xl btn-primary flex items-center justify-center gap-2 text-sm font-semibold"
+                    >
+                      {loading ? "Sending Code via Brevo…" : "Send Verification Code 📧"}
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleConfirmResetPassword} className="space-y-4">
+                    <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
+                      Code dispatched to: <strong>{forgotEmail}</strong>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        6-Digit Verification Code
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        placeholder="123456"
+                        value={forgotCode}
+                        onChange={(e) => {
+                          setForgotCode(e.target.value);
+                          setErrors((prev) => ({ ...prev, forgotCode: "" }));
+                        }}
+                        className={`w-full rounded-xl px-4 py-2.5 text-center font-mono text-lg tracking-widest glass-input ${
+                          errors.forgotCode ? "border-rose-500" : ""
+                        }`}
+                      />
+                      {errors.forgotCode && <p className="text-rose-400 text-xs mt-1">{errors.forgotCode}</p>}
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        New Password
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="Minimum 6 characters"
+                        value={newPassword}
+                        onChange={(e) => {
+                          setNewPassword(e.target.value);
+                          setErrors((prev) => ({ ...prev, newPassword: "" }));
+                        }}
+                        className={`w-full rounded-xl px-4 py-2.5 text-sm glass-input ${
+                          errors.newPassword ? "border-rose-500" : ""
+                        }`}
+                      />
+                      {errors.newPassword && <p className="text-rose-400 text-xs mt-1">{errors.newPassword}</p>}
+                    </div>
+
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setForgotStep(1)}
+                        className="w-1/3 py-2.5 rounded-xl border border-white/10 hover:border-white/20 text-xs font-semibold text-slate-300"
+                      >
+                        ← Back
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-2/3 py-2.5 rounded-xl btn-primary text-sm font-semibold"
+                      >
+                        {loading ? "Updating…" : "Confirm New Password"}
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
+            )}
 
-              {/* Remember me */}
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  className="rounded border-white/20 bg-white/5 text-amber-400 focus:ring-0"
-                />
-                <span className="text-xs text-white/40">Keep me signed in on this device</span>
-              </label>
+            {/* ========================================================= */}
+            {/* VIEW 3: STANDARD LOGIN                                    */}
+            {/* ========================================================= */}
+            {view === "login" && (
+              <form onSubmit={handleLogin} className="space-y-4">
+                {/* Modern Portal Segmented Pills */}
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
+                    Select Staff Role
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PORTALS.map((p) => {
+                      const isActive = portal === p.value;
+                      return (
+                        <button
+                          key={p.value}
+                          type="button"
+                          onClick={() => {
+                            setPortal(p.value);
+                            setErrors({});
+                            setServerError("");
+                          }}
+                          className={`p-2.5 rounded-xl text-left border transition-all duration-150 flex items-center gap-2.5 ${
+                            isActive
+                              ? "bg-blue-600/20 border-blue-500 text-white shadow-md shadow-blue-500/10"
+                              : "border-white/5 bg-white/[0.02] text-slate-400 hover:border-white/15 hover:text-slate-200"
+                          }`}
+                        >
+                          <span className="text-lg">{p.icon}</span>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold leading-tight truncate">{p.label}</div>
+                            <div className="text-[10px] text-slate-500 truncate">{p.value}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 rounded-lg font-semibold text-[#050d1f] bg-amber-400 hover:bg-amber-300 active:scale-95 transition-all duration-150 disabled:opacity-70 flex items-center justify-center gap-2"
-              >
-                {loading ? "Signing in..." : "Sign In →"}
-              </button>
-            </form>
-          )}
+                {/* Email Address */}
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                    University Email
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="user@uitc.edu"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setErrors((er) => ({ ...er, email: "" }));
+                    }}
+                    className={`w-full rounded-xl px-4 py-2.5 text-sm glass-input ${
+                      errors.email ? "border-rose-500" : ""
+                    }`}
+                  />
+                  {errors.email && <p className="text-rose-400 text-xs mt-1">{errors.email}</p>}
+                </div>
 
-          <p className="text-center text-white/30 text-xs mt-6">
-            New to SECS?{" "}
-            <button onClick={() => onNavigate("register")} className="text-amber-400 hover:text-amber-300 font-medium transition-colors">
-              Create an account
-            </button>
-          </p>
+                {/* Password with Forgot Password link */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      Password
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setView("forgot-password");
+                        setForgotEmail(email);
+                        setServerError("");
+                        setSuccessMessage("");
+                      }}
+                      className="text-xs text-blue-400 hover:text-blue-300 font-semibold transition-colors"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showPass ? "text" : "password"}
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setErrors((er) => ({ ...er, password: "" }));
+                      }}
+                      className={`w-full rounded-xl pl-4 pr-11 py-2.5 text-sm glass-input ${
+                        errors.password ? "border-rose-500" : ""
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPass(!showPass)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      {showPass ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  {errors.password && <p className="text-rose-400 text-xs mt-1">{errors.password}</p>}
+                </div>
 
-          <p className="text-center text-white/20 text-xs mt-2">
-            <button onClick={() => onNavigate("landing")} className="hover:text-white/40 transition-colors">
-              ← Back to main site
-            </button>
-          </p>
+                {/* Keep Signed In */}
+                <label className="flex items-center gap-2.5 cursor-pointer pt-1">
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                    className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-600 focus:ring-0 focus:ring-offset-0"
+                  />
+                  <span className="text-xs text-slate-400">Remember credentials on this browser</span>
+                </label>
+
+                {/* Submit button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full mt-2 py-3 rounded-xl btn-primary text-sm font-semibold flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      Authenticating…
+                    </span>
+                  ) : (
+                    `Sign In as ${PORTALS.find((p) => p.value === portal)?.label || "Staff"} →`
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* Bottom Actions */}
+            <div className="mt-7 pt-5 border-t border-white/5 text-center space-y-2.5">
+              <p className="text-xs text-slate-400">
+                Student or Faculty without staff portal access?{" "}
+                <button
+                  onClick={() => onNavigate("register")}
+                  className="text-blue-400 hover:text-blue-300 font-semibold underline underline-offset-4 ml-1"
+                >
+                  Register Student Account
+                </button>
+              </p>
+              <div>
+                <button
+                  onClick={() => onNavigate("landing")}
+                  className="text-xs text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1.5 mx-auto"
+                >
+                  <span>←</span> Return to Public Equipment Tracker
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

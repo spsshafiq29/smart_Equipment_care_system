@@ -13,20 +13,44 @@ interface Technician {
   email: string;
 }
 
-const ROLE_META: Record<Role, { label: string; initials: string; user: string; title: string }> = {
-  admin: { label: "System Admin", initials: "SA", user: "Mahmud Kabir", title: "Facilities Administrator" },
-  authority: { label: "Higher Authority", initials: "SH", user: "Dr. Samina Haque", title: "Director, Academic Operations" },
-  accounts: { label: "Accounts", initials: "NI", user: "Nusrat Islam", title: "Senior Accounts Officer" },
-  technician: { label: "Lab Technician", initials: "AR", user: "Ashik Rahman", title: "CSE & EEE Technician" },
+const ROLE_META: Record<Role, { label: string; initials: string; title: string; color: string; badge: string }> = {
+  admin: {
+    label: "System Admin",
+    initials: "SA",
+    title: "Facilities & Operations Administrator",
+    color: "text-blue-400",
+    badge: "bg-blue-500/10 border-blue-500/30 text-blue-400",
+  },
+  authority: {
+    label: "Higher Authority",
+    initials: "HA",
+    title: "Institutional Approvals & Oversight",
+    color: "text-amber-400",
+    badge: "bg-amber-500/10 border-amber-500/30 text-amber-400",
+  },
+  accounts: {
+    label: "Accounts Office",
+    initials: "AO",
+    title: "Fiscal Disbursement & Ledger Management",
+    color: "text-emerald-400",
+    badge: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400",
+  },
+  technician: {
+    label: "Lab Technician",
+    initials: "LT",
+    title: "Equipment Diagnostics & Repairs",
+    color: "text-indigo-400",
+    badge: "bg-indigo-500/10 border-indigo-500/30 text-indigo-400",
+  },
 };
 
 const NAV_ITEMS: { id: Section; label: string; roles: Role[]; icon: IconName }[] = [
-  { id: "overview", label: "Overview", roles: ["admin", "authority", "accounts", "technician"], icon: "grid" },
-  { id: "reports", label: "Issue workflow", roles: ["admin", "authority", "accounts", "technician"], icon: "alert" },
-  { id: "labs", label: "Lab assignments", roles: ["admin", "authority", "technician"], icon: "lab" },
-  { id: "budgets", label: "Budgets & payments", roles: ["admin", "authority", "accounts", "technician"], icon: "wallet" },
-  { id: "users", label: "User accounts", roles: ["admin", "authority"], icon: "users" },
-  { id: "ledger", label: "Public audit ledger", roles: ["admin", "authority", "accounts", "technician"], icon: "shield" },
+  { id: "overview", label: "Executive Overview", roles: ["admin", "authority", "accounts", "technician"], icon: "grid" },
+  { id: "reports", label: "Issue Workflow", roles: ["admin", "authority", "accounts", "technician"], icon: "alert" },
+  { id: "labs", label: "Lab Assignments", roles: ["admin", "authority", "technician"], icon: "lab" },
+  { id: "budgets", label: "Budgets & Payments", roles: ["admin", "authority", "accounts", "technician"], icon: "wallet" },
+  { id: "users", label: "Access & Staff Accounts", roles: ["admin", "authority"], icon: "users" },
+  { id: "ledger", label: "Public Audit Ledger", roles: ["admin", "authority", "accounts", "technician"], icon: "shield" },
 ];
 
 type IconName = "grid" | "lab" | "wallet" | "users" | "shield" | "bell" | "search" | "menu" | "close" | "check" | "alert" | "arrow";
@@ -34,10 +58,10 @@ type IconName = "grid" | "lab" | "wallet" | "users" | "shield" | "bell" | "searc
 const ICON_PATHS: Record<IconName, ReactNode> = {
   grid: (
     <>
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
     </>
   ),
   lab: (
@@ -101,16 +125,17 @@ function Button({
   variant = "primary",
   className = "",
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "ghost" | "danger" }) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "ghost" | "danger" | "amber" }) {
   const variants = {
-    primary: "bg-amber-400 text-slate-950 hover:bg-amber-300",
-    secondary: "border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500",
-    ghost: "text-slate-400 hover:bg-slate-800 hover:text-white",
-    danger: "border border-red-400/20 bg-red-400/10 text-red-300 hover:bg-red-400/20",
+    primary: "btn-primary text-white",
+    amber: "btn-amber text-slate-950 font-bold",
+    secondary: "border border-white/10 bg-white/[0.03] text-slate-200 hover:bg-white/[0.08] hover:text-white",
+    ghost: "text-slate-400 hover:bg-white/[0.05] hover:text-white",
+    danger: "border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20",
   };
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${variants[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${variants[variant]} ${className}`}
       {...props}
     >
       {children}
@@ -121,11 +146,11 @@ function Button({
 function StatusPill({ status }: { status: BudgetStatus }) {
   const style =
     status === "Payment confirmed"
-      ? "bg-emerald-400/10 text-emerald-300 border-emerald-400/20"
+      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
       : status === "Approved"
-      ? "bg-sky-400/10 text-sky-300 border-sky-400/20"
-      : "bg-amber-400/10 text-amber-300 border-amber-400/20";
-  return <span className={`inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium ${style}`}>{status}</span>;
+      ? "bg-blue-500/10 text-blue-400 border-blue-500/25"
+      : "bg-amber-500/10 text-amber-300 border-amber-500/25";
+  return <span className={`inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${style}`}>{status}</span>;
 }
 
 function formatMoney(amount: number) {
@@ -338,7 +363,7 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
   async function completeIssue(issue: PublicIssue) {
     try {
       await secsApi.issues.updateStatus(issue.id, { action: "complete_repair" });
-      setNotice(`${issue.id} marked complete. Public status is now Resolved.`);
+      setNotice(`${issue.id} marked complete. Public status updated and resolution email sent.`);
       await loadData();
     } catch (err: any) {
       setNotice(err?.message || "Failed to complete repair.");
@@ -348,7 +373,7 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
   async function disputeIssuePayment(issue: PublicIssue) {
     const message = noteDrafts[issue.id]?.trim();
     if (!message) {
-      setNotice("Write a description before publishing a payment concern.");
+      setNotice("Please describe your payment dispute before publishing.");
       return;
     }
 
@@ -357,11 +382,10 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
         action: "dispute_payment",
         disputeMessage: message,
       });
-      setNoteDrafts((current) => ({ ...current, [issue.id]: "" }));
-      setNotice("The discrepancy is now public on the landing page ledger. Your name is hidden.");
+      setNotice(`Dispute recorded for ${issue.id}. Published to the public transparency ledger.`);
       await loadData();
     } catch (err: any) {
-      setNotice(err?.message || "Failed to publish payment concern.");
+      setNotice(err?.message || "Failed to record dispute.");
     }
   }
 
@@ -387,7 +411,7 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
 
       setNewAccount({ name: "", email: "", role: "technician", labId: "", password: "" });
       setShowAccountForm(false);
-      setNotice("Account provisioned! Official credentials (username & password) dispatched to email.");
+      setNotice("Staff account created! Official credentials (username & password) dispatched via email.");
       await loadData();
     } catch (err: any) {
       setNotice(err?.message || "Failed to create account.");
@@ -419,244 +443,278 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
 
     try {
       await secsApi.audit.publishConcern({
-        ticketId: budget.ticketId,
+        ticketId: budget.ticketId || budget.ticket || budget.id,
         message,
         amount: budget.amount,
       });
+
       setNoteDrafts((current) => ({ ...current, [budget.id]: "" }));
-      setNotice("Your payment concern is now public and visible to Higher Authority.");
+      setNotice("Concern published directly to the public transparency ledger.");
       await loadData();
     } catch (err: any) {
       setNotice(err?.message || "Failed to publish concern.");
     }
   }
 
-  const pageTitle = NAV_ITEMS.find((item) => item.id === section)?.label ?? "Overview";
+  const pageTitle = NAV_ITEMS.find((item) => item.id === section)?.label ?? "Workspace Overview";
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-[#050a18] text-slate-100 selection:bg-blue-500/30">
+      {/* ── SIDEBAR NAVIGATION ── */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-slate-800 bg-slate-950 transition-transform lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/5 bg-[#060b18]/95 backdrop-blur-2xl transition-transform duration-200 lg:translate-x-0 ${
           mobileNav ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex h-20 items-center justify-between border-b border-slate-800 px-6">
+        {/* Brand bar */}
+        <div className="flex h-20 items-center justify-between border-b border-white/5 px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400 font-black text-slate-950">S</div>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white shadow-md shadow-blue-500/20 border border-white/10">
+              S
+            </div>
             <div>
-              <div className="font-display text-xl leading-none text-white">SECS</div>
-              <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-slate-500">Live Backend Portal</div>
+              <span className="font-display font-extrabold text-base tracking-tight text-white block">SECS Portal</span>
+              <span className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider block">Enterprise Hub</span>
             </div>
           </div>
-          <Button variant="ghost" className="p-2 lg:hidden" onClick={() => setMobileNav(false)} aria-label="Close navigation">
+          <button className="lg:hidden text-slate-400 hover:text-white" onClick={() => setMobileNav(false)}>
             <Icon name="close" />
-          </Button>
+          </button>
         </div>
 
-        <div className="px-4 py-5">
-          <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Workspace view</label>
+        {/* Workspace Switcher */}
+        <div className="p-4 border-b border-white/5">
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+            Active Staff Workspace
+          </label>
           <select
             value={role}
             onChange={(event) => switchRole(event.target.value as Role)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-400"
+            className="w-full rounded-xl px-3 py-2 text-xs font-semibold glass-input bg-[#0b142c] text-white"
           >
             <option value="admin">System Admin</option>
             <option value="authority">Higher Authority</option>
-            <option value="accounts">Accounts</option>
+            <option value="accounts">Accounts Office</option>
             <option value="technician">Lab Technician</option>
           </select>
-          <p className="mt-2 text-xs leading-relaxed text-slate-600">Switch role to test dynamic permission-based workflows.</p>
+          <p className="mt-1.5 text-[11px] text-slate-500">Switch workspace to test permission rules.</p>
         </div>
 
-        <nav className="flex-1 space-y-1 px-3">
-          {visibleNav.map((item) => (
-            <Button
-              key={item.id}
-              variant="ghost"
-              onClick={() => {
-                setSection(item.id);
-                setMobileNav(false);
-              }}
-              className={`w-full justify-start px-3 py-3 ${section === item.id ? "bg-amber-400/10 text-amber-300" : ""}`}
-            >
-              <Icon name={item.icon} className="h-5 w-5" />
-              {item.label}
-              {item.id === "budgets" && pendingPayments.length > 0 && (
-                <span className="ml-auto rounded-full bg-amber-400 px-2 py-0.5 text-[10px] text-slate-950">
-                  {pendingPayments.length}
-                </span>
-              )}
-            </Button>
-          ))}
+        {/* Navigation Items */}
+        <nav className="flex-1 space-y-1 p-3 overflow-y-auto">
+          {visibleNav.map((item) => {
+            const isActive = section === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setSection(item.id);
+                  setMobileNav(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  isActive
+                    ? "bg-blue-600/15 border border-blue-500/30 text-blue-400 shadow-sm shadow-blue-500/10"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]"
+                }`}
+              >
+                <Icon name={item.icon} className="h-4 w-4 shrink-0" />
+                <span className="truncate">{item.label}</span>
+                {item.id === "budgets" && pendingPayments.length > 0 && (
+                  <span className="ml-auto rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold text-slate-950">
+                    {pendingPayments.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </nav>
 
-        <div className="border-t border-slate-800 p-4">
-          <div className="mb-3 flex items-center gap-3 rounded-xl bg-slate-900 p-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-bold text-amber-300">
+        {/* Profile Card & Logout */}
+        <div className="border-t border-white/5 p-4">
+          <div className="mb-3 flex items-center gap-3 rounded-xl bg-white/[0.02] border border-white/5 p-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 text-xs font-bold border border-blue-500/30">
               {ROLE_META[role].initials}
             </div>
             <div className="min-w-0">
-              <div className="truncate text-sm font-semibold text-white">{ROLE_META[role].user}</div>
-              <div className="truncate text-xs text-slate-500">{ROLE_META[role].title}</div>
+              <div className="truncate text-xs font-bold text-white">{ROLE_META[role].label}</div>
+              <div className="truncate text-[10px] text-slate-500">{ROLE_META[role].title}</div>
             </div>
           </div>
-          <Button variant="ghost" className="w-full justify-start" onClick={onLogout}>
-            Sign out
-          </Button>
+          <button
+            onClick={onLogout}
+            className="w-full py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center justify-center gap-2"
+          >
+            <span>←</span> Sign Out to Landing Page
+          </button>
         </div>
       </aside>
 
-      {mobileNav && <div className="fixed inset-0 z-30 bg-slate-950/80 backdrop-blur-sm lg:hidden" onClick={() => setMobileNav(false)} />}
+      {mobileNav && <div className="fixed inset-0 z-30 bg-black/70 backdrop-blur-sm lg:hidden" onClick={() => setMobileNav(false)} />}
 
-      <div className="min-h-screen lg:pl-72">
-        <header className="sticky top-0 z-20 flex h-20 items-center gap-4 border-b border-slate-800 bg-slate-950/90 px-5 backdrop-blur-xl md:px-8">
-          <Button variant="ghost" className="p-2 lg:hidden" onClick={() => setMobileNav(true)} aria-label="Open navigation">
-            <Icon name="menu" />
-          </Button>
-          <div>
-            <p className="text-xs font-medium uppercase tracking-widest text-amber-400">{ROLE_META[role].label} workspace</p>
-            <h1 className="font-display text-2xl text-white">{pageTitle}</h1>
+      {/* ── MAIN WORKSPACE CONTENT ── */}
+      <div className="min-h-screen lg:pl-72 flex flex-col">
+        {/* Sticky Header */}
+        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-white/5 bg-[#050a18]/90 px-6 backdrop-blur-xl">
+          <div className="flex items-center gap-3">
+            <button className="lg:hidden text-slate-400 p-2" onClick={() => setMobileNav(true)}>
+              <Icon name="menu" />
+            </button>
+            <div>
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${ROLE_META[role].color}`}>
+                {ROLE_META[role].label}
+              </span>
+              <h1 className="font-display font-extrabold text-xl text-white tracking-tight mt-0.5">
+                {pageTitle}
+              </h1>
+            </div>
           </div>
-          <div className="ml-auto flex items-center gap-2">
+
+          <div className="flex items-center gap-3">
             <button
               onClick={loadData}
               disabled={isLoading}
-              className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded border border-slate-800 bg-slate-900"
+              className="text-xs font-semibold text-slate-400 hover:text-white px-3 py-1.5 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02]"
             >
-              {isLoading ? "Syncing..." : "↻ Sync DB"}
+              {isLoading ? "Syncing…" : "↻ Sync DB"}
             </button>
+
             <div className="relative">
-              <Button
-                variant="secondary"
-                className="relative p-2.5"
+              <button
                 onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2.5 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02] text-slate-300"
                 aria-label="Notifications"
               >
                 <Icon name="bell" className="h-4 w-4" />
                 {notifications.length > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-bold text-slate-950">
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-500 px-1 text-[9px] font-bold text-white shadow-sm shadow-blue-500/50">
                     {notifications.length}
                   </span>
                 )}
-              </Button>
+              </button>
+
               {showNotifications && (
-                <div className="absolute right-0 top-12 w-80 overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-2xl z-50">
-                  <div className="border-b border-slate-800 px-4 py-3 text-sm font-semibold text-white flex justify-between">
-                    <span>Workflow notifications</span>
+                <div className="absolute right-0 top-12 w-80 overflow-hidden rounded-2xl glass-card border border-white/10 shadow-2xl z-50">
+                  <div className="border-b border-white/5 px-4 py-3 text-xs font-bold text-white flex justify-between items-center">
+                    <span>Workflow Notifications</span>
                     {notifications.length > 0 && (
                       <button
                         onClick={async () => {
                           await secsApi.notifications.markAllRead(role);
                           setNotifications([]);
                         }}
-                        className="text-[11px] text-amber-400 hover:underline"
+                        className="text-[10px] text-blue-400 hover:underline"
                       >
-                        Clear
+                        Clear All
                       </button>
                     )}
                   </div>
-                  {notifications.length ? (
-                    notifications.map((message, index) => (
-                      <div key={`${message}-${index}`} className="border-b border-slate-800 px-4 py-3 text-xs leading-5 text-slate-300 last:border-0">
-                        {message}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="px-4 py-6 text-center text-xs text-slate-500">No new notifications</div>
-                  )}
+                  <div className="max-h-72 overflow-y-auto divide-y divide-white/5">
+                    {notifications.length ? (
+                      notifications.map((message, index) => (
+                        <div key={`${message}-${index}`} className="p-3.5 text-xs text-slate-300 leading-relaxed">
+                          {message}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-6 text-center text-xs text-slate-500">No active notifications</div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
           </div>
         </header>
 
-        <main className="mx-auto max-w-7xl p-5 md:p-8">
+        {/* Content Body */}
+        <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6">
           {notice && (
-            <div className="mb-6 flex items-center gap-3 rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
-              <Icon name="check" className="h-4 w-4 shrink-0" />
-              <span className="flex-1">{notice}</span>
-              <Button variant="ghost" className="p-1 text-amber-200" onClick={() => setNotice("")} aria-label="Dismiss">
-                <Icon name="close" className="h-4 w-4" />
-              </Button>
+            <div className="p-4 rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-300 text-xs flex items-center justify-between gap-3 shadow-md">
+              <div className="flex items-center gap-2.5">
+                <Icon name="check" className="h-4 w-4 text-blue-400 shrink-0" />
+                <span>{notice}</span>
+              </div>
+              <button onClick={() => setNotice("")} className="text-blue-300 hover:text-white text-xs font-bold">
+                ✕
+              </button>
             </div>
           )}
 
+          {/* ── TAB 1: EXECUTIVE OVERVIEW ── */}
           {section === "overview" && (
-            <div className="space-y-7">
-              <section className="overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-r from-slate-900 to-slate-900/40 p-6 md:p-8">
-                <div className="max-w-2xl">
-                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-400">
-                    Good day, {ROLE_META[role].user.split(" ")[0]}
+            <div className="space-y-6">
+              {/* Hero Banner */}
+              <div className="glass-card p-6 md:p-8 rounded-2xl relative overflow-hidden">
+                <div className="max-w-2xl relative z-10">
+                  <span className={`text-xs font-bold uppercase tracking-wider ${ROLE_META[role].color}`}>
+                    {ROLE_META[role].label} Dashboard
                   </span>
-                  <h2 className="mt-3 font-display text-3xl text-white md:text-4xl">
+                  <h2 className="text-2xl md:text-3xl font-extrabold font-display text-white tracking-tight mt-2">
                     {role === "technician"
-                      ? "Your assigned labs need attention."
+                      ? "Assigned Laboratory Repair Operations"
                       : role === "accounts"
-                      ? "Keep every payment accountable."
-                      : "University Equipment Live Ledger."}
+                      ? "Fiscal Approvals & Disbursement Ledger"
+                      : "Campus Infrastructure Control & Oversight"}
                   </h2>
-                  <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
+                  <p className="text-slate-400 text-xs md:text-sm mt-2 leading-relaxed">
                     {role === "technician"
-                      ? "Only issues from your assigned labs are shown. Payment records can be challenged publicly if funds are not received."
-                      : "Lab ownership, approvals, and dispatches are recorded end-to-end so no handover can happen without a visible audit trail."}
+                      ? "Only issues originating in your assigned laboratories appear here. You can request budget for parts, complete repairs, or contest inaccurate payment records."
+                      : "End-to-end digital tracking guarantees that no repair, budget release, or technician handover occurs without an immutable database audit trail."}
                   </p>
                 </div>
-              </section>
+              </div>
 
+              {/* 4 Metric Cards */}
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {[
                   {
-                    label: role === "technician" ? "My assigned labs" : "Registered labs",
+                    label: role === "technician" ? "My Assigned Labs" : "Active Laboratories",
                     value: role === "technician" ? assignedLabs.length : labs.length,
-                    helper: "Room-level access",
+                    helper: "Room-level authority",
                   },
                   {
-                    label: "Open equipment issues",
+                    label: "Pending Issues",
                     value: assignedLabs.reduce((sum, lab) => sum + (lab.openIssues || 0), 0),
                     helper: "Across visible labs",
                   },
-                  { label: "Approved budget", value: formatMoney(approvedTotal), helper: "Active cycle" },
-                  { label: "Public concerns", value: incidents.length, helper: "Audit ledger" },
+                  { label: "Approved Budget", value: formatMoney(approvedTotal), helper: "Public ledger verified" },
+                  { label: "Public Disputes", value: incidents.length, helper: "Audit incident trail" },
                 ].map((stat) => (
-                  <article key={stat.label} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-                    <p className="text-sm text-slate-500">{stat.label}</p>
-                    <p className="mt-3 text-3xl font-semibold tracking-tight text-white">{stat.value}</p>
-                    <p className="mt-2 text-xs text-slate-600">{stat.helper}</p>
-                  </article>
+                  <div key={stat.label} className="glass-card p-5 rounded-2xl">
+                    <p className="text-xs font-medium text-slate-400">{stat.label}</p>
+                    <p className="text-2xl font-extrabold font-display text-white mt-2">{stat.value}</p>
+                    <p className="text-[11px] text-slate-500 mt-1">{stat.helper}</p>
+                  </div>
                 ))}
               </div>
 
+              {/* Attention Labs & Audit Coverage */}
               <div className="grid gap-6 xl:grid-cols-3">
-                <section className="rounded-2xl border border-slate-800 bg-slate-900/70 xl:col-span-2">
-                  <div className="flex items-center justify-between border-b border-slate-800 p-5">
+                <div className="glass-card rounded-2xl p-6 xl:col-span-2">
+                  <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4">
                     <div>
-                      <h3 className="font-semibold text-white">Labs needing attention</h3>
-                      <p className="mt-1 text-xs text-slate-500">Prioritised by unresolved issues</p>
+                      <h3 className="text-sm font-bold text-white">Laboratories Requiring Attention</h3>
+                      <p className="text-xs text-slate-500">Sorted by unresolved problem reports</p>
                     </div>
                     <Button variant="ghost" onClick={() => setSection("labs")}>
-                      View all <Icon name="arrow" className="h-4 w-4" />
+                      View Directory →
                     </Button>
                   </div>
-                  <div className="divide-y divide-slate-800">
+                  <div className="divide-y divide-white/5">
                     {[...assignedLabs]
                       .sort((a, b) => (b.openIssues || 0) - (a.openIssues || 0))
                       .slice(0, 4)
                       .map((lab) => (
-                        <div key={lab.id} className="flex items-center gap-4 p-4 md:px-5">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800 text-amber-300">
-                            <Icon name="lab" className="h-5 w-5" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-white">{lab.name}</p>
-                            <p className="text-xs text-slate-500">
-                              {lab.room} · {lab.department}
-                            </p>
+                        <div key={lab.id} className="py-3 flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <span className="font-mono text-xs font-bold text-amber-400">{lab.room}</span>
+                            <h4 className="text-sm font-semibold text-white truncate">{lab.name}</h4>
+                            <p className="text-xs text-slate-500">{lab.department}</p>
                           </div>
                           <div className="text-right">
-                            <p className={`text-sm font-semibold ${(lab.openIssues || 0) ? "text-amber-300" : "text-emerald-300"}`}>
-                              {lab.openIssues || 0} open
-                            </p>
-                            <p className="text-xs text-slate-600">
+                            <span className={`text-xs font-bold ${lab.openIssues ? "text-amber-400" : "text-emerald-400"}`}>
+                              {lab.openIssues || 0} Open
+                            </span>
+                            <p className="text-[11px] text-slate-500">
                               {lab.technicianId && technicianMap[lab.technicianId]
                                 ? technicianMap[lab.technicianId].name
                                 : "Unassigned"}
@@ -665,647 +723,502 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
                         </div>
                       ))}
                   </div>
-                </section>
-                <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-                  <div className="mb-5 flex items-center gap-3">
-                    <div className="rounded-lg bg-amber-400/10 p-2 text-amber-300">
-                      <Icon name="shield" />
-                    </div>
+                </div>
+
+                <div className="glass-card rounded-2xl p-6">
+                  <div className="flex items-center gap-3 pb-4 border-b border-white/5 mb-4">
+                    <Icon name="shield" className="h-5 w-5 text-blue-400" />
                     <div>
-                      <h3 className="font-semibold text-white">Audit coverage</h3>
-                      <p className="text-xs text-slate-500">Workflow visibility</p>
+                      <h3 className="text-sm font-bold text-white">Compliance Coverage</h3>
+                      <p className="text-xs text-slate-500">Automated verification trail</p>
                     </div>
                   </div>
-                  <div className="space-y-5">
-                    {["Room assigned to technician", "Budget approved by authority", "Payment confirmed by accounts", "Technician receipt or concern"].map(
-                      (label, index) => (
-                        <div key={label} className="flex gap-3">
-                          <div className="flex flex-col items-center">
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/10 text-emerald-300">
-                              <Icon name="check" className="h-3.5 w-3.5" />
-                            </span>
-                            {index < 3 && <span className="mt-1 h-7 w-px bg-slate-700" />}
-                          </div>
-                          <p className="pt-0.5 text-sm text-slate-300">{label}</p>
-                        </div>
-                      )
-                    )}
+                  <div className="space-y-4">
+                    {[
+                      "Laboratory room assigned to qualified technician",
+                      "Budget request authorized by Higher Authority",
+                      "Payment disbursement verified by Accounts",
+                      "Technician receipt confirmed or publicly challenged",
+                    ].map((step, i) => (
+                      <div key={step} className="flex items-start gap-3 text-xs text-slate-300">
+                        <span className="w-5 h-5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0 text-[10px] font-bold">
+                          {i + 1}
+                        </span>
+                        <span className="pt-0.5">{step}</span>
+                      </div>
+                    ))}
                   </div>
-                </section>
+                </div>
               </div>
             </div>
           )}
 
+          {/* ── TAB 2: ISSUE WORKFLOW ── */}
           {section === "reports" && (
             <div className="space-y-6">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
                 <div>
-                  <h2 className="font-display text-3xl text-white">Issue workflow</h2>
-                  <p className="mt-1 max-w-2xl text-sm text-slate-500">
-                    {role === "technician"
-                      ? "Incoming student reports and assessed repair work are kept in separate queues."
-                      : role === "authority"
-                      ? "Review reports, cancel invalid submissions, and approve or reject technician budgets."
-                      : role === "accounts"
-                      ? "Only authority-approved budgets are actionable here."
-                      : "Monitor every handoff from submission through completion."}
+                  <h2 className="text-2xl font-bold font-display text-white">Issue Workflow Queue</h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Process incoming student reports, submit budget requirements, and verify repair completion.
                   </p>
                 </div>
                 <div className="relative">
-                  <Icon name="search" className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                  <Icon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                   <input
                     value={reportSearch}
-                    onChange={(event) => setReportSearch(event.target.value)}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2.5 pl-9 pr-4 text-sm text-white outline-none placeholder:text-slate-600 focus:border-amber-400 lg:w-80"
-                    placeholder="Search ticket number or item"
+                    onChange={(e) => setReportSearch(e.target.value)}
+                    placeholder="Search by ticket or item…"
+                    className="rounded-xl pl-9 pr-4 py-2 text-xs glass-input w-72"
                   />
                 </div>
               </div>
 
+              {/* Technician Queue Switcher */}
               {role === "technician" && (
-                <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto]">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <button
                     onClick={() => setTechnicianQueue("incoming")}
-                    className={`rounded-2xl border p-5 text-left transition ${
+                    className={`p-4 rounded-2xl text-left border transition-all ${
                       technicianQueue === "incoming"
-                        ? "border-amber-400/40 bg-amber-400/10"
-                        : "border-slate-800 bg-slate-900/70 hover:border-slate-700"
+                        ? "bg-blue-600/15 border-blue-500 text-white"
+                        : "glass-card border-white/5 text-slate-400 hover:text-white"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className={`text-sm font-semibold ${technicianQueue === "incoming" ? "text-amber-300" : "text-white"}`}>
-                          1. New student reports
-                        </p>
-                        <p className="mt-1 text-xs leading-5 text-slate-500">
-                          Unassessed reports received directly from students. Confirm no budget or submit a budget request.
-                        </p>
-                      </div>
-                      <span className="flex h-8 min-w-8 items-center justify-center rounded-full bg-slate-950 px-2 text-sm font-bold text-white">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider">1. New Incoming Reports</span>
+                      <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-mono text-xs font-bold">
                         {technicianIncomingIssues.length}
                       </span>
                     </div>
+                    <p className="text-xs text-slate-400 mt-1">Initial assessments awaiting confirmation or budget request.</p>
                   </button>
+
                   <button
                     onClick={() => setTechnicianQueue("work")}
-                    className={`rounded-2xl border p-5 text-left transition ${
-                      technicianQueue === "work" ? "border-sky-400/40 bg-sky-400/10" : "border-slate-800 bg-slate-900/70 hover:border-slate-700"
+                    className={`p-4 rounded-2xl text-left border transition-all ${
+                      technicianQueue === "work"
+                        ? "bg-blue-600/15 border-blue-500 text-white"
+                        : "glass-card border-white/5 text-slate-400 hover:text-white"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className={`text-sm font-semibold ${technicianQueue === "work" ? "text-sky-300" : "text-white"}`}>
-                          2. Budget & repair queue
-                        </p>
-                        <p className="mt-1 text-xs leading-5 text-slate-500">
-                          Requested, approved, funded and no-budget repairs. Each ticket shows who must act next.
-                        </p>
-                      </div>
-                      <span className="flex h-8 min-w-8 items-center justify-center rounded-full bg-slate-950 px-2 text-sm font-bold text-white">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider">2. Active In-Progress Work</span>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-xs font-bold">
                         {technicianWorkIssues.length}
                       </span>
                     </div>
+                    <p className="text-xs text-slate-400 mt-1">Approved repairs undergoing hardware work or parts replacement.</p>
                   </button>
                 </div>
               )}
 
-              {visibleIssues.length === 0 && (
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-10 text-center text-sm text-slate-500">
-                  No issues matched this filter.
-                </div>
-              )}
-
+              {/* List of Issue Cards */}
               <div className="space-y-4">
-                {visibleIssues.map((issue, issueIndex) => {
-                  const canAssess = role === "technician" && (issue.status === "Assigned" || issue.budgetStatus === "Rejected by Higher Authority");
-                  const canComplete = role === "technician" && (issue.status === "In Progress" || issue.budgetStatus === "Payment approved by Accounts");
+                {visibleIssues.map((issue) => (
+                  <div key={issue.id} className="glass-card p-6 rounded-2xl border border-white/5 space-y-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-white/5">
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-mono text-xs font-bold text-blue-400 px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                          {issue.id}
+                        </span>
+                        <StatusPill status={issue.status as any} />
+                        <span className="text-xs font-bold uppercase px-2 py-0.5 rounded bg-white/5 text-slate-400">
+                          {issue.priority}
+                        </span>
+                      </div>
+                      <span className="text-xs text-slate-500">Submitted: {issue.createdAt || issue.submittedAt}</span>
+                    </div>
 
-                  return (
-                    <article key={issue.id} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
-                      <div className="p-5">
-                        <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              {role === "technician" && (
-                                <span className="flex h-6 min-w-6 items-center justify-center rounded-md bg-slate-800 px-1.5 text-[10px] font-bold text-slate-400">
-                                  {issueIndex + 1}
-                                </span>
-                              )}
-                              <span className="font-mono text-xs font-bold text-amber-300">{issue.id}</span>
-                              <span
-                                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                  issue.status.includes("Rejected") || issue.status.includes("Disputed")
-                                    ? "bg-red-400/10 text-red-300"
-                                    : issue.status === "Resolved"
-                                    ? "bg-emerald-400/10 text-emerald-300"
-                                    : "bg-sky-400/10 text-sky-300"
-                                }`}
-                              >
-                                {issue.status}
-                              </span>
-                              <span className="text-xs text-slate-600">{issue.createdAt || issue.submittedAt}</span>
-                            </div>
-                            <h3 className="mt-3 text-lg font-semibold text-white">{issue.item}</h3>
-                            <p className="mt-1 text-sm text-slate-500">
-                              {issue.labName || issue.lab} · Reporter {issue.reporter || issue.reporterEmail}
-                            </p>
-                            {issue.description && <p className="mt-2 text-xs text-slate-400 leading-relaxed">{issue.description}</p>}
-                          </div>
-                          <div className="grid gap-3 sm:grid-cols-2 xl:w-[430px]">
-                            <div className="rounded-xl bg-slate-950/70 p-3">
-                              <p className="text-[10px] uppercase tracking-widest text-slate-600">Current stage</p>
-                              <p className="mt-1 text-sm text-slate-300">{issue.currentStage}</p>
-                            </div>
-                            <div className="rounded-xl bg-slate-950/70 p-3">
-                              <p className="text-[10px] uppercase tracking-widest text-slate-600">Waiting for</p>
-                              <p className="mt-1 text-sm font-medium text-amber-300">{issue.pendingWith}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {issue.budgetAmount && (
-                          <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                              <div>
-                                <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Budget request</p>
-                                <p className="mt-2 text-sm text-slate-300">{issue.budgetDescription}</p>
-                              </div>
-                              <div className="sm:text-right">
-                                <p className="text-xl font-semibold text-white">{formatMoney(issue.budgetAmount)}</p>
-                                <p className="mt-1 text-xs text-amber-300">{issue.budgetStatus}</p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
+                    <div className="grid md:grid-cols-12 gap-4">
+                      <div className="md:col-span-8">
+                        <h3 className="text-base font-bold text-white">{issue.item}</h3>
+                        <p className="text-xs text-slate-400 mt-0.5">Location: <strong className="text-slate-200">{issue.labName || issue.lab}</strong></p>
+                        <p className="text-xs text-slate-300 mt-2 leading-relaxed bg-white/[0.02] p-3 rounded-xl border border-white/5">
+                          &quot;{issue.description}&quot;
+                        </p>
                       </div>
 
-                      {(canAssess ||
-                        canComplete ||
-                        (role === "authority" && issue.pendingWith !== "Closed") ||
-                        (role === "accounts" && issue.budgetStatus === "Approved by Higher Authority")) && (
-                        <div className="border-t border-slate-800 bg-slate-950/30 p-5">
-                          {canAssess && (
-                            <div className="space-y-4">
-                              <div className="flex flex-wrap items-center gap-3">
-                                <Button onClick={() => confirmNoBudget(issue)}>
-                                  <Icon name="check" className="h-4 w-4" />
-                                  Confirm: no budget needed
-                                </Button>
-                                <span className="text-xs text-slate-600">or submit a budget request with justification</span>
-                              </div>
-                              <div className="grid gap-3 md:grid-cols-[180px_1fr_auto]">
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={budgetDrafts[issue.id]?.amount ?? ""}
-                                  onChange={(event) =>
-                                    setBudgetDrafts((current) => ({
-                                      ...current,
-                                      [issue.id]: {
-                                        amount: event.target.value,
-                                        description: current[issue.id]?.description ?? "",
-                                      },
-                                    }))
-                                  }
-                                  placeholder="Amount (৳)"
-                                  className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-400"
-                                />
-                                <input
-                                  value={budgetDrafts[issue.id]?.description ?? ""}
-                                  onChange={(event) =>
-                                    setBudgetDrafts((current) => ({
-                                      ...current,
-                                      [issue.id]: {
-                                        amount: current[issue.id]?.amount ?? "",
-                                        description: event.target.value,
-                                      },
-                                    }))
-                                  }
-                                  placeholder="Parts or service justification required..."
-                                  className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-400"
-                                />
-                                <Button variant="secondary" onClick={() => requestIssueBudget(issue)}>
-                                  Request budget
-                                </Button>
-                              </div>
-                            </div>
-                          )}
+                      <div className="md:col-span-4 text-xs space-y-1.5 border-t md:border-t-0 md:border-l border-white/5 pt-3 md:pt-0 md:pl-4">
+                        <div className="text-slate-500">Current Stage:</div>
+                        <div className="font-semibold text-slate-200">{issue.currentStage}</div>
+                        <div className="text-slate-500 pt-1">Pending With:</div>
+                        <div className="font-semibold text-blue-400">{issue.pendingWith}</div>
+                      </div>
+                    </div>
 
-                          {role === "authority" && (
-                            <div className="flex flex-wrap gap-3">
-                              {issue.budgetStatus === "Pending Higher Authority" && (
-                                <>
-                                  <Button onClick={() => decideIssueBudget(issue, true)}>
-                                    <Icon name="check" className="h-4 w-4" />
-                                    Approve budget
-                                  </Button>
-                                  <Button variant="danger" onClick={() => decideIssueBudget(issue, false)}>
-                                    Reject budget
-                                  </Button>
-                                </>
-                              )}
-                              {issue.status !== "Resolved" && issue.status !== "Rejected by Higher Authority" && (
-                                <Button variant="danger" onClick={() => cancelIssue(issue.id)}>
-                                  Cancel entire report
-                                </Button>
-                              )}
-                            </div>
-                          )}
-
-                          {role === "accounts" && issue.budgetStatus === "Approved by Higher Authority" && (
-                            <Button onClick={() => approveIssuePayment(issue)}>
-                              <Icon name="wallet" className="h-4 w-4" />
-                              Approve payment & send to technician
+                    {/* Action Bar per Role */}
+                    <div className="pt-3 border-t border-white/5 flex flex-wrap items-center justify-between gap-3">
+                      {/* Technician Actions */}
+                      {role === "technician" && issue.status === "Assigned" && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button variant="primary" onClick={() => confirmNoBudget(issue)}>
+                            Confirm (No Budget Required)
+                          </Button>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              placeholder="৳ Amount"
+                              value={budgetDrafts[issue.id]?.amount ?? ""}
+                              onChange={(e) =>
+                                setBudgetDrafts((curr) => ({
+                                  ...curr,
+                                  [issue.id]: { ...(curr[issue.id] || { description: "" }), amount: e.target.value },
+                                }))
+                              }
+                              className="w-24 px-3 py-1.5 text-xs glass-input rounded-xl"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Budget purpose description"
+                              value={budgetDrafts[issue.id]?.description ?? ""}
+                              onChange={(e) =>
+                                setBudgetDrafts((curr) => ({
+                                  ...curr,
+                                  [issue.id]: { ...(curr[issue.id] || { amount: "" }), description: e.target.value },
+                                }))
+                              }
+                              className="w-56 px-3 py-1.5 text-xs glass-input rounded-xl"
+                            />
+                            <Button variant="amber" onClick={() => requestIssueBudget(issue)}>
+                              Request Budget
                             </Button>
-                          )}
+                          </div>
+                        </div>
+                      )}
 
-                          {canComplete && (
-                            <div className="space-y-4">
-                              <Button onClick={() => completeIssue(issue)}>
-                                <Icon name="check" className="h-4 w-4" />
-                                Confirm repair complete
+                      {/* Higher Authority Actions */}
+                      {role === "authority" && (
+                        <div className="flex items-center gap-2">
+                          {issue.status === "Budget Requested" && (
+                            <>
+                              <Button variant="primary" onClick={() => decideIssueBudget(issue, true)}>
+                                Approve Budget (৳{issue.budgetAmount?.toLocaleString("en-BD")})
                               </Button>
-                              {issue.budgetStatus === "Payment approved by Accounts" && (
-                                <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-4">
-                                  <p className="text-sm font-semibold text-red-200">Accounts marked payment approved, but funds were not received?</p>
-                                  <div className="mt-3 flex flex-col gap-2 md:flex-row">
-                                    <textarea
-                                      value={noteDrafts[issue.id] ?? ""}
-                                      onChange={(event) => setNoteDrafts((current) => ({ ...current, [issue.id]: event.target.value }))}
-                                      placeholder="Describe discrepancy. Published to public transparency ledger anonymously."
-                                      className="min-h-20 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-600 focus:border-red-400"
-                                    />
-                                    <Button variant="danger" className="self-end" onClick={() => disputeIssuePayment(issue)}>
-                                      Publish anonymously
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
+                              <Button variant="danger" onClick={() => decideIssueBudget(issue, false)}>
+                                Reject Budget
+                              </Button>
+                            </>
+                          )}
+                          {issue.status !== "Resolved" && (
+                            <Button variant="ghost" onClick={() => cancelIssue(issue.id)}>
+                              Cancel Report
+                            </Button>
                           )}
                         </div>
                       )}
-                    </article>
-                  );
-                })}
+
+                      {/* Accounts Office Actions */}
+                      {role === "accounts" && issue.status === "Payment Review" && (
+                        <Button variant="primary" onClick={() => approveIssuePayment(issue)}>
+                          Disburse Funds & Confirm Paid
+                        </Button>
+                      )}
+
+                      {/* Complete Repair */}
+                      {role === "technician" && (issue.status === "In Progress" || issue.status === "Funds Approved") && (
+                        <Button variant="primary" onClick={() => completeIssue(issue)}>
+                          Mark Repair Complete (Resolved) ✓
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {visibleIssues.length === 0 && (
+                  <div className="glass-card p-12 rounded-2xl text-center text-xs text-slate-500">
+                    No matching issue records in this queue.
+                  </div>
+                )}
               </div>
             </div>
           )}
 
+          {/* ── TAB 3: LAB ASSIGNMENTS ── */}
           {section === "labs" && (
-            <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
-              <div className="flex flex-col gap-3 border-b border-slate-800 p-5 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                  <h2 className="font-display text-2xl text-white">
-                    {role === "technician" ? "My assigned labs" : "Lab room assignments"}
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {role === "technician"
-                      ? "You can only see issues from these assigned rooms."
-                      : "Control room-by-room technician responsibilities in real-time."}
+                  <h2 className="text-2xl font-bold font-display text-white">Laboratory Assignments</h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Control technician assignment to campus research and instructional facilities.
                   </p>
                 </div>
-                <span className="self-start rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-400">
-                  {assignedLabs.length} rooms visible
-                </span>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-left">
-                  <thead className="border-b border-slate-800 bg-slate-950/50 text-[10px] uppercase tracking-widest text-slate-500">
-                    <tr>
-                      <th className="px-5 py-3 font-semibold">Room & lab</th>
-                      <th className="px-5 py-3 font-semibold">Department</th>
-                      <th className="px-5 py-3 font-semibold">Open issues</th>
-                      <th className="px-5 py-3 font-semibold">Responsible technician</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800">
-                    {assignedLabs.map((lab) => (
-                      <tr key={lab.id} className="hover:bg-slate-800/30">
-                        <td className="px-5 py-4">
-                          <p className="text-sm font-semibold text-white">{lab.name}</p>
-                          <p className="mt-1 font-mono text-xs text-amber-300">{lab.room}</p>
-                        </td>
-                        <td className="px-5 py-4 text-sm text-slate-400">{lab.department}</td>
-                        <td className="px-5 py-4">
-                          <span
-                            className={`rounded-full px-2.5 py-1 text-xs ${
-                              (lab.openIssues || 0) ? "bg-amber-400/10 text-amber-300" : "bg-emerald-400/10 text-emerald-300"
-                            }`}
-                          >
-                            {lab.openIssues || 0} issues
-                          </span>
-                        </td>
-                        <td className="px-5 py-4">
-                          {role === "admin" || role === "authority" ? (
-                            <select
-                              value={lab.technicianId ?? ""}
-                              onChange={(event) => assignTechnician(lab.id, event.target.value)}
-                              className="w-56 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none focus:border-amber-400"
-                            >
-                              <option value="">Unassigned / remove</option>
-                              {technicians.map((tech) => (
-                                <option key={tech.id} value={tech.id}>
-                                  {tech.name}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <div>
-                              <p className="text-sm text-slate-200">
-                                {lab.technicianId && technicianMap[lab.technicianId]
-                                  ? technicianMap[lab.technicianId].name
-                                  : "Unassigned"}
-                              </p>
-                              <p className="text-xs text-slate-600">
-                                {lab.technicianId && technicianMap[lab.technicianId]
-                                  ? technicianMap[lab.technicianId].email
-                                  : ""}
-                              </p>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {labs.map((lab) => (
+                  <div key={lab.id} className="glass-card p-5 rounded-2xl flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-mono text-xs font-bold text-amber-400 px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/20">
+                          {lab.room}
+                        </span>
+                        <span className="text-xs text-slate-500">{lab.openIssues || 0} Open Tickets</span>
+                      </div>
+                      <h3 className="text-base font-bold text-white mt-1">{lab.name}</h3>
+                      <p className="text-xs text-slate-400">{lab.department}</p>
+                    </div>
+
+                    <div className="mt-5 pt-4 border-t border-white/5 space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                        Assigned Technician
+                      </label>
+                      <select
+                        value={lab.technicianId || ""}
+                        disabled={role !== "admin"}
+                        onChange={(e) => assignTechnician(lab.id, e.target.value)}
+                        className="w-full rounded-xl px-3 py-2 text-xs glass-input bg-[#0b142c] disabled:opacity-50"
+                      >
+                        <option value="">Awaiting Assignment</option>
+                        {technicians.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name} ({t.department})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </section>
+            </div>
           )}
 
+          {/* ── TAB 4: BUDGETS & PAYMENTS ── */}
           {section === "budgets" && (
             <div className="space-y-6">
-              <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                  <h2 className="font-display text-3xl text-white">Budget control desk</h2>
-                  <p className="mt-1 text-sm text-slate-500">Authority approval → Accounts payment → Technician verification.</p>
+                  <h2 className="text-2xl font-bold font-display text-white">Budgets & Payment Requisitions</h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Verified requisitions, authority approvals, and accounts disbursement confirmation.
+                  </p>
                 </div>
-                <span className="text-xs text-slate-500">Dynamic audit trail logged for all disbursements</span>
               </div>
-              <div className="grid gap-4">
-                {visibleBudgets.map((budget) => {
-                  const tech = technicianMap[budget.technicianId] || { name: "Assigned Tech" };
-                  return (
-                    <article key={budget.id} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-                      <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-3 flex flex-wrap items-center gap-2">
-                            <span className="font-mono text-xs font-semibold text-amber-300">{budget.id}</span>
-                            <StatusPill status={budget.status} />
-                            <span className="text-xs text-slate-600">{budget.ticketId || budget.ticket}</span>
-                          </div>
-                          <h3 className="font-semibold text-white">{budget.purpose}</h3>
-                          <p className="mt-1 text-sm text-slate-500">
-                            {budget.labName || budget.lab} · Responsible: {tech.name}
-                          </p>
-                        </div>
-                        <div className="lg:text-right">
-                          <p className="text-2xl font-semibold text-white">{formatMoney(budget.amount)}</p>
-                          {budget.paidAt && <p className="mt-1 text-xs text-emerald-300">Accounts confirmed · {budget.paidAt}</p>}
-                        </div>
-                        <div className="flex min-w-48 justify-start lg:justify-end">
-                          {role === "authority" && budget.status === "Pending approval" && (
-                            <Button onClick={() => approveBudget(budget.id)}>
-                              <Icon name="check" className="h-4 w-4" />
-                              Approve budget
-                            </Button>
-                          )}
-                          {role === "accounts" && budget.status === "Approved" && (
-                            <Button onClick={() => confirmPayment(budget.id)}>
-                              <Icon name="wallet" className="h-4 w-4" />
-                              Confirm paid
-                            </Button>
-                          )}
-                          {((role === "authority" && budget.status !== "Pending approval") ||
-                            (role === "accounts" && budget.status !== "Approved") ||
-                            role === "admin") && <span className="text-xs text-slate-600">No action required</span>}
-                        </div>
+
+              <div className="space-y-4">
+                {visibleBudgets.map((budget) => (
+                  <div key={budget.id} className="glass-card p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-mono text-xs font-bold text-amber-400">{budget.id}</span>
+                        <StatusPill status={budget.status} />
+                        <span className="text-xs font-mono text-slate-500">{budget.ticketId || budget.ticket}</span>
                       </div>
-                      {role === "technician" && budget.status === "Payment confirmed" && (
-                        <div className="mt-5 border-t border-slate-800 pt-5">
-                          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">
-                            Did you actually receive this payment?
-                          </p>
-                          <div className="flex flex-col gap-2 md:flex-row">
-                            <textarea
-                              value={noteDrafts[budget.id] ?? ""}
-                              onChange={(event) => setNoteDrafts((current) => ({ ...current, [budget.id]: event.target.value }))}
-                              placeholder="Describe any difference between the Accounts record and funds received..."
-                              className="min-h-20 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-600 focus:border-amber-400"
-                            />
-                            <Button variant="danger" className="self-end" onClick={() => publishNote(budget)}>
-                              <Icon name="alert" className="h-4 w-4" />
-                              Publish concern
-                            </Button>
-                          </div>
-                          <p className="mt-2 text-xs text-slate-600">
-                            This concern will be published directly to the public transparency ledger.
-                          </p>
+                      <h3 className="text-base font-bold text-white">{budget.purpose}</h3>
+                      <p className="text-xs text-slate-400 mt-0.5">{budget.labName || budget.lab}</p>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="text-2xl font-extrabold font-display gradient-amber">
+                          {formatMoney(budget.amount)}
                         </div>
+                        {budget.paidAt && <div className="text-[11px] text-emerald-400">Confirmed · {budget.paidAt}</div>}
+                      </div>
+
+                      {role === "authority" && budget.status === "Pending approval" && (
+                        <Button variant="primary" onClick={() => approveBudget(budget.id)}>
+                          Approve Requisition
+                        </Button>
                       )}
-                    </article>
-                  );
-                })}
+
+                      {role === "accounts" && budget.status === "Approved" && (
+                        <Button variant="amber" onClick={() => confirmPayment(budget.id)}>
+                          Confirm Payment Paid
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {visibleBudgets.length === 0 && (
+                  <div className="glass-card p-12 rounded-2xl text-center text-xs text-slate-500">
+                    No budget requisitions on file.
+                  </div>
+                )}
               </div>
             </div>
           )}
 
+          {/* ── TAB 5: STAFF & ACCESS ACCOUNTS ── */}
           {section === "users" && (
             <div className="space-y-6">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                  <h2 className="font-display text-3xl text-white">Access & staff accounts</h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    System Admin and Higher Authority can create staff accounts and control portal access.
+                  <h2 className="text-2xl font-bold font-display text-white">Staff Account Management</h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Provision new technician, accounts, or higher authority accounts. Credentials are sent via Brevo email.
                   </p>
                 </div>
-                <Button onClick={() => setShowAccountForm(!showAccountForm)}>
-                  <Icon name="users" className="h-4 w-4" />
-                  Create account
+                <Button variant="primary" onClick={() => setShowAccountForm(!showAccountForm)}>
+                  {showAccountForm ? "Close Form" : "+ Provision New Staff Account"}
                 </Button>
               </div>
 
               {showAccountForm && (
-                <form
-                  onSubmit={createAccount}
-                  className="grid gap-4 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5 md:grid-cols-2 xl:grid-cols-3 xl:items-end"
-                >
-                  <label className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-                    Full name
-                    <input
-                      value={newAccount.name}
-                      onChange={(event) => setNewAccount({ ...newAccount, name: event.target.value })}
-                      className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm normal-case tracking-normal text-white outline-none focus:border-amber-400"
-                      placeholder="Staff member name"
-                    />
-                  </label>
-                  <label className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-                    University email
-                    <input
-                      value={newAccount.email}
-                      onChange={(event) => setNewAccount({ ...newAccount, email: event.target.value })}
-                      className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm normal-case tracking-normal text-white outline-none focus:border-amber-400"
-                      placeholder="name@uitc.edu"
-                    />
-                  </label>
-                  <label className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-                    Portal role
-                    <select
-                      value={newAccount.role}
-                      onChange={(event) => setNewAccount({ ...newAccount, role: event.target.value, labId: "" })}
-                      className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm normal-case tracking-normal text-white outline-none focus:border-amber-400"
-                    >
-                      <option value="technician">Lab Technician</option>
-                      <option value="accounts">Accounts</option>
-                      {role === "admin" && (
-                        <>
-                          <option value="authority">Higher Authority</option>
-                          <option value="admin">System Admin</option>
-                        </>
-                      )}
-                    </select>
-                  </label>
-                  <label className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-                    Assign lab now
-                    <select
-                      value={newAccount.labId}
-                      disabled={newAccount.role !== "technician"}
-                      onChange={(event) => setNewAccount({ ...newAccount, labId: event.target.value })}
-                      className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm normal-case tracking-normal text-white outline-none focus:border-amber-400 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <option value="">Assign later</option>
-                      {labs.map((lab) => (
-                        <option key={lab.id} value={lab.id}>
-                          {lab.room} · {lab.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-                    Initial Password (sent via email)
-                    <input
-                      type="text"
-                      value={newAccount.password}
-                      onChange={(event) => setNewAccount({ ...newAccount, password: event.target.value })}
-                      className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm normal-case tracking-normal text-white outline-none focus:border-amber-400"
-                      placeholder="Auto-generated if empty"
-                    />
-                  </label>
-                  <Button type="submit" className="py-2.5">
-                    Save & Dispatch Email Credentials
+                <form onSubmit={createAccount} className="glass-card p-6 rounded-2xl space-y-4">
+                  <h3 className="text-sm font-bold text-white pb-3 border-b border-white/5">
+                    Staff Account Provisioning
+                  </h3>
+
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        Full Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Staff Member Name"
+                        value={newAccount.name}
+                        onChange={(e) => setNewAccount({ ...newAccount, name: e.target.value })}
+                        className="w-full rounded-xl px-4 py-2 text-xs glass-input"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        University Email (.edu)
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="username@uitc.edu"
+                        value={newAccount.email}
+                        onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })}
+                        className="w-full rounded-xl px-4 py-2 text-xs glass-input"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        Portal Role
+                      </label>
+                      <select
+                        value={newAccount.role}
+                        onChange={(e) => setNewAccount({ ...newAccount, role: e.target.value, labId: "" })}
+                        className="w-full rounded-xl px-4 py-2 text-xs glass-input bg-[#0b142c]"
+                      >
+                        <option value="technician">Lab Technician</option>
+                        <option value="accounts">Accounts Office</option>
+                        {role === "admin" && (
+                          <>
+                            <option value="authority">Higher Authority</option>
+                            <option value="admin">System Admin</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        Assign Lab Room (Optional)
+                      </label>
+                      <select
+                        value={newAccount.labId}
+                        disabled={newAccount.role !== "technician"}
+                        onChange={(e) => setNewAccount({ ...newAccount, labId: e.target.value })}
+                        className="w-full rounded-xl px-4 py-2 text-xs glass-input bg-[#0b142c] disabled:opacity-40"
+                      >
+                        <option value="">Assign Later</option>
+                        {labs.map((l) => (
+                          <option key={l.id} value={l.id}>
+                            {l.room} · {l.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        Initial Password (Sent to Email)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Auto-generated if empty"
+                        value={newAccount.password}
+                        onChange={(e) => setNewAccount({ ...newAccount, password: e.target.value })}
+                        className="w-full rounded-xl px-4 py-2 text-xs glass-input"
+                      />
+                    </div>
+                  </div>
+
+                  <Button type="submit" variant="primary" className="w-full py-2.5">
+                    Save Account & Dispatch Credentials via Email →
                   </Button>
                 </form>
               )}
 
-              <div className="grid gap-4 md:grid-cols-3">
-                {[
-                  { label: "Active staff accounts", value: staffAccounts.length, note: "Across all portal roles" },
-                  { label: "Lab technicians", value: technicians.length, note: "Assigned room by room" },
-                  { label: "Unassigned labs", value: labs.filter((lab) => !lab.technicianId).length, note: "Needs access owner" },
-                ].map((item) => (
-                  <article key={item.label} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-                    <p className="text-sm text-slate-500">{item.label}</p>
-                    <p className="mt-3 text-3xl font-semibold text-white">{item.value}</p>
-                    <p className="mt-2 text-xs text-slate-600">{item.note}</p>
-                  </article>
-                ))}
-              </div>
+              {/* Staff Directory */}
+              <div className="glass-card rounded-2xl overflow-hidden divide-y divide-white/5">
+                {staffAccounts.map((account) => {
+                  const canRemove =
+                    account.id !== "admin-1" &&
+                    (role === "admin" || account.role === "technician" || account.role === "accounts");
 
-              <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
-                <div className="border-b border-slate-800 p-5">
-                  <h3 className="font-semibold text-white">Staff account directory</h3>
-                  <p className="mt-1 text-xs text-slate-500">Real database records of faculty and facility operators.</p>
-                </div>
-                <div className="divide-y divide-slate-800">
-                  {staffAccounts.map((account) => {
-                    const isTech = account.role === "technician";
-                    const canRemove =
-                      account.id !== "admin-1" && (role === "admin" || account.role === "technician" || account.role === "accounts");
+                  return (
+                    <div key={account.id} className="p-4 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs">
+                          {account.name.split(" ").map((w) => w[0]).join("")}
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-white">{account.name}</h4>
+                          <p className="text-xs text-slate-400">{account.email}</p>
+                        </div>
+                      </div>
 
-                    return (
-                      <div key={account.id} className="flex flex-col gap-3 p-5 md:flex-row md:items-center">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-xs font-bold text-amber-300">
-                          {account.name.split(" ").map((part) => part[0]).join("")}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-white">{account.name}</p>
-                          <p className="text-xs text-slate-500">{account.email}</p>
-                        </div>
-                        <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-300">
+                      <div className="flex items-center gap-3">
+                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-white/[0.03] border border-white/5 text-slate-300">
                           {ROLE_META[account.role]?.label || account.role}
                         </span>
-                        {isTech && (
-                          <span className="text-xs text-slate-500">
-                            {labs.filter((lab) => lab.technicianId === account.id).length} labs assigned
-                          </span>
-                        )}
+
                         {canRemove ? (
-                          <Button variant="danger" className="self-start px-3 py-1.5 md:self-auto" onClick={() => removeAccount(account)}>
-                            Remove account
+                          <Button variant="danger" onClick={() => removeAccount(account)}>
+                            Remove
                           </Button>
                         ) : (
-                          <span className="text-xs text-slate-600">
-                            {account.role === "authority" && role !== "admin" ? "Admin controlled" : "Protected"}
-                          </span>
+                          <span className="text-[11px] text-slate-500">Protected Account</span>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
-              </section>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
+          {/* ── TAB 6: PUBLIC AUDIT LEDGER ── */}
           {section === "ledger" && (
             <div className="space-y-6">
-              <section className="rounded-2xl border border-amber-400/20 bg-gradient-to-r from-amber-400/10 to-transparent p-6">
-                <div className="flex gap-4">
-                  <div className="rounded-xl bg-amber-400/10 p-3 text-amber-300">
-                    <Icon name="shield" />
-                  </div>
-                  <div>
-                    <h2 className="font-display text-2xl text-white">Public accountability ledger</h2>
-                    <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-                      Every role can see confirmed payments and technician concerns. Accounts cannot delete concerns; only Higher Authority can close an investigation after adding a resolution.
-                    </p>
-                  </div>
-                </div>
-              </section>
+              <div>
+                <h2 className="text-2xl font-bold font-display text-white">Public Audit Ledger</h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Immutable record of payment discrepancies and financial disclosures.
+                </p>
+              </div>
+
               <div className="space-y-4">
-                {incidents.length === 0 ? (
-                  <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center text-sm text-slate-500">
-                    No payment concerns have been published.
-                  </div>
-                ) : (
-                  incidents.map((incident) => (
-                    <article key={incident.id} className="rounded-2xl border border-red-400/20 bg-slate-900/70 p-5">
-                      <div className="flex flex-col gap-4 md:flex-row">
-                        <div className="rounded-xl bg-red-400/10 p-3 text-red-300 self-start">
-                          <Icon name="alert" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full border border-red-400/20 bg-red-400/10 px-2.5 py-1 text-xs font-semibold text-red-300">
-                              Payment disputed
-                            </span>
-                            <span className="font-mono text-xs text-amber-300">{incident.ticketId}</span>
-                            <span className="text-xs text-slate-600">{incident.createdAt}</span>
-                          </div>
-                          <p className="mt-4 text-sm leading-6 text-slate-200">{incident.message}</p>
-                          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 border-t border-slate-800 pt-4 text-xs text-slate-500">
-                            <span>
-                              Published by <strong className="text-slate-300">Anonymous technician</strong>
-                            </span>
-                            {incident.amount && (
-                              <span>
-                                Recorded amount <strong className="text-slate-300">{formatMoney(incident.amount)}</strong>
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                {incidents.map((incident) => (
+                  <div key={incident.id} className="glass-card p-6 rounded-2xl border-rose-500/20 bg-rose-500/[0.02]">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-mono text-xs font-bold text-amber-400">{incident.ticketId}</span>
+                      <span className="text-xs text-slate-500">{incident.createdAt}</span>
+                    </div>
+                    <p className="text-xs text-slate-300 leading-relaxed mb-3">{incident.message}</p>
+                    {incident.amount && (
+                      <div className="text-sm font-extrabold font-display text-amber-400">
+                        {formatMoney(incident.amount)}
                       </div>
-                    </article>
-                  ))
+                    )}
+                  </div>
+                ))}
+
+                {incidents.length === 0 && (
+                  <div className="glass-card p-12 rounded-2xl text-center text-xs text-slate-500">
+                    No active discrepancy notices. All university transactions are balanced.
+                  </div>
                 )}
               </div>
             </div>

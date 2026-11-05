@@ -6,18 +6,10 @@ interface Props {
 }
 
 const ROLES = [
-  { value: "student", label: "Student" },
-  { value: "teacher", label: "Teacher / Lecturer" },
-  { value: "researcher", label: "Researcher" },
+  { value: "student", label: "Student", icon: "🎓" },
+  { value: "teacher", label: "Faculty / Lecturer", icon: "👨‍🏫" },
+  { value: "researcher", label: "Researcher", icon: "🔬" },
 ];
-
-function EduBadge() {
-  return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full border border-amber-400/40 text-amber-400 bg-amber-400/10">
-      .edu required
-    </span>
-  );
-}
 
 export default function RegisterPage({ onNavigate }: Props) {
   const [departments, setDepartments] = useState<string[]>([
@@ -67,15 +59,15 @@ export default function RegisterPage({ onNavigate }: Props) {
   function validate() {
     const errs: Record<string, string> = {};
     if (!form.fullName.trim()) errs.fullName = "Full name is required.";
-    if (!form.studentId.trim()) errs.studentId = "ID number is required.";
+    if (!form.studentId.trim()) errs.studentId = "University ID is required.";
     if (!form.email.trim()) {
-      errs.email = "Email is required.";
+      errs.email = "University email is required.";
     } else if (!form.email.toLowerCase().endsWith(".edu")) {
       errs.email = "Only university .edu email addresses are accepted.";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       errs.email = "Enter a valid email address.";
     }
-    if (!form.department) errs.department = "Select your department.";
+    if (!form.department) errs.department = "Please select your academic department.";
     if (!form.password) {
       errs.password = "Password is required.";
     } else if (form.password.length < 6) {
@@ -86,7 +78,7 @@ export default function RegisterPage({ onNavigate }: Props) {
     } else if (form.password !== form.confirmPassword) {
       errs.confirmPassword = "Passwords do not match.";
     }
-    if (!form.agreed) errs.agreed = "You must accept the terms to proceed.";
+    if (!form.agreed) errs.agreed = "You must accept the terms of laboratory use.";
     return errs;
   }
 
@@ -111,7 +103,7 @@ export default function RegisterPage({ onNavigate }: Props) {
       });
       setSubmitted(true);
     } catch (err: any) {
-      setServerError(err?.message || "Registration failed. Please check inputs.");
+      setServerError(err?.message || "Registration failed. Please check your inputs.");
     } finally {
       setLoading(false);
     }
@@ -126,378 +118,341 @@ export default function RegisterPage({ onNavigate }: Props) {
       ? 2
       : 3;
 
-  const strengthLabel = ["", "Weak", "Fair", "Strong"];
-  const strengthColor = ["", "bg-red-500", "bg-amber-400", "bg-green-500"];
+  const strengthLabel = ["", "Weak", "Medium", "Secure"];
+  const strengthColor = ["", "bg-rose-500", "bg-amber-400", "bg-emerald-500"];
 
   return (
-    <div className="min-h-screen flex" style={{ background: "linear-gradient(135deg, #050d1f 0%, #0a1628 60%, #0e1f3a 100%)" }}>
-      {/* Left panel */}
-      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 flex-col justify-between p-12 relative overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: `url(https://images.unsplash.com/photo-1562774053-701939374585?w=800&h=1200&fit=crop&auto=format)`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(5,13,31,0.85) 0%, rgba(10,22,40,0.7) 100%)" }} />
+    <div className="min-h-screen flex bg-[#050a18] text-slate-100 selection:bg-blue-500/30">
+      {/* ── LEFT BRAND PANEL ── */}
+      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 relative flex-col justify-between p-12 overflow-hidden border-r border-white/5 bg-gradient-to-br from-[#070e24] via-[#09132e] to-[#040814]">
+        {/* Glows */}
+        <div className="absolute top-1/3 -left-20 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-amber-400 flex items-center justify-center text-[#050d1f] font-black text-lg">S</div>
-            <div>
-              <div style={{ fontFamily: "var(--font-display)" }} className="text-white text-xl leading-none">
-                SECS
-              </div>
-              <div className="text-amber-400/70 text-[10px] uppercase tracking-widest">Smart Equipment Care System</div>
-            </div>
+        <div className="relative z-10 flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20 border border-white/10">
+            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+            </svg>
+          </div>
+          <div>
+            <span className="font-display font-extrabold text-xl tracking-tight text-white">SECS</span>
+            <span className="text-xs text-blue-400 font-semibold tracking-wide block uppercase">University Care Network</span>
           </div>
         </div>
 
-        <div className="relative z-10">
-          <h2 style={{ fontFamily: "var(--font-display)" }} className="text-4xl xl:text-5xl text-white mb-5 leading-tight">
-            Join the<br />
-            <span className="text-amber-400">Smart Campus</span><br />
-            Network
+        <div className="relative z-10 max-w-md my-auto py-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-6">
+            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+            Student & Faculty Membership
+          </div>
+
+          <h2 className="text-3xl xl:text-4xl font-extrabold font-display text-white tracking-tight leading-[1.2] mb-6">
+            Keep Campus Labs <br />
+            <span className="gradient-brand">Operational & Verified</span>
           </h2>
-          <p className="text-white/50 text-sm leading-relaxed mb-10 max-w-sm">
-            Register with your university email to report equipment issues, track repair progress, and keep labs running smoothly.
+
+          <p className="text-slate-400 text-sm leading-relaxed mb-8">
+            Create an authenticated university profile to log malfunctioning lab equipment, monitor real-time repair stages, and verify that reported issues receive prompt attention.
           </p>
 
-          <div className="space-y-4">
+          <div className="space-y-3.5">
             {[
-              { icon: "🔬", text: "Report broken lab equipment in seconds" },
-              { icon: "📡", text: "Track issue status in real time" },
-              { icon: "🔔", text: "Get instant notifications on repairs" },
-            ].map((item) => (
-              <div key={item.text} className="flex items-center gap-3">
-                <span className="text-xl">{item.icon}</span>
-                <span className="text-white/60 text-sm">{item.text}</span>
+              { icon: "⚡", title: "Instant Sequential Ticket ID", desc: "Your report gets assigned to the responsible lab tech automatically" },
+              { icon: "🛡️", title: "Masked Public Privacy", desc: "Your personal email is masked on the public transparency tracker" },
+              { icon: "📧", title: "Live Resolution Notices", desc: "Receive email confirmation the moment your reported equipment is repaired" },
+            ].map((f) => (
+              <div key={f.title} className="flex items-start gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
+                <span className="text-lg">{f.icon}</span>
+                <div>
+                  <h4 className="text-xs font-semibold text-white">{f.title}</h4>
+                  <p className="text-[11px] text-slate-500 leading-normal">{f.desc}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="relative z-10 text-white/30 text-xs">© 2026 University Facilities & IT Division</div>
+        <div className="relative z-10 text-xs text-slate-500 border-t border-white/5 pt-6 flex justify-between">
+          <span>© 2026 University Facilities & IT Division</span>
+          <span className="text-blue-400">.edu Verification Required</span>
+        </div>
       </div>
 
-      {/* Right panel — form */}
-      <div className="flex-1 flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-14 xl:px-20 overflow-y-auto">
-        <div className="lg:hidden flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 rounded bg-amber-400 flex items-center justify-center text-[#050d1f] font-black text-sm">S</div>
-          <span style={{ fontFamily: "var(--font-display)" }} className="text-white text-lg">
-            SECS
-          </span>
-        </div>
-
-        <div className="max-w-md w-full mx-auto lg:mx-0">
-          {submitted ? (
-            <div className="text-center py-8">
-              <div className="w-20 h-20 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center mx-auto mb-5">
-                <svg className="w-9 h-9 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h2 style={{ fontFamily: "var(--font-display)" }} className="text-3xl text-white mb-2">
-                Account Created!
-              </h2>
-              <p className="text-white/50 text-sm mb-1">Your SECS account has been registered for</p>
-              <p className="text-amber-400 font-medium mb-6">{form.email}</p>
-              <p className="text-white/40 text-xs mb-8">
-                You can now log in to the portal with your university credentials to submit reports and follow resolution progress.
-              </p>
-              <button
-                onClick={() => onNavigate("login")}
-                className="w-full py-3 rounded-lg font-semibold text-[#050d1f] bg-amber-400 hover:bg-amber-300 transition-colors duration-200"
-              >
-                Go to Login
-              </button>
+      {/* ── RIGHT FORM PANEL ── */}
+      <div className="flex-1 flex flex-col justify-center items-center px-6 py-12 sm:px-10 lg:px-16 overflow-y-auto">
+        <div className="w-full max-w-lg">
+          {/* Mobile header */}
+          <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
+            <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-sm">
+              S
             </div>
-          ) : (
-            <>
-              <div className="mb-8">
-                <h1 style={{ fontFamily: "var(--font-display)" }} className="text-3xl text-white mb-1">
-                  Create your account
-                </h1>
-                <p className="text-white/40 text-sm">
-                  Register with your university <span className="text-amber-400">.edu</span> email address
+            <span className="font-display font-extrabold text-lg text-white">Create Account</span>
+          </div>
+
+          <div className="glass-card rounded-2xl p-7 sm:p-9 shadow-2xl">
+            {submitted ? (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/20">
+                  <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold font-display text-white mb-2">Account Provisioned!</h2>
+                <p className="text-slate-400 text-xs mb-1">Your SECS account has been successfully registered for:</p>
+                <p className="text-blue-400 font-mono text-sm font-semibold mb-6">{form.email}</p>
+                <p className="text-slate-500 text-xs mb-8 max-w-sm mx-auto leading-relaxed">
+                  You can now log in to the portal with your credentials to submit equipment fault reports and follow resolution progress in real time.
                 </p>
+                <button
+                  onClick={() => onNavigate("login")}
+                  className="w-full py-3 rounded-xl btn-primary text-sm font-semibold"
+                >
+                  Proceed to Login Portal →
+                </button>
               </div>
-
-              {serverError && (
-                <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-                  {serverError}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                {/* Role selector */}
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-widest text-white/40 mb-2">I am a</label>
-                  <div className="flex gap-2">
-                    {ROLES.map((r) => (
-                      <button
-                        key={r.value}
-                        type="button"
-                        onClick={() => set("role", r.value)}
-                        className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-all duration-150 ${
-                          form.role === r.value
-                            ? "bg-amber-400/20 border-amber-400 text-amber-400"
-                            : "border-white/10 text-white/40 hover:border-white/20 hover:text-white/60"
-                        }`}
-                      >
-                        {r.label}
-                      </button>
-                    ))}
+            ) : (
+              <>
+                <div className="mb-6 pb-4 border-b border-white/5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-blue-400">New Registration</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                      .edu only
+                    </span>
                   </div>
+                  <h1 className="text-2xl font-bold font-display text-white mt-1">Create Your Account</h1>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Register with your official university credentials for verified access.
+                  </p>
                 </div>
 
-                {/* Full Name */}
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-widest text-white/40 mb-1.5">Full Name</label>
-                  <input
-                    type="text"
-                    placeholder="Abir Talukdar"
-                    value={form.fullName}
-                    onChange={(e) => set("fullName", e.target.value)}
-                    className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
-                      errors.fullName ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
-                    }`}
-                  />
-                  {errors.fullName && <p className="text-red-400 text-xs mt-1">{errors.fullName}</p>}
-                </div>
+                {serverError && (
+                  <div className="mb-5 p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs flex items-center gap-2.5">
+                    <svg className="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" strokeWidth={2} />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01" />
+                    </svg>
+                    <span>{serverError}</span>
+                  </div>
+                )}
 
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Student / Staff ID */}
+                <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                  {/* Role Selector Pills */}
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-widest text-white/40 mb-1.5">
-                      Student / Staff ID
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
+                      Academic Designation
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {ROLES.map((r) => (
+                        <button
+                          key={r.value}
+                          type="button"
+                          onClick={() => set("role", r.value)}
+                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all text-center flex flex-col items-center gap-1 ${
+                            form.role === r.value
+                              ? "bg-blue-600/20 border-blue-500 text-white shadow-md shadow-blue-500/15"
+                              : "border-white/5 bg-white/[0.02] text-slate-400 hover:border-white/15 hover:text-slate-200"
+                          }`}
+                        >
+                          <span className="text-base">{r.icon}</span>
+                          <span className="truncate">{r.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Full Name & Student ID */}
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        Full Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Afsana Mimi"
+                        value={form.fullName}
+                        onChange={(e) => set("fullName", e.target.value)}
+                        className={`w-full rounded-xl px-3.5 py-2.5 text-sm glass-input ${
+                          errors.fullName ? "border-rose-500" : ""
+                        }`}
+                      />
+                      {errors.fullName && <p className="text-rose-400 text-xs mt-1">{errors.fullName}</p>}
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        University ID
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="0432320005101099"
+                        value={form.studentId}
+                        onChange={(e) => set("studentId", e.target.value)}
+                        className={`w-full rounded-xl px-3.5 py-2.5 text-sm glass-input font-mono ${
+                          errors.studentId ? "border-rose-500" : ""
+                        }`}
+                      />
+                      {errors.studentId && <p className="text-rose-400 text-xs mt-1">{errors.studentId}</p>}
+                    </div>
+                  </div>
+
+                  {/* University Email */}
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                      University Email (.edu)
                     </label>
                     <input
-                      type="text"
-                      placeholder="0432320005101078"
-                      value={form.studentId}
-                      onChange={(e) => set("studentId", e.target.value)}
-                      className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
-                        errors.studentId ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
+                      type="email"
+                      placeholder="student@uitc.edu"
+                      value={form.email}
+                      onChange={(e) => set("email", e.target.value)}
+                      className={`w-full rounded-xl px-3.5 py-2.5 text-sm glass-input ${
+                        errors.email ? "border-rose-500" : ""
                       }`}
                     />
-                    {errors.studentId && <p className="text-red-400 text-xs mt-1">{errors.studentId}</p>}
+                    {errors.email && <p className="text-rose-400 text-xs mt-1">{errors.email}</p>}
                   </div>
 
                   {/* Department */}
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-widest text-white/40 mb-1.5">Department</label>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                      Department
+                    </label>
                     <select
                       value={form.department}
                       onChange={(e) => set("department", e.target.value)}
-                      className={`w-full rounded-lg px-4 py-2.5 text-sm text-white bg-[#0a1628] border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
-                        errors.department ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
+                      className={`w-full rounded-xl px-3.5 py-2.5 text-sm glass-input bg-[#0b142c] ${
+                        errors.department ? "border-rose-500" : ""
                       }`}
                     >
-                      <option value="">Select dept.</option>
+                      <option value="">Select your academic department</option>
                       {departments.map((d) => (
                         <option key={d} value={d}>
                           {d}
                         </option>
                       ))}
                     </select>
-                    {errors.department && <p className="text-red-400 text-xs mt-1">{errors.department}</p>}
+                    {errors.department && <p className="text-rose-400 text-xs mt-1">{errors.department}</p>}
                   </div>
-                </div>
 
-                {/* Email */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold uppercase tracking-widest text-white/40">University Email</label>
-                    <EduBadge />
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="email"
-                      placeholder="a.talukdar@uitc.edu"
-                      value={form.email}
-                      onChange={(e) => set("email", e.target.value)}
-                      className={`w-full rounded-lg pl-4 pr-10 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
-                        errors.email ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
-                      }`}
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  {/* Password & Confirm Password */}
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPass ? "text" : "password"}
+                          placeholder="Min. 6 chars"
+                          value={form.password}
+                          onChange={(e) => set("password", e.target.value)}
+                          className={`w-full rounded-xl pl-3.5 pr-9 py-2.5 text-sm glass-input ${
+                            errors.password ? "border-rose-500" : ""
+                          }`}
                         />
-                      </svg>
-                    </span>
-                  </div>
-                  {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
-                </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowPass(!showPass)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs"
+                        >
+                          {showPass ? "Hide" : "Show"}
+                        </button>
+                      </div>
+                      {errors.password && <p className="text-rose-400 text-xs mt-1">{errors.password}</p>}
+                    </div>
 
-                {/* Password */}
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-widest text-white/40 mb-1.5">Password</label>
-                  <div className="relative">
-                    <input
-                      type={showPass ? "text" : "password"}
-                      placeholder="Minimum 6 characters"
-                      value={form.password}
-                      onChange={(e) => set("password", e.target.value)}
-                      className={`w-full rounded-lg pl-4 pr-10 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
-                        errors.password ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPass(!showPass)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors"
-                    >
-                      {showPass ? (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-                          />
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                        </svg>
-                      )}
-                    </button>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        Confirm Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirm ? "text" : "password"}
+                          placeholder="Re-enter password"
+                          value={form.confirmPassword}
+                          onChange={(e) => set("confirmPassword", e.target.value)}
+                          className={`w-full rounded-xl pl-3.5 pr-9 py-2.5 text-sm glass-input ${
+                            errors.confirmPassword ? "border-rose-500" : ""
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirm(!showConfirm)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs"
+                        >
+                          {showConfirm ? "Hide" : "Show"}
+                        </button>
+                      </div>
+                      {errors.confirmPassword && <p className="text-rose-400 text-xs mt-1">{errors.confirmPassword}</p>}
+                    </div>
                   </div>
+
+                  {/* Password Strength Indicator */}
                   {form.password && (
-                    <div className="mt-1.5 flex items-center gap-2">
-                      <div className="flex-1 flex gap-1">
-                        {[1, 2, 3].map((i) => (
+                    <div className="space-y-1 pt-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400">Password Strength:</span>
+                        <span className="font-semibold text-white">{strengthLabel[strength]}</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden flex gap-1">
+                        {[1, 2, 3].map((level) => (
                           <div
-                            key={i}
-                            className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
-                              i <= strength ? strengthColor[strength] : "bg-white/10"
+                            key={level}
+                            className={`h-full flex-1 transition-all duration-300 ${
+                              strength >= level ? strengthColor[strength] : "bg-white/5"
                             }`}
                           />
                         ))}
                       </div>
-                      <span className="text-xs text-white/40">{strengthLabel[strength]}</span>
                     </div>
                   )}
-                  {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
-                </div>
 
-                {/* Confirm password */}
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-widest text-white/40 mb-1.5">
-                    Confirm Password
-                  </label>
-                  <div className="relative">
+                  {/* Terms Checkbox */}
+                  <label className="flex items-start gap-2.5 cursor-pointer pt-1">
                     <input
-                      type={showConfirm ? "text" : "password"}
-                      placeholder="Re-enter your password"
-                      value={form.confirmPassword}
-                      onChange={(e) => set("confirmPassword", e.target.value)}
-                      className={`w-full rounded-lg pl-4 pr-10 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
-                        errors.confirmPassword ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
-                      }`}
+                      type="checkbox"
+                      checked={form.agreed}
+                      onChange={(e) => set("agreed", e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-blue-600 focus:ring-0"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirm(!showConfirm)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors"
-                    >
-                      {showConfirm ? (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-                          />
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword}</p>}
-                </div>
-
-                {/* Terms */}
-                <div>
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <div className="relative mt-0.5 shrink-0">
-                      <input type="checkbox" checked={form.agreed} onChange={(e) => set("agreed", e.target.checked)} className="sr-only" />
-                      <div
-                        className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                          form.agreed ? "bg-amber-400 border-amber-400" : "border-white/20 bg-white/5"
-                        }`}
-                      >
-                        {form.agreed && (
-                          <svg className="w-2.5 h-2.5 text-[#050d1f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </div>
-                    </div>
-                    <span className="text-xs text-white/40 leading-relaxed">
-                      I agree to the university's{" "}
-                      <a href="#" className="text-amber-400 hover:underline">
-                        Terms of Use
-                      </a>{" "}
-                      and{" "}
-                      <a href="#" className="text-amber-400 hover:underline">
-                        Privacy Policy
-                      </a>
+                    <span className="text-xs text-slate-400 leading-normal">
+                      I agree to the University Laboratory Equipment Code of Conduct and acknowledge that problem reports are logged publicly.
                     </span>
                   </label>
-                  {errors.agreed && <p className="text-red-400 text-xs mt-1">{errors.agreed}</p>}
+                  {errors.agreed && <p className="text-rose-400 text-xs mt-0.5">{errors.agreed}</p>}
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full mt-2 py-3 rounded-xl btn-primary text-sm font-semibold flex items-center justify-center gap-2"
+                  >
+                    {loading ? "Registering Profile…" : "Complete Account Registration →"}
+                  </button>
+                </form>
+
+                <div className="mt-6 pt-5 border-t border-white/5 text-center">
+                  <p className="text-xs text-slate-400">
+                    Already registered?{" "}
+                    <button
+                      onClick={() => onNavigate("login")}
+                      className="text-blue-400 hover:text-blue-300 font-semibold underline underline-offset-4 ml-1"
+                    >
+                      Sign in here
+                    </button>
+                  </p>
+                  <button
+                    onClick={() => onNavigate("landing")}
+                    className="text-xs text-slate-500 hover:text-slate-300 mt-2 transition-colors block mx-auto"
+                  >
+                    ← Back to main site
+                  </button>
                 </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 rounded-lg font-semibold text-[#050d1f] bg-amber-400 hover:bg-amber-300 active:scale-95 transition-all duration-150 mt-2 disabled:opacity-50"
-                >
-                  {loading ? "Creating Account..." : "Create Account →"}
-                </button>
-              </form>
-
-              <p className="text-center text-white/30 text-xs mt-6">
-                Already have an account?{" "}
-                <button onClick={() => onNavigate("login")} className="text-amber-400 hover:text-amber-300 font-medium transition-colors">
-                  Sign in
-                </button>
-              </p>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

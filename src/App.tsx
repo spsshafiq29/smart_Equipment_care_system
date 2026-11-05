@@ -17,102 +17,127 @@ type Page = "landing" | "login" | "register" | "dashboard";
 
 const NAV_LINKS = [
   { label: "Home", href: "#home" },
-  { label: "Submit Issue", href: "#submit" },
-  { label: "Track Status", href: "#track" },
+  { label: "Submit Fault", href: "#submit" },
+  { label: "Transparency Tracker", href: "#track" },
   { label: "Lab Directory", href: "#labs" },
+  { label: "Staff Portals", href: "#portal-access" },
   { label: "FAQ", href: "#faq" },
 ];
 
 const HOW_IT_WORKS = [
   {
     step: "01",
-    title: "Identify the Equipment",
-    desc: "Locate the asset tag or serial number on the malfunctioning device. If unavailable, a description is sufficient.",
+    title: "Inspect & Tag",
+    desc: "Locate the asset tag, serial number, or room number on the malfunctioning lab device.",
+    icon: "🔍",
   },
   {
     step: "02",
-    title: "Submit the Report",
-    desc: "Fill out the online form with your contact details, lab location, equipment type, and a description of the fault.",
+    title: "Submit Online",
+    desc: "Provide your university credentials, equipment type, priority, and a concise description of the failure.",
+    icon: "📝",
   },
   {
     step: "03",
-    title: "Receive a Ticket",
-    desc: "A case number is generated and logged immediately. The technical team reviews and prioritises your report within 24 hours.",
+    title: "Auto-Routing",
+    desc: "A sequential TKT ID is generated. The system auto-assigns the assigned technician for that lab within seconds.",
+    icon: "⚡",
   },
   {
     step: "04",
-    title: "Track & Resolve",
-    desc: "Check live status updates on the transparency tracker at any time. You'll be notified when equipment is repaired.",
+    title: "Live Tracking & Resolution",
+    desc: "Track status publicly. When fixed, you receive automated email verification via Brevo SMTP.",
+    icon: "✅",
   },
 ];
 
-const PORTAL_CARDS: { role: PortalRole; title: string; description: string; actions: string[] }[] = [
+const PORTAL_CARDS: { role: PortalRole; title: string; subtitle: string; description: string; actions: string[]; icon: string; accentColor: string }[] = [
   {
     role: "admin",
-    title: "Admin Portal",
-    description: "Create staff accounts and control room-level technician assignments.",
-    actions: ["Create technician accounts", "Assign or remove labs", "Monitor every workflow"],
+    title: "System Admin",
+    subtitle: "Facilities & Operations",
+    description: "Manage laboratory rooms, technician assignments, and overall campus access control.",
+    actions: ["Manage lab assignments", "Control staff access", "Audit system workflows"],
+    icon: "🛡️",
+    accentColor: "border-blue-500/30 text-blue-400 bg-blue-500/10",
   },
   {
     role: "authority",
     title: "Higher Authority",
-    description: "Approve budgets, oversee staff access, and investigate disputed payments.",
-    actions: ["Approve repair budgets", "Manage staff access", "Open investigations"],
+    subtitle: "Institutional Governance",
+    description: "Review, approve or reject repair budget requests, and conduct financial oversight.",
+    actions: ["Approve repair budgets", "Audit payment discrepancies", "Departmental oversight"],
+    icon: "🏛️",
+    accentColor: "border-amber-500/30 text-amber-400 bg-amber-500/10",
   },
   {
     role: "accounts",
-    title: "Accounts Portal",
-    description: "Receive approved requests and confirm when funds are released.",
-    actions: ["View approved budgets", "Confirm technician payment", "Maintain payment trail"],
+    title: "Accounts Office",
+    subtitle: "Fiscal Management",
+    description: "Verify approved purchase requisitions and disburse repair funds to technicians.",
+    actions: ["Process approved funds", "Confirm disbursements", "Uphold payment records"],
+    icon: "💳",
+    accentColor: "border-emerald-500/30 text-emerald-400 bg-emerald-500/10",
   },
   {
     role: "technician",
-    title: "Technician Portal",
-    description: "See only assigned labs, assess repairs, request budgets, and challenge false payment records.",
-    actions: ["View assigned lab issues", "Track repair budgets", "Publish payment concerns"],
+    title: "Lab Technician",
+    subtitle: "Technical Repair Staff",
+    description: "Diagnose faults, request parts funding, confirm fixes, and dispute false payments.",
+    actions: ["Room-specific queue", "Request parts funding", "Resolve & close tickets"],
+    icon: "🔧",
+    accentColor: "border-indigo-500/30 text-indigo-400 bg-indigo-500/10",
   },
 ];
 
-const STATUS_COLORS: Record<string, string> = {
-  Resolved: "bg-green-100 text-green-800",
-  "In Progress": "bg-blue-100 text-blue-800",
-  "Under Review": "bg-amber-100 text-amber-700",
-  Assigned: "bg-violet-100 text-violet-800",
-  "Budget Requested": "bg-amber-100 text-amber-800",
-  "Payment Review": "bg-cyan-100 text-cyan-800",
-  "Rejected by Higher Authority": "bg-red-100 text-red-800",
-  "Payment Disputed": "bg-red-100 text-red-800",
+const STATUS_CONFIG: Record<string, { bg: string; text: string; border: string; dot: string }> = {
+  Resolved: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/30", dot: "bg-emerald-400" },
+  "In Progress": { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/30", dot: "bg-blue-400" },
+  "Under Review": { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/30", dot: "bg-amber-400" },
+  Assigned: { bg: "bg-indigo-500/10", text: "text-indigo-400", border: "border-indigo-500/30", dot: "bg-indigo-400" },
+  "Budget Requested": { bg: "bg-amber-500/10", text: "text-amber-300", border: "border-amber-500/30", dot: "bg-amber-400" },
+  "Payment Review": { bg: "bg-cyan-500/10", text: "text-cyan-300", border: "border-cyan-500/30", dot: "bg-cyan-400" },
+  "Funds Approved": { bg: "bg-teal-500/10", text: "text-teal-300", border: "border-teal-500/30", dot: "bg-teal-400" },
+  "Rejected by Higher Authority": { bg: "bg-rose-500/10", text: "text-rose-400", border: "border-rose-500/30", dot: "bg-rose-400" },
+  "Payment Disputed": { bg: "bg-rose-500/15", text: "text-rose-300", border: "border-rose-500/40", dot: "bg-rose-400" },
 };
 
-const PRIORITY_COLORS: Record<string, string> = {
-  Critical: "text-red-500 font-bold",
-  High: "text-red-400",
-  Medium: "text-amber-400",
-  Low: "text-green-400",
+const PRIORITY_BADGES: Record<string, { label: string; color: string; badge: string }> = {
+  Critical: { label: "Critical", color: "text-rose-400", badge: "bg-rose-500/15 border-rose-500/30 text-rose-300" },
+  High: { label: "High", color: "text-orange-400", badge: "bg-orange-500/15 border-orange-500/30 text-orange-300" },
+  Medium: { label: "Medium", color: "text-amber-400", badge: "bg-amber-500/15 border-amber-500/30 text-amber-300" },
+  Low: { label: "Low", color: "text-emerald-400", badge: "bg-emerald-500/15 border-emerald-500/30 text-emerald-300" },
 };
 
 const FAQS = [
   {
-    q: "Who can submit an equipment report?",
-    a: "Any registered student, lecturer, or researcher with an active university ID can submit a report. The system connects directly to lab coordinators and assigned technicians.",
+    q: "Who is eligible to report laboratory equipment faults?",
+    a: "Any university student, faculty member, or research assistant with an active .edu email address can submit an issue report. Reports are authenticated and dispatched directly to the technician responsible for that specific laboratory room.",
   },
   {
-    q: "How long does it take for an issue to be resolved?",
-    a: "Critical issues are addressed within 24 hours. High priority issues take up to 3 days, while standard repairs take 3–7 working days depending on parts and budget approval.",
+    q: "How does the system ensure resolution accountability?",
+    a: "Every report is logged with a public sequential ticket number. When funding is requested, both Higher Authority approvals and Accounts Office disbursements are recorded permanently. If an issue is unresolved after 7 days, automated condition update emails are dispatched.",
   },
   {
-    q: "Can I report an issue anonymously?",
-    a: "You must provide a valid university email for verification. On the public transparency tracker, your email is masked (e.g. sa***@uitc.edu) to protect your privacy.",
+    q: "Is my personal email address publicly exposed?",
+    a: "No. On the public transparency tracker, all reporter email addresses are cryptographically masked (e.g. sa***@uitc.edu) to strictly protect your privacy while maintaining public verification integrity.",
   },
   {
-    q: "What if the equipment poses a safety risk?",
-    a: "Mark the issue as 'Critical' priority during submission. Do not operate the equipment and alert the lab supervisor immediately.",
+    q: "What procedure should be followed for high-hazard or electrical safety risks?",
+    a: "Select the 'Critical' priority level during submission. This marks the ticket with a strict 24-hour SLA alert. You should immediately cease operating the equipment and inform the lab instructor on duty.",
   },
 ];
 
 function StatusBadge({ status }: { status: string }) {
+  const conf = STATUS_CONFIG[status] || {
+    bg: "bg-slate-800",
+    text: "text-slate-300",
+    border: "border-slate-700",
+    dot: "bg-slate-400",
+  };
   return (
-    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[status] ?? "bg-gray-100 text-gray-700"}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${conf.bg} ${conf.text} ${conf.border}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${conf.dot}`} />
       {status}
     </span>
   );
@@ -121,15 +146,21 @@ function StatusBadge({ status }: { status: string }) {
 function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-white/10 last:border-0">
+    <div className="border-b border-white/5 last:border-0">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-5 text-left gap-4 text-white/70 hover:text-white transition-colors duration-150"
+        className="w-full flex items-center justify-between py-5 text-left gap-4 text-slate-300 hover:text-white transition-colors"
       >
-        <span className="font-medium text-[15px] leading-snug">{q}</span>
-        <span className="text-xl text-white/30 shrink-0">{open ? "−" : "+"}</span>
+        <span className="font-semibold text-base leading-snug">{q}</span>
+        <span className={`text-xl font-bold transition-transform duration-200 ${open ? "rotate-45 text-blue-400" : "text-slate-500"}`}>
+          +
+        </span>
       </button>
-      {open && <p className="pb-5 text-sm text-white/40 leading-relaxed pr-8">{a}</p>}
+      {open && (
+        <div className="pb-5 text-sm text-slate-400 leading-relaxed pr-6">
+          {a}
+        </div>
+      )}
     </div>
   );
 }
@@ -162,8 +193,8 @@ export default function App() {
   const [submittedTicket, setSubmittedTicket] = useState<string | null>(null);
   const [formError, setFormError] = useState("");
   const [ticketSearch, setTicketSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  // Load all dynamic data from backend API
   const loadDynamicData = async () => {
     try {
       setIsLoading(true);
@@ -198,41 +229,57 @@ export default function App() {
     setFormError("");
     setIsSubmitting(true);
 
+    if (!formData.name.trim() || !formData.email.trim()) {
+      setFormError("Please provide your name and email address.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!formData.email.toLowerCase().endsWith(".edu")) {
+      setFormError("Only university .edu email addresses are permitted.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!formData.lab) {
+      setFormError("Please select the affected laboratory room.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!formData.equipmentType) {
+      setFormError("Please select the equipment type.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!formData.description.trim() || formData.description.trim().length < 5) {
+      setFormError("Please describe the fault with at least 5 characters.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      // Find matching labId from selected room/name
-      const selectedLab = labs.find((l) => `${l.room} · ${l.name}` === formData.lab || l.room === formData.lab);
+      const selectedLab = labs.find((l) => `${l.room} · ${l.name}` === formData.lab);
       const res = await secsApi.issues.submitIssue({
         labId: selectedLab?.id || "lab-1",
         labName: formData.lab,
         equipmentType: formData.equipmentType,
-        assetTag: formData.assetTag,
-        description: formData.description,
+        assetTag: formData.assetTag.trim() || undefined,
+        description: formData.description.trim(),
         priority: formData.priority,
-        reporterName: formData.name,
-        reporterEmail: formData.email,
+        reporterName: formData.name.trim(),
+        reporterEmail: formData.email.trim(),
       });
 
       setSubmittedTicket(res.issue.id);
-      // Refresh dynamic tracker and stats immediately from backend
-      loadDynamicData();
+      await loadDynamicData();
     } catch (err: any) {
-      setFormError(err?.message || "Failed to submit issue. Please check your inputs.");
+      setFormError(err?.message || "Failed to submit fault report.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  async function openPortal(role: PortalRole) {
-    try {
-      // Authenticate with demo credentials to get real session token
-      await secsApi.auth.login({ portal: role, email: `${role}@uitc.edu` });
-      setPortalRole(role);
-      setPage("dashboard");
-    } catch {
-      // Fallback direct navigation
-      setPortalRole(role);
-      setPage("dashboard");
-    }
+  function openPortal(role: PortalRole) {
+    setPortalRole(role);
+    setPage("dashboard");
   }
 
   if (page === "login") {
@@ -268,842 +315,888 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-full text-white" style={{ background: "#070f20" }}>
-      {/* ── FULL-SCREEN HERO (nav embedded) ── */}
-      <section
-        id="home"
-        className="relative min-h-screen flex flex-col overflow-hidden text-white"
-        style={{ background: "linear-gradient(135deg, #050d1f 0%, #071428 50%, #0a1e3a 100%)" }}
-      >
-        {/* Background: lab photo collage */}
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1800&h=1000&fit=crop&auto=format"
-            alt=""
-            className="w-full h-full object-cover object-center opacity-20"
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background: "linear-gradient(135deg, rgba(5,13,31,0.97) 0%, rgba(7,20,40,0.85) 50%, rgba(5,13,31,0.6) 100%)",
-            }}
-          />
-        </div>
-
-        {/* Decorative grid lines */}
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
-          }}
-        />
-
-        {/* Glowing orbs */}
-        <div
-          className="absolute top-1/4 right-1/4 w-96 h-96 rounded-full opacity-10 blur-3xl"
-          style={{ background: "radial-gradient(circle, #d4550a 0%, transparent 70%)" }}
-        />
-        <div
-          className="absolute bottom-1/3 left-1/3 w-72 h-72 rounded-full opacity-8 blur-3xl"
-          style={{ background: "radial-gradient(circle, #0e2d5c 0%, transparent 70%)" }}
-        />
-
-        {/* NAV */}
-        <nav className="relative z-20 flex items-center justify-between px-6 md:px-10 h-16 border-b border-white/5">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center font-black text-base"
-              style={{ background: "linear-gradient(135deg, #d4550a, #e8700a)" }}
-            >
-              S
+    <div className="min-h-full bg-[#050a18] text-slate-100 selection:bg-blue-500/30">
+      {/* ── STICKY GLASS NAVIGATION ── */}
+      <nav className="sticky top-0 z-50 glass-panel border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20 border border-white/10">
+              <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+              </svg>
             </div>
             <div>
-              <span style={{ fontFamily: "var(--font-display)" }} className="text-white text-base leading-none tracking-tight">
-                SECS
+              <span className="font-display font-extrabold text-xl tracking-tight text-white">SECS</span>
+              <span className="hidden sm:inline-block text-xs font-semibold text-blue-400 tracking-wider ml-2.5 uppercase">
+                Smart Equipment Care System
               </span>
-              <span className="hidden sm:inline text-white/30 text-xs ml-2">Smart Equipment Care System</span>
             </div>
           </div>
-          <div className="hidden md:flex items-center gap-6 text-sm">
+
+          <div className="hidden lg:flex items-center gap-7 text-sm font-medium text-slate-400">
             {NAV_LINKS.map((link) => (
-              <a key={link.label} href={link.href} className="text-white/50 hover:text-white transition-colors duration-150">
+              <a
+                key={link.label}
+                href={link.href}
+                className="hover:text-white transition-colors duration-150"
+              >
                 {link.label}
               </a>
             ))}
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-3">
             <button
               onClick={() => document.querySelector("#portal-access")?.scrollIntoView({ behavior: "smooth" })}
-              className="text-sm text-white/60 hover:text-white px-4 py-1.5 rounded border border-white/10 hover:border-white/25 transition-all duration-150"
+              className="hidden sm:flex text-xs font-semibold px-4 py-2 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05] text-slate-300 hover:text-white transition-all"
             >
               Staff Portals
             </button>
             <button
-              onClick={() => setPage("register")}
-              className="text-sm font-semibold px-4 py-1.5 rounded transition-colors duration-150 text-white"
-              style={{ background: "linear-gradient(135deg, #d4550a, #b83d00)" }}
+              onClick={() => setPage("login")}
+              className="text-xs font-semibold px-4 py-2 rounded-xl btn-primary"
             >
-              Register
+              Portal Sign In →
             </button>
-            <button className="md:hidden text-white/60 ml-1" onClick={() => setMobileOpen(!mobileOpen)}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button
+              className="lg:hidden text-slate-400 p-2"
+              onClick={() => setMobileOpen(!mobileOpen)}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
               </svg>
             </button>
           </div>
-        </nav>
+        </div>
+
         {mobileOpen && (
-          <div className="relative z-20 bg-[#071428] border-b border-white/10 px-6 py-4 flex flex-col gap-3 text-sm">
+          <div className="lg:hidden bg-[#070e24] border-t border-white/5 px-6 py-5 flex flex-col gap-3.5 text-sm">
             {NAV_LINKS.map((link) => (
-              <a key={link.label} href={link.href} className="text-white/50 hover:text-white" onClick={() => setMobileOpen(false)}>
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-slate-400 hover:text-white py-1"
+                onClick={() => setMobileOpen(false)}
+              >
                 {link.label}
               </a>
             ))}
+            <div className="pt-2 flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  setMobileOpen(false);
+                  setPage("register");
+                }}
+                className="w-full text-center py-2.5 rounded-xl border border-white/10 text-xs font-semibold text-white"
+              >
+                Register Student
+              </button>
+            </div>
           </div>
         )}
+      </nav>
 
-        {/* HERO CONTENT */}
-        <div className="relative z-10 flex-1 flex flex-col justify-center max-w-7xl mx-auto w-full px-6 md:px-10 py-16">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            {/* Left: copy */}
-            <div>
-              <div className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 rounded-full border border-amber-400/30 bg-amber-400/10">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-amber-400 text-xs font-semibold uppercase tracking-widest">UITC University · Live Operations</span>
+      {/* ── HERO SECTION ── */}
+      <header id="home" className="relative min-h-[92vh] flex items-center overflow-hidden border-b border-white/5">
+        {/* Ambient lighting meshes */}
+        <div className="absolute top-1/4 left-1/4 w-[38rem] h-[38rem] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-[32rem] h-[32rem] bg-amber-500/10 rounded-full blur-[100px] pointer-events-none" />
+
+        {/* Subtle geometric dot grid */}
+        <div
+          className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{
+            backgroundImage: "radial-gradient(#ffffff 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+          }}
+        />
+
+        <div className="relative z-10 max-w-7xl mx-auto w-full px-6 py-16">
+          <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+            {/* Left Copy */}
+            <div className="lg:col-span-7">
+              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-7">
+                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                UITC University · Live Campus Operations
               </div>
 
-              <h1 style={{ fontFamily: "var(--font-display)" }} className="text-4xl sm:text-5xl lg:text-6xl leading-[1.1] mb-6 text-white">
-                Smart Equipment<br />
-                <span style={{ color: "#d4550a" }}>Care System</span><br />
-                <span className="text-white/60 text-3xl sm:text-4xl lg:text-5xl">(SECS)</span>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold font-display text-white tracking-tight leading-[1.12] mb-6">
+                Smart Equipment <br />
+                <span className="gradient-brand">Care & Maintenance</span> <br />
+                System
               </h1>
 
-              <p className="text-white/55 text-lg leading-relaxed mb-4 max-w-lg">
-                A fully dynamic university platform for reporting, tracking, and resolving lab equipment issues — transparently, digitally, and fast.
+              <p className="text-slate-400 text-lg leading-relaxed mb-8 max-w-xl">
+                A unified university platform for logging laboratory device faults, tracking repairs with complete financial transparency, and guaranteeing SLA response times.
               </p>
 
-              <div className="flex flex-col gap-2 mb-8">
-                {[
-                  "🔬 Microscope or lab device malfunctioning? Report it in seconds.",
-                  "📡 Live public tracking shows every handoff and responsible office.",
-                  "🛡️ Transparent financial ledger ensures complete accountability.",
-                ].map((line) => (
-                  <p key={line} className="text-white/50 text-sm">
-                    {line}
-                  </p>
-                ))}
-              </div>
-
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-4 mb-10">
                 <a
                   href="#submit"
-                  className="font-semibold px-7 py-3.5 rounded-lg text-white transition-all duration-200 hover:scale-105"
-                  style={{ background: "linear-gradient(135deg, #d4550a, #b83d00)" }}
+                  className="font-semibold px-7 py-3.5 rounded-xl btn-primary text-sm flex items-center gap-2.5"
                 >
-                  Report Equipment Fault ↓
+                  <span>Report Equipment Fault</span>
+                  <span className="text-base">↓</span>
                 </a>
                 <button
                   onClick={() => setPage("login")}
-                  className="px-7 py-3.5 rounded-lg border border-white/20 hover:border-white/40 text-white/70 hover:text-white transition-all duration-200 text-sm font-medium"
+                  className="font-semibold px-7 py-3.5 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05] text-slate-200 hover:text-white transition-all text-sm"
                 >
-                  Sign In to Portal
+                  Staff Portal Sign In
                 </button>
               </div>
 
-              <div className="mt-8 flex flex-wrap gap-2">
-                <span className="text-white/30 text-xs self-center mr-1">Designed for:</span>
-                {["Students", "Teachers", "Technicians", "Higher Authority", "Accounts Office"].map((r) => (
-                  <span key={r} className="text-xs px-2.5 py-1 rounded-full border border-white/10 text-white/40">
-                    {r}
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                <span className="text-xs text-slate-500 mr-2">Dedicated portals for:</span>
+                {["Students", "Faculty", "Technicians", "Higher Authority", "Accounts"].map((role) => (
+                  <span
+                    key={role}
+                    className="text-xs px-3 py-1 rounded-full border border-white/5 bg-white/[0.02] text-slate-400 font-medium"
+                  >
+                    {role}
                   </span>
                 ))}
               </div>
             </div>
 
-            {/* Right: visual card cluster with dynamic stats */}
-            <div className="hidden lg:flex flex-col gap-4">
-              <div className="relative rounded-2xl overflow-hidden border border-white/10" style={{ height: 220 }}>
+            {/* Right Metric Showcase Card Cluster */}
+            <div className="lg:col-span-5 flex flex-col gap-4">
+              {/* Image banner card */}
+              <div className="relative rounded-2xl overflow-hidden border border-white/10 h-52 glass-card">
                 <img
-                  src="https://images.unsplash.com/photo-1532094349884-543559c02254?w=700&h=300&fit=crop&auto=format"
-                  alt="University laboratory"
-                  className="w-full h-full object-cover"
+                  src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&fit=crop&auto=format"
+                  alt="University laboratory equipment"
+                  className="w-full h-full object-cover object-center opacity-40"
                 />
-                <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(5,13,31,0.7) 0%, transparent 60%)" }} />
-                <div className="absolute bottom-4 left-4">
-                  <p className="text-white/50 text-xs uppercase tracking-widest mb-0.5">Campus Infrastructure</p>
-                  <p className="text-white font-semibold text-sm">
-                    {labs.length > 0 ? `${labs.length} University Labs Connected` : "Active University Labs"}
-                  </p>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050a18] via-[#050a18]/60 to-transparent" />
+                <div className="absolute bottom-4 left-5 right-5 flex items-end justify-between">
+                  <div>
+                    <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider block">
+                      Campus Lab Infrastructure
+                    </span>
+                    <h3 className="text-sm font-semibold text-white mt-0.5">
+                      {labs.length > 0 ? `${labs.length} Connected Laboratories` : "Active University Labs"}
+                    </h3>
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    Live Operational
+                  </span>
                 </div>
               </div>
 
-              {/* Dynamic Stats row */}
-              <div className="grid grid-cols-4 gap-3">
-                {[
-                  { value: stats?.issuesResolvedFormatted || "2,400+", label: "Issues Resolved" },
-                  { value: stats?.avgResponseTime || "48 hr", label: "Avg. Response" },
-                  { value: String(stats?.labsSupported || labs.length || "14"), label: "Labs Active" },
-                  { value: stats?.satisfactionRate || "98%", label: "Satisfaction" },
-                ].map((s) => (
-                  <div
-                    key={s.label}
-                    className="rounded-xl border border-white/10 p-4 text-center"
-                    style={{ background: "rgba(255,255,255,0.04)" }}
-                  >
-                    <div style={{ fontFamily: "var(--font-display)", color: "#d4550a" }} className="text-2xl mb-0.5">
-                      {s.value}
-                    </div>
-                    <div className="text-white/35 text-[10px] uppercase tracking-wider leading-tight">{s.label}</div>
+              {/* Dynamic Stats Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="glass-card p-4 rounded-xl">
+                  <div className="text-xs font-medium text-slate-400">Total Solved Issues</div>
+                  <div className="text-2xl font-extrabold font-display text-white mt-1">
+                    {stats?.issuesResolvedCount ?? 0}
                   </div>
-                ))}
+                  <div className="text-[11px] text-emerald-400 mt-0.5 flex items-center gap-1">
+                    <span>✓</span> Verified database records
+                  </div>
+                </div>
+
+                <div className="glass-card p-4 rounded-xl">
+                  <div className="text-xs font-medium text-slate-400">Approved Budget</div>
+                  <div className="text-2xl font-extrabold font-display gradient-amber mt-1">
+                    ৳{(stats?.approvedBudgetTotal ?? 0).toLocaleString("en-BD")}
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">Publicly audited funds</div>
+                </div>
+
+                <div className="glass-card p-4 rounded-xl">
+                  <div className="text-xs font-medium text-slate-400">Average Response</div>
+                  <div className="text-2xl font-extrabold font-display text-white mt-1">
+                    {stats?.avgResponseTime || "< 24 hr"}
+                  </div>
+                  <div className="text-[11px] text-blue-400 mt-0.5">Automated tech dispatch</div>
+                </div>
+
+                <div className="glass-card p-4 rounded-xl">
+                  <div className="text-xs font-medium text-slate-400">Resolution Rate</div>
+                  <div className="text-2xl font-extrabold font-display text-white mt-1">
+                    {stats?.satisfactionRate || "99.4%"}
+                  </div>
+                  <div className="text-[11px] text-emerald-400 mt-0.5">SLA compliance</div>
+                </div>
               </div>
 
-              {/* SLA tier strip */}
-              <div className="rounded-xl border border-white/10 p-4" style={{ background: "rgba(255,255,255,0.04)" }}>
-                <p className="text-white/30 text-[10px] uppercase tracking-widest mb-3 font-semibold">SLA Auto-Escalation Tiers</p>
-                <div className="flex gap-2">
-                  {[
-                    { label: "Critical", time: "24 h", color: "#ef4444" },
-                    { label: "High", time: "3 days", color: "#f97316" },
-                    { label: "Medium", time: "7 days", color: "#eab308" },
-                    { label: "Low", time: "14 days", color: "#22c55e" },
-                  ].map((t) => (
-                    <div
-                      key={t.label}
-                      className="flex-1 rounded-lg border px-2 py-2 text-center"
-                      style={{ borderColor: t.color + "40", background: t.color + "10" }}
-                    >
-                      <div className="text-[10px] font-semibold mb-0.5" style={{ color: t.color }}>
-                        {t.label}
-                      </div>
-                      <div className="text-white/40 text-[10px]">{t.time}</div>
-                    </div>
-                  ))}
+              {/* SLA Response strip */}
+              <div className="glass-card p-4 rounded-xl">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-xs font-semibold text-slate-300">Priority SLA Enforcement</span>
+                  <span className="text-[10px] text-slate-500">Auto-Escalation Engine</span>
+                </div>
+                <div className="grid grid-cols-4 gap-2 text-center text-[11px]">
+                  <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300">
+                    <span className="font-bold block">Critical</span>
+                    <span className="text-[10px] opacity-75">24 Hours</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-300">
+                    <span className="font-bold block">High</span>
+                    <span className="text-[10px] opacity-75">3 Days</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                    <span className="font-bold block">Medium</span>
+                    <span className="text-[10px] opacity-75">7 Days</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
+                    <span className="font-bold block">Low</span>
+                    <span className="text-[10px] opacity-75">14 Days</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </header>
 
-        {/* Bottom scroll cue */}
-        <div className="relative z-10 flex justify-center pb-6">
-          <a href="#how" className="flex flex-col items-center gap-1 text-white/20 hover:text-white/40 transition-colors">
-            <span className="text-xs uppercase tracking-widest">Scroll</span>
-            <svg className="w-4 h-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
-            </svg>
-          </a>
-        </div>
-      </section>
-
-      {/* ── DYNAMIC ANNOUNCEMENT BANNER ── */}
+      {/* ── ANNOUNCEMENTS BAR ── */}
       {announcements.length > 0 && (
-        <div
-          className="bg-amber-400/10 border-y border-amber-400/20 px-6 py-3 text-sm text-amber-300 flex items-center justify-center gap-2"
-          style={{ background: "#0a1628" }}
-        >
-          <span className="font-semibold text-amber-400">⚠ Notice:</span>
+        <aside aria-label="Campus Notice" className="bg-blue-600/10 border-y border-blue-500/20 px-6 py-3.5 text-xs text-blue-300 flex items-center justify-center gap-2.5">
+          <span className="font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 uppercase tracking-wider text-[10px]">
+            Campus Notice
+          </span>
           <span>{announcements[0]?.message}</span>
-        </div>
+        </aside>
       )}
 
-      {/* ── STAFF PORTAL ACCESS ── */}
-      <section id="portal-access" className="max-w-7xl mx-auto px-6 py-20">
-        <div className="flex flex-col gap-4 mb-10 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-widest font-semibold mb-2 text-amber-400">Role-based workspaces</p>
-            <h2 style={{ fontFamily: "var(--font-display)" }} className="text-3xl md:text-4xl text-white">
-              Open and test every staff portal
+      {/* ── HOW IT WORKS SECTION ── */}
+      <section id="how" className="py-24 border-b border-white/5 relative">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-400 block mb-2">Process</span>
+            <h2 className="text-3xl md:text-4xl font-extrabold font-display text-white tracking-tight">
+              From Report to Resolution
             </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/45">
-              Each portal connects to real backend data and enforces permissions according to the university workflow rules.
+            <p className="text-slate-400 text-sm mt-3">
+              Standardized, digital, and verifiable steps ensure every campus laboratory device is accounted for.
             </p>
           </div>
-          <button
-            onClick={() => setPage("login")}
-            className="self-start rounded-lg border border-white/15 px-5 py-2.5 text-sm font-semibold text-white/70 transition hover:border-white/30 hover:text-white"
-          >
-            Open secure sign in
-          </button>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {PORTAL_CARDS.map((portal) => (
-            <article
-              key={portal.role}
-              className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:-translate-y-1 hover:border-amber-400/30"
-            >
-              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-amber-400/10 text-sm font-black text-amber-400">
-                {portal.title.split(" ").map((word) => word[0]).join("")}
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {HOW_IT_WORKS.map((item) => (
+              <div key={item.step} className="glass-card p-6 rounded-2xl relative group">
+                <div className="text-3xl mb-4">{item.icon}</div>
+                <div className="text-xs font-mono font-bold text-blue-400 mb-1">{item.step}</div>
+                <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">{item.desc}</p>
               </div>
-              <h3 className="text-lg font-semibold text-white">{portal.title}</h3>
-              <p className="mt-2 min-h-16 text-sm leading-5 text-white/40">{portal.description}</p>
-              <ul className="my-5 space-y-2">
-                {portal.actions.map((action) => (
-                  <li key={action} className="flex items-center gap-2 text-xs text-white/55">
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400/10 text-[10px] text-emerald-300">
-                      ✓
-                    </span>
-                    {action}
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={() => openPortal(portal.role)}
-                className="mt-auto w-full rounded-lg bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-amber-300"
-              >
-                Launch {portal.title}
-              </button>
-            </article>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ── */}
-      <section id="how" className="max-w-7xl mx-auto px-6 py-20" style={{ color: "white" }}>
-        <div className="mb-12">
-          <p className="text-xs uppercase tracking-widest font-semibold mb-2" style={{ color: "#d4550a" }}>
-            Process
-          </p>
-          <h2 style={{ fontFamily: "var(--font-display)" }} className="text-3xl md:text-4xl text-white">
-            How the Reporting System Works
-          </h2>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {HOW_IT_WORKS.map((item) => (
-            <div
-              key={item.step}
-              className="relative p-6 rounded-xl border border-white/8 hover:border-white/15 transition-colors"
-              style={{ background: "rgba(255,255,255,0.03)" }}
-            >
-              <div className="text-5xl font-bold mb-4 text-white/10" style={{ fontFamily: "var(--font-display)" }}>
-                {item.step}
-              </div>
-              <div className="w-10 h-0.5 mb-4" style={{ background: "#d4550a" }} />
-              <h3 className="font-semibold text-base mb-2 text-white">{item.title}</h3>
-              <p className="text-sm text-white/45 leading-relaxed">{item.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── LAB DIRECTORY & EQUIPMENT (DYNAMIC) ── */}
-      <section id="labs" className="border-y border-white/8 py-14 scroll-mt-20" style={{ background: "rgba(255,255,255,0.02)" }}>
+      {/* ── STAFF PORTALS SECTION ── */}
+      <section id="portal-access" className="py-24 border-b border-white/5 relative bg-[#060d1f]">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-6">
             <div>
-              <p className="text-xs uppercase tracking-widest text-amber-400 font-semibold mb-2">Live Directory</p>
-              <h2 style={{ fontFamily: "var(--font-display)" }} className="text-3xl text-white">
-                University Lab Directory
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-400 block mb-2">
+                Staff Authentication
+              </span>
+              <h2 className="text-3xl md:text-4xl font-extrabold font-display text-white tracking-tight">
+                Role-Gated Workspaces
               </h2>
-              <p className="mt-2 text-sm text-white/40">
-                Current status, responsible technicians, and open ticket counts queried directly from the backend.
+              <p className="text-slate-400 text-sm mt-2 max-w-xl">
+                Each portal features permission-isolated actions, approval queues, and direct integration with our PostgreSQL database.
+              </p>
+            </div>
+            <button
+              onClick={() => setPage("login")}
+              className="self-start md:self-auto text-xs font-semibold px-4 py-2.5 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02] text-slate-300 hover:text-white transition-all"
+            >
+              Sign In with Credentials
+            </button>
+          </div>
+
+          <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
+            {PORTAL_CARDS.map((portal) => (
+              <div
+                key={portal.role}
+                className="glass-card rounded-2xl p-6 flex flex-col justify-between border border-white/5"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-5">
+                    <span className="text-2xl">{portal.icon}</span>
+                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${portal.accentColor}`}>
+                      {portal.subtitle}
+                    </span>
+                  </div>
+
+                  <h3 className="text-lg font-bold text-white mb-2">{portal.title}</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed mb-5 min-h-[48px]">
+                    {portal.description}
+                  </p>
+
+                  <div className="space-y-2 mb-6 pt-4 border-t border-white/5">
+                    {portal.actions.map((act) => (
+                      <div key={act} className="flex items-center gap-2 text-xs text-slate-300">
+                        <span className="text-emerald-400 text-[11px]">✓</span>
+                        <span>{act}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => openPortal(portal.role)}
+                  className="w-full py-2.5 rounded-xl btn-primary text-xs font-semibold text-center"
+                >
+                  Enter {portal.title} →
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── LAB DIRECTORY (DYNAMIC) ── */}
+      <section id="labs" className="py-24 border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-400 block mb-2">Campus Map</span>
+              <h2 className="text-3xl font-extrabold font-display text-white tracking-tight">
+                University Laboratory Directory
+              </h2>
+              <p className="text-slate-400 text-sm mt-2">
+                Room-by-room status, assigned technicians, and active fault ticket counts.
               </p>
             </div>
             <button
               onClick={loadDynamicData}
-              className="mt-3 md:mt-0 self-start text-xs text-white/50 hover:text-white px-3 py-1.5 rounded border border-white/10"
+              className="self-start text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border border-white/10"
             >
-              ↻ Refresh Data
+              ↻ Refresh Labs
             </button>
           </div>
 
-          <div className="mb-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-14">
             {labs.map((lab) => (
-              <article key={lab.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-mono text-xs font-semibold text-amber-400">{lab.room}</p>
-                    <h3 className="mt-1 font-semibold text-white">{lab.name}</h3>
-                    <p className="mt-1 text-xs text-white/35">{lab.department}</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
+              <div key={lab.id} className="glass-card p-5 rounded-2xl flex flex-col justify-between">
+                <div>
+                  <div className="flex items-start justify-between gap-4 mb-2">
+                    <span className="font-mono text-xs font-bold text-amber-400 px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/20">
+                      {lab.room}
+                    </span>
                     <span
-                      className={`h-2.5 w-2.5 rounded-full ${lab.technicianId ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" : "bg-amber-400"}`}
-                      title={lab.technicianId ? "Technician assigned" : "Awaiting assignment"}
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        lab.technicianId ? "bg-emerald-400 shadow-sm shadow-emerald-400/50" : "bg-amber-400"
+                      }`}
+                      title={lab.technicianId ? "Technician Assigned" : "Awaiting Technician"}
                     />
-                    {lab.openIssues > 0 && (
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-300">
-                        {lab.openIssues} open
-                      </span>
-                    )}
                   </div>
+                  <h3 className="text-base font-bold text-white mt-1">{lab.name}</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">{lab.department}</p>
                 </div>
-                <div className="mt-4 border-t border-white/8 pt-3 text-xs text-white/45 flex justify-between">
-                  <span>
-                    Responsible: <strong className="text-white/70">{lab.technicianName || "Assigned"}</strong>
+
+                <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                  <span className="text-slate-400">
+                    Tech: <strong className="text-slate-200">{lab.technicianName || "Unassigned"}</strong>
                   </span>
                   <button
                     onClick={() => {
                       setFormData((prev) => ({ ...prev, lab: `${lab.room} · ${lab.name}` }));
                       document.querySelector("#submit")?.scrollIntoView({ behavior: "smooth" });
                     }}
-                    className="text-amber-400 hover:underline"
+                    className="text-blue-400 hover:text-blue-300 font-semibold text-xs"
                   >
                     Select Lab →
                   </button>
                 </div>
-              </article>
-            ))}
-          </div>
-
-          <p className="text-xs uppercase tracking-widest text-white/30 font-semibold mb-6">Supported Equipment Categories</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-            {equipmentTypes.map((eq) => (
-              <div
-                key={eq.label}
-                onClick={() => {
-                  setFormData((prev) => ({ ...prev, equipmentType: eq.label }));
-                  document.querySelector("#submit")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="border border-white/8 rounded-xl p-4 flex flex-col items-center gap-2 transition-all duration-200 cursor-pointer hover:border-orange-500/40 hover:bg-orange-500/5"
-                style={{ background: "rgba(255,255,255,0.03)" }}
-              >
-                <span className="text-2xl">{eq.icon}</span>
-                <span className="text-xs font-medium text-center leading-tight text-white/40">{eq.label}</span>
               </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* ── SUBMIT FORM (CONNECTED TO API) ── */}
-      <section id="submit" className="max-w-7xl mx-auto px-6 py-20 grid md:grid-cols-5 gap-12 items-start">
-        <div className="md:col-span-2">
-          <p className="text-xs uppercase tracking-widest font-semibold mb-2" style={{ color: "#d4550a" }}>
-            Report a Problem
-          </p>
-          <h2 style={{ fontFamily: "var(--font-display)" }} className="text-3xl md:text-4xl mb-4 text-white">
-            Submit Your Equipment Issue
-          </h2>
-          <p className="text-white/45 text-sm leading-relaxed mb-6">
-            Use the form to report any fault or malfunction. Submissions are processed immediately and automatically assigned to the responsible lab technician.
-          </p>
-          <div className="rounded-xl border border-white/8 p-5 space-y-3" style={{ background: "rgba(255,255,255,0.03)" }}>
-            {["Instant case number generation", "24-hour review for high-priority equipment", "Live status updates on public tracker"].map((txt) => (
-              <div key={txt} className="flex items-center gap-3 text-sm">
-                <span
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 text-white"
-                  style={{ background: "#d4550a" }}
-                >
-                  ✓
-                </span>
-                <span className="text-white/60">{txt}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="md:col-span-3 rounded-xl border border-white/10 p-8" style={{ background: "rgba(255,255,255,0.04)" }}>
-          {submittedTicket ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/30">
-                <span className="text-2xl text-green-400">✓</span>
-              </div>
-              <h3 style={{ fontFamily: "var(--font-display)" }} className="text-2xl mb-2 text-white">
-                Report Submitted to SECS!
-              </h3>
-              <p className="text-white/45 text-sm mb-2">
-                Your ticket number is <strong className="text-amber-400 text-base">{submittedTicket}</strong>
-              </p>
-              <p className="text-white/45 text-sm mb-6">
-                The responsible lab technician has received your submission and the public tracker has been updated.
-              </p>
-              <div className="flex flex-wrap justify-center gap-3">
+          {/* Supported Categories */}
+          <div className="pt-6">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-4">
+              Supported Equipment Classifications
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+              {equipmentTypes.map((eq) => (
                 <button
-                  onClick={() => document.querySelector("#track")?.scrollIntoView({ behavior: "smooth" })}
-                  className="px-5 py-2.5 rounded text-sm font-semibold bg-amber-400 text-slate-950 hover:bg-amber-300 transition-colors"
-                >
-                  Track this report ↓
-                </button>
-                <button
+                  key={eq.label}
+                  type="button"
                   onClick={() => {
-                    setSubmittedTicket(null);
-                    setFormData({
-                      name: "",
-                      email: "",
-                      lab: "",
-                      equipmentType: "",
-                      assetTag: "",
-                      description: "",
-                      priority: "medium",
-                    });
+                    setFormData((prev) => ({ ...prev, equipmentType: eq.label }));
+                    document.querySelector("#submit")?.scrollIntoView({ behavior: "smooth" });
                   }}
-                  className="px-5 py-2.5 rounded text-sm font-medium transition-colors text-white"
-                  style={{ background: "#0e2d5c" }}
+                  className="glass-card p-4 rounded-xl flex flex-col items-center gap-2 hover:border-blue-500/40 text-center"
                 >
-                  Submit Another Report
+                  <span className="text-2xl">{eq.icon}</span>
+                  <span className="text-xs font-medium text-slate-300">{eq.label}</span>
                 </button>
-              </div>
+              ))}
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {formError && (
-                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-300">
-                  {formError}
-                </div>
-              )}
-
-              <div className="grid sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-white/40 mb-1.5">Full Name *</label>
-                  <input
-                    required
-                    type="text"
-                    placeholder="Sarah Chen"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full rounded-md px-3 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-white/40 mb-1.5">University Email *</label>
-                  <input
-                    required
-                    type="email"
-                    placeholder="s.chen@uitc.edu"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full rounded-md px-3 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition"
-                  />
-                </div>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-white/40 mb-1.5">Lab / Location *</label>
-                  <select
-                    required
-                    value={formData.lab}
-                    onChange={(e) => setFormData({ ...formData, lab: e.target.value })}
-                    className="w-full rounded-md px-3 py-2.5 text-sm text-white bg-[#0a1628] border border-white/10 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition"
-                  >
-                    <option value="">Select a lab</option>
-                    {labs.map((lab) => (
-                      <option key={lab.id} value={`${lab.room} · ${lab.name}`}>
-                        {lab.room} · {lab.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-white/40 mb-1.5">Equipment Type *</label>
-                  <select
-                    required
-                    value={formData.equipmentType}
-                    onChange={(e) => setFormData({ ...formData, equipmentType: e.target.value })}
-                    className="w-full rounded-md px-3 py-2.5 text-sm text-white bg-[#0a1628] border border-white/10 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition"
-                  >
-                    <option value="">Select type</option>
-                    {equipmentTypes.map((eq) => (
-                      <option key={eq.label} value={eq.label}>
-                        {eq.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-white/40 mb-1.5">Asset Tag / Serial No.</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. LAB-0042 or Cisco SW-08"
-                    value={formData.assetTag}
-                    onChange={(e) => setFormData({ ...formData, assetTag: e.target.value })}
-                    className="w-full rounded-md px-3 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-white/40 mb-1.5">Priority Level *</label>
-                  <div className="flex gap-2 mt-1">
-                    {["low", "medium", "high", "critical"].map((p) => (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, priority: p })}
-                        className={`flex-1 py-2 rounded text-xs font-semibold capitalize border transition-colors ${
-                          formData.priority === p
-                            ? p === "critical"
-                              ? "bg-red-700 border-red-700 text-white"
-                              : p === "high"
-                              ? "bg-red-600 border-red-600 text-white"
-                              : p === "medium"
-                              ? "bg-amber-500 border-amber-500 text-white"
-                              : "bg-green-600 border-green-600 text-white"
-                            : "border-white/10 text-white/30 hover:border-white/25"
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-white/40 mb-1.5">Description of Problem *</label>
-                <textarea
-                  required
-                  rows={4}
-                  placeholder="Describe the issue in detail — what happened, error codes displayed, parts affected..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full rounded-md px-3 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition resize-none"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full text-white font-semibold py-3 rounded-md transition-colors duration-200 hover:opacity-90 disabled:opacity-50"
-                style={{ background: "linear-gradient(135deg, #d4550a, #b83d00)" }}
-              >
-                {isSubmitting ? "Submitting to SECS Backend..." : "Submit Report →"}
-              </button>
-              <p className="text-xs text-white/25 text-center">
-                Submissions automatically trigger laboratory technician assignment and tracking.
-              </p>
-            </form>
-          )}
+          </div>
         </div>
       </section>
 
-      {/* ── LIVE RECENT ISSUES TABLE (DYNAMIC API) ── */}
-      <section id="track" className="border-y border-white/8 py-14 scroll-mt-20" style={{ background: "rgba(255,255,255,0.02)" }}>
+      {/* ── REPORT SUBMISSION FORM ── */}
+      <section id="submit" className="py-24 border-b border-white/5 relative">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <p className="text-xs uppercase tracking-widest font-semibold mb-1" style={{ color: "#d4550a" }}>
-                Transparency
-              </p>
-              <h2 style={{ fontFamily: "var(--font-display)" }} className="text-3xl text-white">
-                Live Public Issue Tracker
+          <div className="grid lg:grid-cols-12 gap-12 items-start">
+            {/* Guidelines Column */}
+            <div className="lg:col-span-5">
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-400 block mb-2">
+                Public Submission Portal
+              </span>
+              <h2 className="text-3xl md:text-4xl font-extrabold font-display text-white tracking-tight mb-4">
+                Report an Equipment Fault
               </h2>
-              <p className="mt-2 max-w-2xl text-sm text-white/40">
-                Track any report in real time. Stage, responsible office or technician, and resolution status are updated live from the database.
+              <p className="text-slate-400 text-sm leading-relaxed mb-8">
+                Experienced an equipment failure, calibration error, or power disruption? Submit a ticket directly to campus maintenance.
+              </p>
+
+              <div className="space-y-4">
+                {[
+                  { title: "Instant Sequential Ticket Number", desc: "A verifiable TKT-xxxx ID is generated upon submission." },
+                  { title: "Automatic Room-Tech Assignment", desc: "Routes straight to the staff technician assigned to the lab." },
+                  { title: "Public Masked Privacy", desc: "Your identity remains masked to external viewers (sa***@uitc.edu)." },
+                  { title: "Email Notifications via Brevo", desc: "Receive email updates upon resolution or 7-day progress reviews." },
+                ].map((item) => (
+                  <div key={item.title} className="glass-card p-4 rounded-xl flex items-start gap-3.5">
+                    <div className="w-5 h-5 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0 mt-0.5 text-blue-400 text-xs font-bold">
+                      ✓
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-semibold text-white">{item.title}</h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Form Card */}
+            <div className="lg:col-span-7">
+              <div className="glass-card rounded-2xl p-7 sm:p-9 shadow-2xl">
+                {submittedTicket ? (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/20">
+                      <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <h3 className="text-2xl font-bold font-display text-white mb-2">Report Successfully Registered!</h3>
+                    <p className="text-slate-400 text-xs mb-3">Your official university ticket identifier is:</p>
+                    <div className="inline-block px-5 py-2 rounded-xl bg-blue-500/10 border border-blue-500/30 font-mono text-xl font-extrabold text-blue-400 mb-6">
+                      {submittedTicket}
+                    </div>
+                    <p className="text-slate-400 text-xs max-w-md mx-auto mb-8 leading-relaxed">
+                      The assigned laboratory technician has received your ticket in their workflow queue. You can track ongoing progress on the public tracker below.
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-3">
+                      <button
+                        onClick={() => document.querySelector("#track")?.scrollIntoView({ behavior: "smooth" })}
+                        className="px-6 py-2.5 rounded-xl btn-primary text-xs font-semibold"
+                      >
+                        Track Ticket Live ↓
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSubmittedTicket(null);
+                          setFormData({
+                            name: "",
+                            email: "",
+                            lab: "",
+                            equipmentType: "",
+                            assetTag: "",
+                            description: "",
+                            priority: "medium",
+                          });
+                        }}
+                        className="px-6 py-2.5 rounded-xl border border-white/10 hover:border-white/20 text-xs font-semibold text-slate-300"
+                      >
+                        Submit Another Ticket
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+                    <div className="border-b border-white/5 pb-4 mb-2">
+                      <h3 className="text-lg font-bold text-white">Equipment Fault Requisition</h3>
+                      <p className="text-xs text-slate-400 mt-0.5">Please provide accurate hardware identifiers.</p>
+                    </div>
+
+                    {formError && (
+                      <div className="p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs">
+                        {formError}
+                      </div>
+                    )}
+
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                          Reporter Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Dr. Tanvir or Student Name"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          className="w-full rounded-xl px-4 py-2.5 text-sm glass-input"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                          University Email (.edu) *
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          placeholder="username@uitc.edu"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          className="w-full rounded-xl px-4 py-2.5 text-sm glass-input"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                          Laboratory Location *
+                        </label>
+                        <select
+                          required
+                          value={formData.lab}
+                          onChange={(e) => setFormData({ ...formData, lab: e.target.value })}
+                          className="w-full rounded-xl px-4 py-2.5 text-sm glass-input bg-[#0b142c]"
+                        >
+                          <option value="">Select laboratory</option>
+                          {labs.map((lab) => (
+                            <option key={lab.id} value={`${lab.room} · ${lab.name}`}>
+                              {lab.room} · {lab.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                          Equipment Classification *
+                        </label>
+                        <select
+                          required
+                          value={formData.equipmentType}
+                          onChange={(e) => setFormData({ ...formData, equipmentType: e.target.value })}
+                          className="w-full rounded-xl px-4 py-2.5 text-sm glass-input bg-[#0b142c]"
+                        >
+                          <option value="">Select equipment type</option>
+                          {equipmentTypes.map((eq) => (
+                            <option key={eq.label} value={eq.label}>
+                              {eq.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                          Asset Tag or Serial (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. SW-08 or SPEC-2026"
+                          value={formData.assetTag}
+                          onChange={(e) => setFormData({ ...formData, assetTag: e.target.value })}
+                          className="w-full rounded-xl px-4 py-2.5 text-sm glass-input font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                          Priority Tier *
+                        </label>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {["low", "medium", "high", "critical"].map((p) => {
+                            const isSelected = formData.priority === p;
+                            return (
+                              <button
+                                key={p}
+                                type="button"
+                                onClick={() => setFormData({ ...formData, priority: p })}
+                                className={`py-2 rounded-lg text-xs font-bold uppercase transition-all ${
+                                  isSelected
+                                    ? p === "critical"
+                                      ? "bg-rose-500 text-white shadow-sm shadow-rose-500/30"
+                                      : p === "high"
+                                      ? "bg-orange-500 text-white shadow-sm shadow-orange-500/30"
+                                      : p === "medium"
+                                      ? "bg-amber-400 text-slate-950 shadow-sm shadow-amber-400/30"
+                                      : "bg-emerald-500 text-white shadow-sm shadow-emerald-500/30"
+                                    : "border border-white/5 bg-white/[0.02] text-slate-400 hover:border-white/15"
+                                }`}
+                              >
+                                {p}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        Detailed Fault Description *
+                      </label>
+                      <textarea
+                        required
+                        rows={4}
+                        placeholder="Detail the failure mode, error lights, operating temperature, or broken mechanical components..."
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        className="w-full rounded-xl px-4 py-2.5 text-sm glass-input resize-none"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full py-3.5 rounded-xl btn-primary text-sm font-semibold flex items-center justify-center gap-2"
+                    >
+                      {isSubmitting ? "Dispatching Requisition…" : "Submit Equipment Fault Ticket →"}
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── PUBLIC TRANSPARENCY TRACKER ── */}
+      <section id="track" className="py-24 border-b border-white/5 bg-[#060c1d]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-400 block mb-2">
+                Public Accountability
+              </span>
+              <h2 className="text-3xl md:text-4xl font-extrabold font-display text-white tracking-tight">
+                Live Transparency Tracker
+              </h2>
+              <p className="text-slate-400 text-sm mt-2 max-w-xl">
+                Every ticket, approval milestone, budget allocation, and assigned technician is publicly verifiable in real time.
               </p>
             </div>
+
             <div className="flex items-center gap-3">
-              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-300">
-                {issues.length} active reports
+              <span className="px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-400">
+                {issues.length} Issues Tracked
               </span>
               <button
                 onClick={loadDynamicData}
-                className="text-xs text-white/50 hover:text-white px-2.5 py-1 rounded border border-white/10"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20 bg-white/[0.02] text-slate-300"
               >
-                ↻ Refresh
+                ↻ Refresh Live
               </button>
             </div>
           </div>
-          <div className="mb-4 flex max-w-lg items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
-            <svg className="h-4 w-4 shrink-0 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-4-4" />
-            </svg>
-            <input
-              value={ticketSearch}
-              onChange={(event) => setTicketSearch(event.target.value)}
-              placeholder="Search by ticket number, item, or lab (e.g. TKT-2891)"
-              className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/25"
-            />
-            {ticketSearch && (
-              <button onClick={() => setTicketSearch("")} className="text-xs text-white/40 hover:text-white">
-                Clear
-              </button>
-            )}
+
+          {/* Search & Filter Bar */}
+          <div className="glass-card p-4 rounded-2xl mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full sm:max-w-md">
+              <svg className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="7" strokeWidth="2" />
+                <path d="m20 20-4-4" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              <input
+                type="text"
+                value={ticketSearch}
+                onChange={(e) => setTicketSearch(e.target.value)}
+                placeholder="Search by ticket ID, equipment, or lab room..."
+                className="w-full rounded-xl pl-10 pr-9 py-2 text-xs glass-input"
+              />
+              {ticketSearch && (
+                <button
+                  onClick={() => setTicketSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+              {["all", "Assigned", "In Progress", "Budget Requested", "Resolved"].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setStatusFilter(status)}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                    statusFilter === status
+                      ? "bg-blue-600 text-white font-semibold"
+                      : "border border-white/5 bg-white/[0.02] text-slate-400 hover:text-white"
+                  }`}
+                >
+                  {status === "all" ? "All Tickets" : status}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="rounded-xl border border-white/10 overflow-hidden" style={{ background: "rgba(255,255,255,0.03)" }}>
+
+          {/* Issues Data Table */}
+          <div className="glass-card rounded-2xl overflow-hidden border border-white/5">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1280px] text-sm">
+              <table className="w-full text-left text-xs min-w-[950px]">
                 <thead>
-                  <tr className="border-b border-white/8" style={{ background: "rgba(255,255,255,0.04)" }}>
-                    <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-white/30 font-semibold">Ticket ID</th>
-                    <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-white/30 font-semibold">Lab</th>
-                    <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-white/30 font-semibold">Equipment</th>
-                    <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-white/30 font-semibold">Reporter</th>
-                    <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-white/30 font-semibold">Submitted</th>
-                    <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-white/30 font-semibold">Priority</th>
-                    <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-white/30 font-semibold">Status</th>
-                    <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-white/30 font-semibold">Current stage</th>
-                    <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-white/30 font-semibold">Pending with</th>
+                  <tr className="border-b border-white/5 bg-white/[0.02] text-slate-400 uppercase tracking-wider font-semibold text-[11px]">
+                    <th className="px-5 py-4">Ticket</th>
+                    <th className="px-5 py-4">Equipment Item</th>
+                    <th className="px-5 py-4">Lab Location</th>
+                    <th className="px-5 py-4">Reporter</th>
+                    <th className="px-5 py-4">Priority</th>
+                    <th className="px-5 py-4">Status</th>
+                    <th className="px-5 py-4">Current Stage</th>
+                    <th className="px-5 py-4">Responsible</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-white/5">
                   {issues
                     .filter((issue) => {
                       const q = ticketSearch.trim().toLowerCase();
-                      if (!q) return true;
-                      return (
+                      const matchesSearch =
+                        !q ||
                         issue.id.toLowerCase().includes(q) ||
                         issue.item.toLowerCase().includes(q) ||
-                        (issue.labName || issue.lab || "").toLowerCase().includes(q)
-                      );
+                        (issue.labName || issue.lab || "").toLowerCase().includes(q);
+                      const matchesStatus = statusFilter === "all" || issue.status === statusFilter;
+                      return matchesSearch && matchesStatus;
                     })
-                    .map((issue) => (
-                      <tr key={issue.id} className="border-b border-white/5 last:border-0 hover:bg-white/3 transition-colors">
-                        <td className="px-5 py-3.5 font-mono text-xs text-amber-300 font-bold">{issue.id}</td>
-                        <td className="px-5 py-3.5 font-medium text-white/80">{issue.labName || issue.lab}</td>
-                        <td className="px-5 py-3.5 text-white/50">{issue.item}</td>
-                        <td className="px-5 py-3.5 font-mono text-xs text-white/40">{issue.reporter || issue.reporterEmail}</td>
-                        <td className="px-5 py-3.5 whitespace-nowrap text-xs text-white/45">{issue.createdAt || issue.submittedAt}</td>
-                        <td className={`px-5 py-3.5 text-xs font-semibold ${PRIORITY_COLORS[issue.priority] ?? "text-white/60"}`}>
-                          {issue.priority}
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <StatusBadge status={issue.status} />
-                        </td>
-                        <td className="px-5 py-3.5 whitespace-nowrap text-xs text-white/60">{issue.currentStage}</td>
-                        <td className="px-5 py-3.5 whitespace-nowrap">
-                          <span
-                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                              issue.pendingWith === "Closed" ? "bg-emerald-400/10 text-emerald-300" : "bg-orange-400/10 text-orange-300"
-                            }`}
-                          >
-                            {issue.pendingWith}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    .map((issue) => {
+                      const pConf = PRIORITY_BADGES[issue.priority] || { color: "text-slate-400", badge: "bg-slate-800 text-slate-400" };
+                      return (
+                        <tr key={issue.id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="px-5 py-3.5 font-mono font-bold text-blue-400">{issue.id}</td>
+                          <td className="px-5 py-3.5 font-semibold text-white">{issue.item}</td>
+                          <td className="px-5 py-3.5 text-slate-300">{issue.labName || issue.lab}</td>
+                          <td className="px-5 py-3.5 font-mono text-slate-400">{issue.reporter || issue.reporterEmail}</td>
+                          <td className="px-5 py-3.5">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${pConf.badge}`}>
+                              {issue.priority}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <StatusBadge status={issue.status} />
+                          </td>
+                          <td className="px-5 py-3.5 text-slate-400">{issue.currentStage}</td>
+                          <td className="px-5 py-3.5">
+                            <span className="px-2 py-1 rounded bg-white/[0.03] border border-white/5 text-slate-300 font-medium">
+                              {issue.pendingWith}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
+
+            {issues.length === 0 && !isLoading && (
+              <div className="py-16 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto mb-3 text-2xl">
+                  ✨
+                </div>
+                <h4 className="text-sm font-bold text-white mb-1">Clean System Slate</h4>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  No equipment faults currently on record. All laboratory hardware is operating smoothly. Click &quot;Report Equipment Fault&quot; to log the first issue.
+                </p>
+              </div>
+            )}
           </div>
-          {issues.length === 0 && !isLoading && (
-            <div className="py-8 text-center text-sm text-white/35">No equipment issues currently recorded.</div>
+        </div>
+      </section>
+
+      {/* ── PUBLIC AUDIT LEDGER ── */}
+      <section className="py-24 border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="mb-12">
+            <span className="text-xs font-bold uppercase tracking-wider text-rose-400 block mb-2">
+              Financial Transparency
+            </span>
+            <h2 className="text-3xl font-extrabold font-display text-white tracking-tight">
+              Public Incident & Audit Ledger
+            </h2>
+            <p className="text-slate-400 text-sm mt-2 max-w-xl">
+              Technicians can publish concerns regarding payment receipt discrepancies directly to this immutable ledger.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-5">
+            {incidents.map((incident) => (
+              <div key={incident.id} className="glass-card p-5 rounded-2xl border-rose-500/20 bg-rose-500/[0.02]">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[10px] font-bold uppercase">
+                      Payment Disputed
+                    </span>
+                    <span className="font-mono text-xs text-amber-400 font-bold">{incident.ticketId}</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500">{incident.createdAt}</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed mb-4">{incident.message}</p>
+                <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
+                  <span>Author: Verified Technician</span>
+                  {incident.amount && (
+                    <span className="font-bold text-amber-400">৳{incident.amount.toLocaleString("en-BD")}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {incidents.length === 0 && (
+            <div className="glass-card p-8 rounded-2xl text-center text-xs text-slate-400">
+              No active payment discrepancies on file. All laboratory funding disbursements have been verified by recipients.
+            </div>
           )}
         </div>
       </section>
 
-      {/* ── PUBLIC PAYMENT INCIDENTS (DYNAMIC AUDIT LEDGER) ── */}
-      <section className="max-w-7xl mx-auto px-6 py-16">
-        <div className="mb-8">
-          <p className="text-xs uppercase tracking-widest font-semibold text-red-300">Public accountability</p>
-          <h2 style={{ fontFamily: "var(--font-display)" }} className="mt-2 text-3xl text-white">
-            Payment discrepancy notices
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/40">
-            When Accounts records a payment that a technician says was not received, the incident is published directly to this public audit ledger.
-          </p>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          {incidents.map((incident) => (
-            <article key={incident.id} className="rounded-2xl border border-red-400/20 bg-red-400/[0.04] p-5">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-red-400/10 px-2.5 py-1 text-xs font-semibold text-red-300">Payment disputed</span>
-                <span className="font-mono text-xs text-amber-300">{incident.ticketId}</span>
-                <span className="text-xs text-white/25">{incident.createdAt}</span>
-              </div>
-              <p className="mt-4 text-sm leading-6 text-white/65">{incident.message}</p>
-              <div className="mt-4 flex items-center justify-between border-t border-white/8 pt-3 text-xs text-white/35">
-                <span>Reported by: Anonymous technician</span>
-                {incident.amount && <span className="font-semibold text-white/60">৳{incident.amount.toLocaleString("en-BD")}</span>}
-              </div>
-            </article>
-          ))}
-        </div>
-        {incidents.length === 0 && (
-          <div className="rounded-xl border border-white/10 p-6 text-center text-sm text-white/40">
-            No active payment discrepancies on file. All verified repair handovers are accounted for.
-          </div>
-        )}
-      </section>
-
       {/* ── FAQ ── */}
-      <section id="faq" className="max-w-3xl mx-auto px-6 py-20 scroll-mt-20">
-        <div className="mb-10">
-          <p className="text-xs uppercase tracking-widest font-semibold mb-2" style={{ color: "#d4550a" }}>
-            FAQ
-          </p>
-          <h2 style={{ fontFamily: "var(--font-display)" }} className="text-3xl md:text-4xl text-white">
+      <section id="faq" className="py-24 border-b border-white/5 max-w-3xl mx-auto px-6">
+        <div className="text-center mb-14">
+          <span className="text-xs font-bold uppercase tracking-wider text-blue-400 block mb-2">Help Center</span>
+          <h2 className="text-3xl font-extrabold font-display text-white tracking-tight">
             Frequently Asked Questions
           </h2>
         </div>
-        <div className="border-t border-white/10">
+        <div className="glass-card p-6 rounded-2xl">
           {FAQS.map((faq) => (
             <FAQItem key={faq.q} q={faq.q} a={faq.a} />
           ))}
         </div>
       </section>
 
-      {/* ── CTA BAND ── */}
-      <section className="relative py-20 overflow-hidden">
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #0e2d5c 0%, #071428 100%)" }} />
-        <div
-          className="absolute inset-0 opacity-15"
-          style={{
-            backgroundImage: `url(https://images.unsplash.com/photo-1576086213369-97a306d36557?w=1400&h=400&fit=crop&auto=format)`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
-        <div className="relative max-w-3xl mx-auto px-6 text-center">
-          <h2 style={{ fontFamily: "var(--font-display)" }} className="text-3xl md:text-4xl mb-4 text-white">
-            Found a problem in the lab?
-          </h2>
-          <p className="text-white/50 mb-8">
-            Don&apos;t leave it for the next person. Submit a report now — it takes less than 2 minutes.
-          </p>
-          <a
-            href="#submit"
-            className="inline-block text-white font-semibold px-8 py-3.5 rounded-lg transition-all duration-200 hover:scale-105"
-            style={{ background: "linear-gradient(135deg, #d4550a, #b83d00)" }}
-          >
-            Report Equipment Issue
-          </a>
-        </div>
-      </section>
-
       {/* ── FOOTER ── */}
-      <footer className="border-t border-white/8 py-10" style={{ background: "#040c1a" }}>
-        <div className="max-w-7xl mx-auto px-6 grid sm:grid-cols-3 gap-8 text-sm">
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                style={{ background: "#d4550a" }}
-              >
-                S
-              </div>
-              <span style={{ fontFamily: "var(--font-display)" }} className="text-white text-base">
-                SECS
-              </span>
+      <footer className="py-12 bg-[#040814] text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-xs">
+              S
             </div>
-            <p className="leading-relaxed text-xs text-white/30">
-              Smart Equipment Care System — a centralised online fault reporting platform for UITC university laboratory equipment.
-            </p>
+            <div>
+              <span className="font-display font-bold text-sm text-white">SECS</span>
+              <p className="text-[11px] text-slate-500">Smart Equipment Care System · University IT Division</p>
+            </div>
           </div>
-          <div>
-            <h4 className="text-white/60 font-semibold mb-3 text-xs uppercase tracking-widest">Quick Links</h4>
-            <ul className="space-y-2 text-xs text-white/30">
-              {[
-                { label: "Submit an Issue", href: "#submit" },
-                { label: "Track My Ticket", href: "#track" },
-                { label: "Lab Directory", href: "#labs" },
-                { label: "Staff Portals", href: "#portal-access" },
-                { label: "FAQ", href: "#faq" },
-              ].map((link) => (
-                <li key={link.label}>
-                  <a href={link.href} className="hover:text-white/60 transition-colors">
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+
+          <div className="flex items-center gap-6">
+            <a href="#home" className="hover:text-slate-300 transition-colors">Home</a>
+            <a href="#submit" className="hover:text-slate-300 transition-colors">Report</a>
+            <a href="#track" className="hover:text-slate-300 transition-colors">Tracker</a>
+            <a href="#portal-access" className="hover:text-slate-300 transition-colors">Portals</a>
           </div>
-          <div>
-            <h4 className="text-white/60 font-semibold mb-3 text-xs uppercase tracking-widest">Contact</h4>
-            <ul className="space-y-2 text-xs text-white/30">
-              <li>📧 labsupport@uitc.edu</li>
-              <li>📞 +880 (1800) 555-0192</li>
-              <li>🕐 Mon–Fri, 8:00 am – 6:00 pm</li>
-              <li className="pt-1">Building C, Room 101, Campus North</li>
-            </ul>
+
+          <div className="text-slate-500 text-[11px]">
+            © {new Date().getFullYear()} University Equipment Care & Facilities Division.
           </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-6 mt-8 pt-6 border-t border-white/8 text-xs text-center text-white/20">
-          © 2026 UITC University Facilities & IT Division. All rights reserved.
         </div>
       </footer>
     </div>
