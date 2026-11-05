@@ -71,220 +71,13 @@ interface DatabaseState {
 
 function getInitialState(): DatabaseState {
   return {
-    users: [
-      { id: "admin-1", name: "Mahmud Kabir", email: "mahmud.kabir@uitc.edu", role: "admin", department: "Facilities & IT", isActive: true },
-      { id: "authority-1", name: "Dr. Samina Haque", email: "samina.haque@uitc.edu", role: "authority", department: "Academic Operations", isActive: true },
-      { id: "accounts-1", name: "Nusrat Islam", email: "nusrat.islam@uitc.edu", role: "accounts", department: "Accounts Office", isActive: true },
-      { id: "tech-1", name: "Ashik Rahman", email: "ashik.rahman@uitc.edu", role: "technician", department: "CSE & EEE", assignedLabs: ["lab-1", "lab-2"], isActive: true },
-      { id: "tech-2", name: "Farhana Islam", email: "farhana.islam@uitc.edu", role: "technician", department: "Physics", assignedLabs: ["lab-3"], isActive: true },
-      { id: "tech-3", name: "Nayeem Hasan", email: "nayeem.hasan@uitc.edu", role: "technician", department: "Chemistry", assignedLabs: ["lab-4"], isActive: true },
-      { id: "tech-4", name: "Sadia Karim", email: "sadia.karim@uitc.edu", role: "technician", department: "Biology", assignedLabs: ["lab-5"], isActive: true },
-    ],
-    labs: [
-      { id: "lab-1", room: "CSE-402", name: "Networking Lab", department: "Computer Science", technicianId: "tech-1", technicianName: "Ashik Rahman", openIssues: 4 },
-      { id: "lab-2", room: "EEE-205", name: "Electronics Lab", department: "Electrical Engineering", technicianId: "tech-1", technicianName: "Ashik Rahman", openIssues: 2 },
-      { id: "lab-3", room: "PHY-301", name: "Optics Lab", department: "Physics", technicianId: "tech-2", technicianName: "Farhana Islam", openIssues: 1 },
-      { id: "lab-4", room: "CHEM-110", name: "Analytical Chemistry Lab", department: "Chemistry", technicianId: "tech-3", technicianName: "Nayeem Hasan", openIssues: 3 },
-      { id: "lab-5", room: "BIO-214", name: "Molecular Biology Lab", department: "Biology", technicianId: "tech-4", technicianName: "Sadia Karim", openIssues: 0 },
-      { id: "lab-6", room: "ME-106", name: "Thermodynamics Lab", department: "Mechanical Engineering", technicianId: null, technicianName: "Awaiting assignment", openIssues: 5 },
-    ],
-    issues: [
-      {
-        id: "TKT-2891",
-        labId: "lab-1",
-        labName: "CSE-402 · Networking Lab",
-        lab: "CSE-402 · Networking Lab",
-        item: "Cisco Switch SW-08",
-        equipmentType: "Lab Computer / Workstation",
-        assetTag: "Cisco Switch SW-08",
-        description: "Port 3 and 7 fail to negotiate 1Gbps link speed and drops packets.",
-        status: "Assigned",
-        priority: "High",
-        reporter: "sa***@uitc.edu",
-        reporterEmail: "s.chen@uitc.edu",
-        reporterName: "Sarah Chen",
-        submittedAt: "18 Mar 2026 · 09:42 AM",
-        createdAt: "18 Mar 2026 · 09:42 AM",
-        currentStage: "Awaiting technician assessment",
-        pendingWith: "Ashik Rahman",
-        assignedTechnicianId: "tech-1",
-      },
-      {
-        id: "TKT-2890",
-        labId: "lab-5",
-        labName: "BIO-214 · Molecular Biology Lab",
-        lab: "BIO-214 · Molecular Biology Lab",
-        item: "Centrifuge C-14",
-        equipmentType: "Centrifuge",
-        assetTag: "Centrifuge C-14",
-        description: "Vibration dampener replaced and tested under 8000 RPM load successfully.",
-        status: "Resolved",
-        priority: "Medium",
-        reporter: "ra***@uitc.edu",
-        reporterEmail: "r.ahmed@uitc.edu",
-        reporterName: "Rafiq Ahmed",
-        submittedAt: "17 Mar 2026 · 02:16 PM",
-        createdAt: "17 Mar 2026 · 02:16 PM",
-        currentStage: "Repair completed",
-        pendingWith: "Closed",
-        assignedTechnicianId: "tech-4",
-      },
-      {
-        id: "TKT-2887",
-        labId: "lab-4",
-        labName: "CHEM-110 · Analytical Chemistry Lab",
-        lab: "CHEM-110 · Analytical Chemistry Lab",
-        item: "Fume Hood Fan",
-        equipmentType: "Fume Hood",
-        assetTag: "Fume Hood Fan",
-        description: "Exhaust motor burned out during acid digestion experiment.",
-        status: "Budget Requested",
-        priority: "High",
-        reporter: "ta***@uitc.edu",
-        reporterEmail: "t.hossain@uitc.edu",
-        reporterName: "Tanvir Hossain",
-        submittedAt: "17 Mar 2026 · 11:05 AM",
-        createdAt: "17 Mar 2026 · 11:05 AM",
-        currentStage: "Budget awaiting approval",
-        pendingWith: "Higher Authority",
-        assignedTechnicianId: "tech-3",
-        budgetAmount: 32000,
-        budgetDescription: "Replacement motor, coupling and installation cost.",
-        budgetStatus: "Pending Higher Authority",
-      },
-      {
-        id: "TKT-2884",
-        labId: "lab-2",
-        labName: "EEE-205 · Electronics Lab",
-        lab: "EEE-205 · Electronics Lab",
-        item: "Workstation PC-07",
-        equipmentType: "Lab Computer / Workstation",
-        assetTag: "Workstation PC-07",
-        description: "RAM replacement complete and verified with memtest.",
-        status: "Resolved",
-        priority: "Low",
-        reporter: "na***@uitc.edu",
-        reporterEmail: "n.fuad@uitc.edu",
-        reporterName: "Nafis Fuad",
-        submittedAt: "16 Mar 2026 · 03:28 PM",
-        createdAt: "16 Mar 2026 · 03:28 PM",
-        currentStage: "Repair completed",
-        pendingWith: "Closed",
-        assignedTechnicianId: "tech-1",
-      },
-      {
-        id: "TKT-2881",
-        labId: "lab-2",
-        labName: "EEE-205 · Electronics Lab",
-        lab: "EEE-205 · Electronics Lab",
-        item: "Oscilloscope power module",
-        equipmentType: "Oscilloscope",
-        assetTag: "Oscilloscope power module",
-        description: "Switch-mode power supply unit capacitor breakdown.",
-        status: "Payment Review",
-        priority: "Medium",
-        reporter: "ab***@uitc.edu",
-        reporterEmail: "a.talukdar@uitc.edu",
-        reporterName: "Abir Talukdar",
-        submittedAt: "15 Mar 2026 · 10:14 AM",
-        createdAt: "15 Mar 2026 · 10:14 AM",
-        currentStage: "Approved budget awaiting Accounts",
-        pendingWith: "Accounts Office",
-        assignedTechnicianId: "tech-1",
-        budgetAmount: 12750,
-        budgetDescription: "Power module replacement and calibration.",
-        budgetStatus: "Approved by Higher Authority",
-      },
-    ],
-    budgets: [
-      {
-        id: "BGT-1048",
-        ticketId: "TKT-2891",
-        ticket: "TKT-2891",
-        labName: "Networking Lab",
-        lab: "Networking Lab",
-        purpose: "Cisco switch power module",
-        amount: 18500,
-        technicianId: "tech-1",
-        status: "Approved",
-        approvedBy: "Dr. Samina Haque",
-        createdAt: "18 Mar 2026",
-      },
-      {
-        id: "BGT-1047",
-        ticketId: "TKT-2887",
-        ticket: "TKT-2887",
-        labName: "Analytical Chemistry Lab",
-        lab: "Analytical Chemistry Lab",
-        purpose: "Fume hood motor repair",
-        amount: 32000,
-        technicianId: "tech-3",
-        status: "Pending approval",
-        createdAt: "17 Mar 2026",
-      },
-      {
-        id: "BGT-1042",
-        ticketId: "TKT-2879",
-        ticket: "TKT-2879",
-        labName: "Optics Lab",
-        lab: "Optics Lab",
-        purpose: "Laser alignment kit",
-        amount: 12750,
-        technicianId: "tech-2",
-        status: "Payment confirmed",
-        approvedBy: "Dr. Samina Haque",
-        paidAt: "12 Mar 2026",
-        createdAt: "10 Mar 2026",
-      },
-      {
-        id: "BGT-1039",
-        ticketId: "TKT-2864",
-        ticket: "TKT-2864",
-        labName: "Electronics Lab",
-        lab: "Electronics Lab",
-        purpose: "Oscilloscope probe set",
-        amount: 8900,
-        technicianId: "tech-1",
-        status: "Payment confirmed",
-        approvedBy: "Dr. Samina Haque",
-        paidAt: "09 Mar 2026",
-        createdAt: "07 Mar 2026",
-      },
-    ],
-    incidents: [
-      {
-        id: 1,
-        ticketId: "TKT-2884",
-        message: "Accounts marked this payment as approved, but the technician reported that the funds were not received.",
-        createdAt: "10 Mar 2026 · 10:42 AM",
-        amount: 8900,
-        reportedByRole: "Technician",
-      },
-    ],
-    notifications: [
-      {
-        id: "notif-1",
-        targetRole: "technician",
-        message: "Higher Authority approved budget of ৳18,500 for Cisco switch repair.",
-        read: false,
-        createdAt: "18 Mar 2026 · 11:00 AM",
-      },
-      {
-        id: "notif-2",
-        targetRole: "accounts",
-        message: "Budget BGT-1048 approved by Higher Authority, pending payment disbursement.",
-        read: false,
-        createdAt: "18 Mar 2026 · 11:05 AM",
-      },
-    ],
-    announcements: [
-      {
-        id: "ann-1",
-        message: "Physics Lab 3 oscilloscopes are currently offline for scheduled maintenance. Expected return: 10 Sep 2026.",
-        active: true,
-        createdAt: "2026-03-01T00:00:00.000Z",
-      },
-    ],
+    users: [],
+    labs: [],
+    issues: [],
+    budgets: [],
+    incidents: [],
+    notifications: [],
+    announcements: [],
     equipmentTypes: [
       { icon: "🔬", label: "Microscopes" },
       { icon: "⚗️", label: "Centrifuges" },
@@ -307,13 +100,13 @@ function getInitialState(): DatabaseState {
       "Other",
     ],
     counters: {
-      ticketSeq: 2892,
-      budgetSeq: 1049,
-      incidentSeq: 2,
+      ticketSeq: 1001,
+      budgetSeq: 101,
+      incidentSeq: 1,
     },
-    baseResolvedCount: 2400,
-    avgResponseHours: 48,
-    satisfactionRate: 98,
+    baseResolvedCount: 0,
+    avgResponseHours: 24,
+    satisfactionRate: 100,
   };
 }
 
@@ -328,10 +121,7 @@ class SECSBackendEngine {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.issues?.length && parsed?.labs?.length) {
-          return parsed;
-        }
+        return JSON.parse(raw);
       }
     } catch {
       // ignore
@@ -354,29 +144,79 @@ class SECSBackendEngine {
   }
 
   // --- Auth ---
+  async checkAdminStatus(): Promise<{ adminConfigured: boolean }> {
+    await this.delay(20);
+    const hasAdmin = this.state.users.some((u) => u.role === "admin" && u.isActive !== false);
+    return { adminConfigured: hasAdmin };
+  }
+
+  async setupAdmin(payload: { name: string; email: string; password?: string; department?: string }) {
+    await this.delay();
+    const hasAdmin = this.state.users.some((u) => u.role === "admin" && u.isActive !== false);
+    if (hasAdmin) {
+      throw new ApiError("Admin account has already been initialized.", 403, "FORBIDDEN");
+    }
+
+    const email = payload.email.trim().toLowerCase();
+    const adminUser: StaffAccount = {
+      id: "admin-1",
+      name: payload.name.trim(),
+      email,
+      role: "admin",
+      department: payload.department || "Facilities & IT",
+      isActive: true,
+    };
+
+    this.state.users = this.state.users.filter((u) => u.id !== "admin-1" && u.email !== email);
+    this.state.users.push(adminUser);
+    this.persist();
+
+    const token = `jwt_mock_${adminUser.id}_${Date.now()}`;
+    setToken(token);
+    return {
+      message: "Admin account setup successful.",
+      accessToken: token,
+      user: adminUser,
+    };
+  }
+
+  async forgotPassword(email: string): Promise<{ success: boolean; message: string; code?: string }> {
+    await this.delay();
+    const trimmed = email.trim().toLowerCase();
+    const user = this.state.users.find((u) => u.email.toLowerCase() === trimmed);
+    if (!user) {
+      throw new ApiError("No registered account found with this email.", 404, "NOT_FOUND");
+    }
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    (this.state as any)._resetCode = { email: trimmed, code, exp: Date.now() + 15 * 60 * 1000 };
+    return {
+      success: true,
+      message: "Password reset verification code generated.",
+      code,
+    };
+  }
+
+  async resetPassword(payload: { email: string; code: string; newPassword: string }): Promise<{ success: boolean; message: string }> {
+    await this.delay();
+    const trimmed = payload.email.trim().toLowerCase();
+    const user = this.state.users.find((u) => u.email.toLowerCase() === trimmed);
+    if (!user) {
+      throw new ApiError("User not found.", 404, "NOT_FOUND");
+    }
+    const temp = (this.state as any)._resetCode;
+    if (!temp || temp.email !== trimmed || temp.code !== payload.code.trim() || temp.exp < Date.now()) {
+      throw new ApiError("Invalid or expired reset code.", 400, "INVALID_CODE");
+    }
+    return {
+      success: true,
+      message: "Password updated successfully. You can now log in.",
+    };
+  }
+
   async login(credentials: { email: string; password?: string; portal?: PortalRole }) {
     await this.delay();
     const email = (credentials.email || "").trim().toLowerCase();
-    let user = this.state.users.find((u) => u.email.toLowerCase() === email);
-
-    if (!user && credentials.portal) {
-      if (credentials.portal === "admin") user = this.state.users.find((u) => u.id === "admin-1");
-      else if (credentials.portal === "authority") user = this.state.users.find((u) => u.id === "authority-1");
-      else if (credentials.portal === "accounts") user = this.state.users.find((u) => u.id === "accounts-1");
-      else if (credentials.portal === "technician") user = this.state.users.find((u) => u.id === "tech-1");
-    }
-
-    if (!user && email.endsWith(".edu")) {
-      user = {
-        id: `user-${Date.now()}`,
-        name: email.split("@")[0].replace(/\./g, " "),
-        email,
-        role: "technician",
-        isActive: true,
-      };
-      this.state.users.push(user);
-      this.persist();
-    }
+    const user = this.state.users.find((u) => u.email.toLowerCase() === email);
 
     if (!user) {
       throw new ApiError("User account not found. Please verify your credentials or register.", 401, "UNAUTHORIZED");
@@ -966,6 +806,47 @@ async function tryApi<T>(apiFn: () => Promise<T>, fallbackFn: () => Promise<T>):
 
 export const secsApi = {
   auth: {
+    checkAdminStatus: async (): Promise<{ adminConfigured: boolean }> => {
+      return tryApi(
+        async () => apiRequest<{ adminConfigured: boolean }>("/api/v1/auth/admin-status"),
+        async () => engine.checkAdminStatus()
+      );
+    },
+    setupAdmin: async (payload: { name: string; email: string; password?: string; department?: string }) => {
+      return tryApi(
+        async () => {
+          const res = await apiRequest<{ message: string; accessToken: string; user: any }>("/api/v1/auth/setup-admin", {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+          if (res?.accessToken) {
+            setToken(res.accessToken);
+          }
+          return res;
+        },
+        async () => engine.setupAdmin(payload)
+      );
+    },
+    forgotPassword: async (email: string) => {
+      return tryApi(
+        async () =>
+          apiRequest<{ success: boolean; message: string; code?: string }>("/api/v1/auth/forgot-password", {
+            method: "POST",
+            body: JSON.stringify({ email }),
+          }),
+        async () => engine.forgotPassword(email)
+      );
+    },
+    resetPassword: async (payload: { email: string; code: string; newPassword: string }) => {
+      return tryApi(
+        async () =>
+          apiRequest<{ success: boolean; message: string }>("/api/v1/auth/reset-password", {
+            method: "POST",
+            body: JSON.stringify(payload),
+          }),
+        async () => engine.resetPassword(payload)
+      );
+    },
     login: async (credentials: { email: string; password?: string; portal?: PortalRole }) => {
       return tryApi(
         async () => {

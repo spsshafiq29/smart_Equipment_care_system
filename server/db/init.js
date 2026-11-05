@@ -41,18 +41,11 @@ async function initDatabase() {
     console.log('✓ Successfully connected to PostgreSQL.');
 
     const schemaPath = path.join(__dirname, 'schema.sql');
-    const seedsPath = path.join(__dirname, 'seeds.sql');
-
     const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-    const seedsSql = fs.readFileSync(seedsPath, 'utf8');
 
-    console.log('Executing schema.sql DDL migrations...');
+    console.log('Executing schema.sql DDL (creating clean tables)...');
     await client.query(schemaSql);
-    console.log('✓ Schema applied successfully.');
-
-    console.log('Executing seeds.sql dataset...');
-    await client.query(seedsSql);
-    console.log('✓ Seeds applied successfully.');
+    console.log('✓ Clean database tables created successfully (no seed/dummy data).');
 
     client.release();
     await pool.end();

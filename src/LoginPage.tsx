@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { secsApi } from "./services/secsApi";
 import type { PortalRole } from "./workflowTypes";
 
@@ -7,14 +7,15 @@ interface Props {
   onLogin: (role: PortalRole) => void;
 }
 
-const PORTALS: { value: PortalRole; label: string; description: string; demoEmail: string }[] = [
-  { value: "admin", label: "Admin", description: "Labs, assignments and accounts", demoEmail: "mahmud.kabir@uitc.edu" },
-  { value: "authority", label: "Higher Authority", description: "Approvals and oversight", demoEmail: "samina.haque@uitc.edu" },
-  { value: "accounts", label: "Accounts", description: "Payments and confirmation", demoEmail: "nusrat.islam@uitc.edu" },
-  { value: "technician", label: "Technician", description: "Assigned labs and repairs", demoEmail: "ashik.rahman@uitc.edu" },
+const PORTALS: { value: PortalRole; label: string; description: string }[] = [
+  { value: "admin", label: "Admin", description: "Labs, assignments and accounts" },
+  { value: "authority", label: "Higher Authority", description: "Approvals and oversight" },
+  { value: "accounts", label: "Accounts", description: "Payments and confirmation" },
+  { value: "technician", label: "Technician", description: "Assigned labs and repairs" },
 ];
 
 export default function LoginPage({ onNavigate, onLogin }: Props) {
+  const [view, setView] = useState<"login" | "setup-admin" | "forgot-password">("login");
   const [portal, setPortal] = useState<PortalRole>("admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,25 +23,54 @@ export default function LoginPage({ onNavigate, onLogin }: Props) {
   const [remember, setRemember] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function validate() {
+  // Admin first-time setup state
+  const [adminConfigured, setAdminConfigured] = useState<boolean | null>(null);
+  const [adminName, setAdminName] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminDept, setAdminDept] = useState("Facilities & IT Management");
+
+  // Forgot Password state
+  const [forgotStep, setForgotStep] = useState<1 | 2>(1);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotCode, setForgotCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [generatedCodeHint, setGeneratedCodeHint] = useState("");
+
+  // Check admin status on load
+  useEffect(() => {
+    secsApi.auth
+      .checkAdminStatus()
+      .then((res) => {
+        setAdminConfigured(res.adminConfigured);
+        if (!res.adminConfigured) {
+          setView("setup-admin");
+        }
+      })
+      .catch(() => {
+        setAdminConfigured(true);
+      });
+  }, []);
+
+  function validateLogin() {
     const errs: Record<string, string> = {};
     if (!email.trim()) {
       errs.email = "Email is required.";
-    } else if (!email.toLowerCase().endsWith(".edu")) {
-      errs.email = "Only university .edu email addresses are accepted.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       errs.email = "Enter a valid email address.";
     }
     if (!password) errs.password = "Password is required.";
     return errs;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setServerError("");
-    const errs = validate();
+    setSuccessMessage("");
+    const errs = validateLogin();
     if (Object.keys(errs).length) {
       setErrors(errs);
       return;
@@ -48,25 +78,106 @@ export default function LoginPage({ onNavigate, onLogin }: Props) {
 
     setLoading(true);
     try {
-      await secsApi.auth.login({
+      const res = await secsApi.auth.login({
         email: email.trim(),
         password,
         portal,
       });
-      onLogin(portal);
+      const userRole = (res?.user?.role as PortalRole) || portal;
+      onLogin(userRole);
     } catch (err: any) {
-      setServerError(err?.message || "Authentication failed. Please verify credentials.");
+      setServerError(err?.message || "Authentication failed. Please verify credentials or register.");
     } finally {
       setLoading(false);
     }
   }
 
-  function fillDemoCredentials(p: typeof PORTALS[0]) {
-    setPortal(p.value);
-    setEmail(p.demoEmail);
-    setPassword("Admin@123"); // matches seed data
-    setErrors({});
+  async function handleSetupAdmin(e: React.FormEvent) {
+    e.preventDefault();
     setServerError("");
+    setSuccessMessage("");
+    const errs: Record<string, string> = {};
+    if (!adminName.trim()) errs.adminName = "Admin username/full name is required.";
+    if (!adminEmail.trim()) errs.adminEmail = "University email is required.";
+    if (!adminPassword || adminPassword.length < 6) errs.adminPassword = "Password must be at least 6 characters.";
+
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await secsApi.auth.setupAdmin({
+        name: adminName.trim(),
+        email: adminEmail.trim(),
+        password: adminPassword,
+        department: adminDept.trim(),
+      });
+      setAdminConfigured(true);
+      onLogin("admin");
+    } catch (err: any) {
+      setServerError(err?.message || "Failed to initialize Admin account.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSendResetCode(e: React.FormEvent) {
+    e.preventDefault();
+    setServerError("");
+    setSuccessMessage("");
+    if (!forgotEmail.trim()) {
+      setErrors({ forgotEmail: "Please enter your registered email address." });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await secsApi.auth.forgotPassword(forgotEmail.trim());
+      if (res.code) {
+        setForgotCode(res.code);
+        setGeneratedCodeHint(res.code);
+      }
+      setSuccessMessage("Verification code generated! Please enter code and your new password.");
+      setForgotStep(2);
+    } catch (err: any) {
+      setServerError(err?.message || "Could not generate reset code.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleConfirmResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setServerError("");
+    setSuccessMessage("");
+    const errs: Record<string, string> = {};
+    if (!forgotCode.trim()) errs.forgotCode = "Verification code is required.";
+    if (!newPassword || newPassword.length < 6) errs.newPassword = "New password must be at least 6 characters.";
+
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await secsApi.auth.resetPassword({
+        email: forgotEmail.trim(),
+        code: forgotCode.trim(),
+        newPassword,
+      });
+      setEmail(forgotEmail.trim());
+      setPassword("");
+      setSuccessMessage("Password successfully updated! You can now log in with your new password.");
+      setView("login");
+      setForgotStep(1);
+    } catch (err: any) {
+      setServerError(err?.message || "Failed to reset password. Please check your verification code.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -97,233 +208,377 @@ export default function LoginPage({ onNavigate, onLogin }: Props) {
 
         <div className="relative z-10">
           <h2 style={{ fontFamily: "var(--font-display)" }} className="text-4xl xl:text-5xl text-white mb-5 leading-tight">
-            Welcome<br />
-            <span className="text-amber-400">Back</span> to<br />
-            Your Portal
+            Campus Equipment
+            <br />
+            Management Portal
           </h2>
-          <p className="text-white/50 text-sm leading-relaxed mb-6 max-w-sm">
-            Sign in to manage equipment reports, track repair status, approve budgets, and maintain university laboratory transparency.
+          <p className="text-white/60 text-sm max-w-md leading-relaxed">
+            Real-time equipment issue tracking, lab technician coordination, verified budget releases, and public transparency audits across all university faculties.
           </p>
-
-          {/* Quick Demo Credentials shortcut */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 mb-6">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-400 mb-2">Fast Fill Demo Accounts</p>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              {PORTALS.map((p) => (
-                <button
-                  key={p.value}
-                  type="button"
-                  onClick={() => fillDemoCredentials(p)}
-                  className="rounded border border-white/10 px-2.5 py-1.5 text-left text-white/60 hover:border-amber-400 hover:text-white transition"
-                >
-                  <strong className="text-white block">{p.label}</strong>
-                  <span className="text-[10px] text-white/30 truncate block">{p.demoEmail.split("@")[0]}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* SLA tiers teaser */}
-          <div className="space-y-3">
-            <p className="text-white/30 text-xs uppercase tracking-widest font-semibold">SLA Resolution Tiers</p>
-            {[
-              { label: "Critical", time: "24 hrs", color: "bg-red-500" },
-              { label: "High", time: "3 days", color: "bg-orange-400" },
-              { label: "Medium", time: "7 days", color: "bg-amber-400" },
-              { label: "Low", time: "14 days", color: "bg-green-500" },
-            ].map((tier) => (
-              <div key={tier.label} className="flex items-center gap-3">
-                <span className={`w-2 h-2 rounded-full ${tier.color}`} />
-                <span className="text-white/60 text-sm flex-1">{tier.label}</span>
-                <span className="text-white/30 text-xs">{tier.time}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
-        <div className="relative z-10 text-white/30 text-xs">© 2026 University Facilities & IT Division</div>
+        <div className="relative z-10 flex items-center justify-between text-xs text-white/30 border-t border-white/10 pt-6">
+          <span>University of Information Technology</span>
+          <span>PERN Cloud Architecture</span>
+        </div>
       </div>
 
-      {/* Right panel — form */}
-      <div className="flex-1 flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-14 xl:px-20">
-        <div className="lg:hidden flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 rounded bg-amber-400 flex items-center justify-center text-[#050d1f] font-black text-sm">S</div>
-          <span style={{ fontFamily: "var(--font-display)" }} className="text-white text-lg">
-            SECS
-          </span>
-        </div>
-
-        <div className="max-w-sm w-full mx-auto lg:mx-0">
-          <div className="mb-8">
-            <h1 style={{ fontFamily: "var(--font-display)" }} className="text-3xl text-white mb-1">
-              Sign in
+      {/* Right form panel */}
+      <div className="w-full lg:w-7/12 xl:w-1/2 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
+        <div className="w-full max-w-md">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <span className="text-amber-400 text-xs font-semibold uppercase tracking-widest">
+                {view === "setup-admin" ? "First-Time Deployment" : view === "forgot-password" ? "Security Recovery" : "Staff Access"}
+              </span>
+              {view !== "login" && (
+                <button
+                  onClick={() => {
+                    setView("login");
+                    setServerError("");
+                    setSuccessMessage("");
+                  }}
+                  className="text-xs text-white/40 hover:text-white transition-colors"
+                >
+                  ← Back to Login
+                </button>
+              )}
+            </div>
+            <h1 style={{ fontFamily: "var(--font-display)" }} className="text-2xl md:text-3xl font-bold text-white mt-1">
+              {view === "setup-admin"
+                ? "Setup Admin Account"
+                : view === "forgot-password"
+                ? "Reset Your Password"
+                : "Sign In to Portal"}
             </h1>
-            <p className="text-white/40 text-sm">
-              Choose your staff portal, then sign in with your university <span className="text-amber-400">.edu</span> email
+            <p className="text-white/40 text-xs mt-1">
+              {view === "setup-admin"
+                ? "Initialize the master administrator credentials for this deployment."
+                : view === "forgot-password"
+                ? "Enter your university email to securely set up a new password."
+                : "Select your role and enter your university credentials to continue."}
             </p>
           </div>
 
+          {/* Setup admin prompt if not configured */}
+          {adminConfigured === false && view !== "setup-admin" && (
+            <div className="mb-4 p-3 rounded-lg border border-amber-400/30 bg-amber-400/10 flex items-center justify-between text-xs text-amber-300">
+              <span>First-time setup: Admin account is not yet configured.</span>
+              <button
+                onClick={() => setView("setup-admin")}
+                className="underline font-bold hover:text-white ml-2"
+              >
+                Setup Now
+              </button>
+            </div>
+          )}
+
+          {/* Success message banner */}
+          {successMessage && (
+            <div className="mb-4 p-3 rounded-lg border border-green-500/40 bg-green-500/10 text-green-300 text-xs">
+              {successMessage}
+            </div>
+          )}
+
+          {/* Server error alert */}
           {serverError && (
-            <div className="mb-5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            <div className="mb-4 p-3 rounded-lg border border-red-500/40 bg-red-500/10 text-red-300 text-xs">
               {serverError}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-            <div>
-              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-white/40">Select portal</label>
-              <div className="grid grid-cols-2 gap-2">
-                {PORTALS.map((item) => (
-                  <button
-                    key={item.value}
-                    type="button"
-                    onClick={() => {
-                      setPortal(item.value);
-                      if (!email) setEmail(item.demoEmail);
-                    }}
-                    className={`rounded-lg border p-3 text-left transition ${
-                      portal === item.value ? "border-amber-400 bg-amber-400/10" : "border-white/10 bg-white/[0.02] hover:border-white/20"
-                    }`}
-                  >
-                    <span className={`block text-sm font-semibold ${portal === item.value ? "text-amber-400" : "text-white/70"}`}>
-                      {item.label}
-                    </span>
-                    <span className="mt-1 block text-[10px] leading-4 text-white/30">{item.description}</span>
-                  </button>
-                ))}
+          {/* ========================================================= */}
+          {/* VIEW 1: FIRST-TIME ADMIN SETUP                             */}
+          {/* ========================================================= */}
+          {view === "setup-admin" && (
+            <form onSubmit={handleSetupAdmin} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
+                  Admin Full Name / Username
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. System Administrator"
+                  value={adminName}
+                  onChange={(e) => {
+                    setAdminName(e.target.value);
+                    setErrors((prev) => ({ ...prev, adminName: "" }));
+                  }}
+                  className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
+                    errors.adminName ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
+                  }`}
+                />
+                {errors.adminName && <p className="text-red-400 text-xs mt-1">{errors.adminName}</p>}
               </div>
-            </div>
 
-            {/* Email */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-semibold uppercase tracking-widest text-white/40">University Email</label>
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full border border-amber-400/40 text-amber-400 bg-amber-400/10">
-                  .edu only
-                </span>
-              </div>
-              <div className="relative">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
+                  Admin Email Address
+                </label>
                 <input
                   type="email"
-                  placeholder="you@uitc.edu"
+                  placeholder="admin@uitc.edu"
+                  value={adminEmail}
+                  onChange={(e) => {
+                    setAdminEmail(e.target.value);
+                    setErrors((prev) => ({ ...prev, adminEmail: "" }));
+                  }}
+                  className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
+                    errors.adminEmail ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
+                  }`}
+                />
+                {errors.adminEmail && <p className="text-red-400 text-xs mt-1">{errors.adminEmail}</p>}
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
+                  Admin Password
+                </label>
+                <input
+                  type={showPass ? "text" : "password"}
+                  placeholder="Create a strong password (min 6 characters)"
+                  value={adminPassword}
+                  onChange={(e) => {
+                    setAdminPassword(e.target.value);
+                    setErrors((prev) => ({ ...prev, adminPassword: "" }));
+                  }}
+                  className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
+                    errors.adminPassword ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
+                  }`}
+                />
+                {errors.adminPassword && <p className="text-red-400 text-xs mt-1">{errors.adminPassword}</p>}
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
+                  Department
+                </label>
+                <input
+                  type="text"
+                  placeholder="Facilities & IT Management"
+                  value={adminDept}
+                  onChange={(e) => setAdminDept(e.target.value)}
+                  className="w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-lg font-semibold text-[#050d1f] bg-amber-400 hover:bg-amber-300 active:scale-95 transition-all duration-150 disabled:opacity-70 mt-2 flex items-center justify-center gap-2"
+              >
+                {loading ? "Configuring Admin..." : "Initialize Admin & Enter Dashboard →"}
+              </button>
+            </form>
+          )}
+
+          {/* ========================================================= */}
+          {/* VIEW 2: FORGOT PASSWORD                                    */}
+          {/* ========================================================= */}
+          {view === "forgot-password" && (
+            <div className="space-y-4">
+              {forgotStep === 1 ? (
+                <form onSubmit={handleSendResetCode} className="space-y-4">
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
+                      Enter Your Registered Email
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="your.email@uitc.edu"
+                      value={forgotEmail}
+                      onChange={(e) => {
+                        setForgotEmail(e.target.value);
+                        setErrors((prev) => ({ ...prev, forgotEmail: "" }));
+                      }}
+                      className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
+                        errors.forgotEmail ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
+                      }`}
+                    />
+                    {errors.forgotEmail && <p className="text-red-400 text-xs mt-1">{errors.forgotEmail}</p>}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 rounded-lg font-semibold text-[#050d1f] bg-amber-400 hover:bg-amber-300 active:scale-95 transition-all duration-150 disabled:opacity-70 flex items-center justify-center gap-2"
+                  >
+                    {loading ? "Generating Code..." : "Send Reset Code →"}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleConfirmResetPassword} className="space-y-4">
+                  {generatedCodeHint && (
+                    <div className="p-2.5 rounded bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs flex items-center justify-between">
+                      <span>Verification Code: <strong>{generatedCodeHint}</strong></span>
+                      <span className="text-[10px] text-white/40">(Valid for 15m)</span>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
+                      6-Digit Verification Code
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 582914"
+                      value={forgotCode}
+                      onChange={(e) => {
+                        setForgotCode(e.target.value);
+                        setErrors((prev) => ({ ...prev, forgotCode: "" }));
+                      }}
+                      className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
+                        errors.forgotCode ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
+                      }`}
+                    />
+                    {errors.forgotCode && <p className="text-red-400 text-xs mt-1">{errors.forgotCode}</p>}
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
+                      New Password
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="Enter new password (min 6 characters)"
+                      value={newPassword}
+                      onChange={(e) => {
+                        setNewPassword(e.target.value);
+                        setErrors((prev) => ({ ...prev, newPassword: "" }));
+                      }}
+                      className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
+                        errors.newPassword ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
+                      }`}
+                    />
+                    {errors.newPassword && <p className="text-red-400 text-xs mt-1">{errors.newPassword}</p>}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 rounded-lg font-semibold text-[#050d1f] bg-amber-400 hover:bg-amber-300 active:scale-95 transition-all duration-150 disabled:opacity-70 flex items-center justify-center gap-2"
+                  >
+                    {loading ? "Updating Password..." : "Update Password & Return to Login →"}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* VIEW 3: STANDARD LOGIN                                     */}
+          {/* ========================================================= */}
+          {view === "login" && (
+            <form onSubmit={handleLogin} className="space-y-4">
+              {/* Portal Selector */}
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-2">
+                  Select Portal Role
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {PORTALS.map((item) => (
+                    <button
+                      key={item.value}
+                      type="button"
+                      onClick={() => setPortal(item.value)}
+                      className={`rounded-lg border p-3 text-left transition ${
+                        portal === item.value
+                          ? "border-amber-400 bg-amber-400/10"
+                          : "border-white/10 bg-white/[0.02] hover:border-white/20"
+                      }`}
+                    >
+                      <span className={`block text-sm font-semibold ${portal === item.value ? "text-amber-400" : "text-white/70"}`}>
+                        {item.label}
+                      </span>
+                      <span className="mt-1 block text-[10px] leading-4 text-white/30">{item.description}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-widest text-white/40 block mb-1">
+                  Registered University Email
+                </label>
+                <input
+                  type="email"
+                  placeholder="your.email@uitc.edu"
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
                     setErrors((er) => ({ ...er, email: "" }));
                   }}
-                  className={`w-full rounded-lg pl-4 pr-10 py-3 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
+                  className={`w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
                     errors.email ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
                   }`}
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                    />
-                  </svg>
-                </span>
+                {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
               </div>
-              {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
-            </div>
 
-            {/* Password */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-semibold uppercase tracking-widest text-white/40">Password</label>
+              {/* Password */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold uppercase tracking-widest text-white/40">Password</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotEmail(email);
+                      setForgotStep(1);
+                      setView("forgot-password");
+                      setServerError("");
+                      setSuccessMessage("");
+                    }}
+                    className="text-xs text-amber-400 hover:text-amber-300 font-medium transition-colors"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPass ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setErrors((er) => ({ ...er, password: "" }));
+                    }}
+                    className={`w-full rounded-lg pl-4 pr-10 py-2.5 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
+                      errors.password ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white"
+                  >
+                    {showPass ? "Hide" : "Show"}
+                  </button>
+                </div>
+                {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
               </div>
-              <div className="relative">
-                <input
-                  type={showPass ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setErrors((er) => ({ ...er, password: "" }));
-                  }}
-                  className={`w-full rounded-lg pl-4 pr-10 py-3 text-sm text-white placeholder-white/20 bg-white/5 border focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition ${
-                    errors.password ? "border-red-500" : "border-white/10 focus:border-amber-400/50"
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors"
-                >
-                  {showPass ? (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-                      />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                      />
-                    </svg>
-                  )}
-                </button>
-              </div>
-              {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
-            </div>
 
-            {/* Remember me */}
-            <label className="flex items-center gap-3 cursor-pointer">
-              <div className="relative shrink-0">
+              {/* Remember me */}
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={remember}
                   onChange={(e) => setRemember(e.target.checked)}
-                  className="sr-only"
+                  className="rounded border-white/20 bg-white/5 text-amber-400 focus:ring-0"
                 />
-                <div
-                  className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                    remember ? "bg-amber-400 border-amber-400" : "border-white/20 bg-white/5"
-                  }`}
-                >
-                  {remember && (
-                    <svg className="w-2.5 h-2.5 text-[#050d1f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </div>
-              </div>
-              <span className="text-xs text-white/40">Keep me signed in on this device</span>
-            </label>
+                <span className="text-xs text-white/40">Keep me signed in on this device</span>
+              </label>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-lg font-semibold text-[#050d1f] bg-amber-400 hover:bg-amber-300 active:scale-95 transition-all duration-150 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  Signing in…
-                </>
-              ) : (
-                "Sign In →"
-              )}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-lg font-semibold text-[#050d1f] bg-amber-400 hover:bg-amber-300 active:scale-95 transition-all duration-150 disabled:opacity-70 flex items-center justify-center gap-2"
+              >
+                {loading ? "Signing in..." : "Sign In →"}
+              </button>
+            </form>
+          )}
 
           <p className="text-center text-white/30 text-xs mt-6">
             New to SECS?{" "}
@@ -332,7 +587,7 @@ export default function LoginPage({ onNavigate, onLogin }: Props) {
             </button>
           </p>
 
-          <p className="text-center text-white/20 text-xs mt-3">
+          <p className="text-center text-white/20 text-xs mt-2">
             <button onClick={() => onNavigate("landing")} className="hover:text-white/40 transition-colors">
               ← Back to main site
             </button>

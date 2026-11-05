@@ -3,6 +3,7 @@
 -- =============================================================================
 
 -- Drop tables if re-creating
+DROP TABLE IF EXISTS password_resets CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS audit_incidents CASCADE;
 DROP TABLE IF EXISTS budgets CASCADE;
@@ -131,4 +132,16 @@ CREATE TABLE announcements (
     active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 8. PASSWORD RESETS
+CREATE TABLE password_resets (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    token VARCHAR(64) NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_password_resets_email ON password_resets(email);
 

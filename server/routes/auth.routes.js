@@ -1,45 +1,128 @@
-import { memoryDb } from '../db/pool.js';
+import { memoryDb, query } from '../db/pool.js';
 import { generateToken, hashPassword } from '../middleware/auth.js';
 
 export function authRoutes(router) {
+  // GET /api/v1/auth/admin-status - checks if primary admin has been set up
+  router.get('/api/v1/auth/admin-status', async (req, res) => {
+    try {
+      // Check Postgres if available
+      const dbRes = await query("SELECT id FROM users WHERE role = 'admin' AND is_active = true LIMIT 1");
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+        return res.json({ adminConfigured: true });
+      }
+    } catch {
+      // ignore
+    }
+
+    const memAdmin = memoryDb.tables.users.some((u) => u.role === 'admin' && u.is_active);
+    res.json({ adminConfigured: memAdmin });
+  });
+
+  // POST /api/v1/auth/setup-admin - initial setup of the primary admin account
+  router.post('/api/v1/auth/setup-admin', async (req, res) => {
+    // Check if an admin is already configured
+    let adminExists = false;
+    try {
+      const dbRes = await query("SELECT id FROM users WHERE role = 'admin' AND is_active = true LIMIT 1");
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) adminExists = true;
+    } catch {
+      // ignore
+    }
+    if (!adminExists) {
+      adminExists = memoryDb.tables.users.some((u) => u.role === 'admin' && u.is_active);
+    }
+
+    if (adminExists) {
+      return res.status(403).json({
+        error: { code: 'FORBIDDEN', message: 'System Admin account has already been initialized.' },
+      });
+    }
+
+    const { name, email, password, department } = req.body || {};
+    if (!name?.trim()) {
+      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Admin username/full name is required' } });
+    }
+    if (!email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'A valid email address is required' } });
+    }
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Password must be at least 6 characters' } });
+    }
+
+    const trimmedEmail = email.trim().toLowerCase();
+    const passwordHash = hashPassword(password);
+    const adminUser = {
+      id: 'admin-1',
+      name: name.trim(),
+      email: trimmedEmail,
+      password_hash: passwordHash,
+      role: 'admin',
+      department: department?.trim() || 'Facilities & IT Management',
+      student_id: null,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    };
+
+    // Save to memory store
+    memoryDb.tables.users = memoryDb.tables.users.filter((u) => u.id !== 'admin-1' && u.email !== trimmedEmail);
+    memoryDb.tables.users.push(adminUser);
+
+    // Save to PostgreSQL if connected
+    try {
+      await query(
+        `INSERT INTO users (id, name, email, password_hash, role, department, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, name = EXCLUDED.name, is_active = true`,
+        [adminUser.id, adminUser.name, adminUser.email, adminUser.password_hash, adminUser.role, adminUser.department, true]
+      );
+    } catch {
+      // ignore
+    }
+
+    const token = generateToken(adminUser);
+    const { password_hash, ...safeUser } = adminUser;
+
+    res.status(201).json({
+      message: 'System Admin account successfully initialized.',
+      accessToken: token,
+      user: safeUser,
+    });
+  });
+
   // POST /api/v1/auth/login
-  router.post('/api/v1/auth/login', (req, res) => {
-    const { email, password, portal } = req.body || {};
+  router.post('/api/v1/auth/login', async (req, res) => {
+    const { email, password } = req.body || {};
     if (!email) {
       return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Email is required' } });
     }
+    if (!password) {
+      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Password is required' } });
+    }
 
     const trimmed = email.trim().toLowerCase();
-    let user = memoryDb.tables.users.find((u) => u.email.toLowerCase() === trimmed);
+    let user = null;
 
-    // Demo portal fallback
-    if (!user && portal) {
-      if (portal === 'admin') user = memoryDb.tables.users.find((u) => u.id === 'admin-1');
-      else if (portal === 'authority') user = memoryDb.tables.users.find((u) => u.id === 'authority-1');
-      else if (portal === 'accounts') user = memoryDb.tables.users.find((u) => u.id === 'accounts-1');
-      else if (portal === 'technician') user = memoryDb.tables.users.find((u) => u.id === 'tech-1');
+    // First try PostgreSQL
+    try {
+      const dbRes = await query('SELECT * FROM users WHERE LOWER(email) = $1 AND is_active = true', [trimmed]);
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+        user = dbRes.rows[0];
+      }
+    } catch {
+      // ignore
+    }
+
+    // Fall back to memoryDb
+    if (!user) {
+      user = memoryDb.tables.users.find((u) => u.email.toLowerCase() === trimmed && u.is_active);
     }
 
     if (!user) {
       return res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Invalid credentials or user not found' } });
     }
 
-    if (!password) {
-      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Password is required' } });
-    }
-
     const inputHash = hashPassword(password);
-    const isSeedUser = user.id.startsWith('admin-') || user.id.startsWith('tech-') || user.id.startsWith('authority-') || user.id.startsWith('accounts-') || user.id.startsWith('stu-');
-    const validSeedPassword =
-      password === 'Admin@123' ||
-      (user.id.startsWith('tech-') && password === 'Tech@123') ||
-      (user.id.startsWith('authority-') && password === 'Auth@123') ||
-      (user.id.startsWith('accounts-') && password === 'Acct@123') ||
-      (user.id.startsWith('stu-') && (password === 'Student@123' || password === '123456'));
-
-    const isMatch = user.password_hash === inputHash || (isSeedUser && validSeedPassword);
-
-    if (!isMatch) {
+    if (user.password_hash !== inputHash) {
       return res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Invalid email or password' } });
     }
 
@@ -58,7 +141,7 @@ export function authRoutes(router) {
   });
 
   // POST /api/v1/auth/register
-  router.post('/api/v1/auth/register', (req, res) => {
+  router.post('/api/v1/auth/register', async (req, res) => {
     const { fullName, studentId, email, department, role, password } = req.body || {};
 
     if (!fullName?.trim()) {
@@ -71,7 +154,19 @@ export function authRoutes(router) {
       return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Password must be at least 6 characters' } });
     }
 
-    const existing = memoryDb.tables.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    const trimmedEmail = email.trim().toLowerCase();
+
+    // Check duplicate
+    let existing = null;
+    try {
+      const dbRes = await query('SELECT id FROM users WHERE LOWER(email) = $1', [trimmedEmail]);
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) existing = dbRes.rows[0];
+    } catch {
+      // ignore
+    }
+    if (!existing) {
+      existing = memoryDb.tables.users.find((u) => u.email.toLowerCase() === trimmedEmail);
+    }
     if (existing) {
       return res.status(409).json({ error: { code: 'CONFLICT', message: 'An account with this email already exists' } });
     }
@@ -79,7 +174,7 @@ export function authRoutes(router) {
     const newUser = {
       id: `usr-${Date.now()}`,
       name: fullName.trim(),
-      email: email.trim().toLowerCase(),
+      email: trimmedEmail,
       password_hash: hashPassword(password),
       role: role || 'student',
       department: department || 'General Engineering',
@@ -89,6 +184,17 @@ export function authRoutes(router) {
     };
 
     memoryDb.tables.users.push(newUser);
+
+    try {
+      await query(
+        `INSERT INTO users (id, name, email, password_hash, role, department, student_id, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [newUser.id, newUser.name, newUser.email, newUser.password_hash, newUser.role, newUser.department, newUser.student_id, true]
+      );
+    } catch {
+      // ignore
+    }
+
     const token = generateToken(newUser);
 
     res.status(201).json({
@@ -102,6 +208,129 @@ export function authRoutes(router) {
         role: newUser.role,
         department: newUser.department,
       },
+    });
+  });
+
+  // POST /api/v1/auth/forgot-password - generate reset verification code
+  router.post('/api/v1/auth/forgot-password', async (req, res) => {
+    const { email } = req.body || {};
+    if (!email?.trim()) {
+      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Email is required' } });
+    }
+
+    const trimmed = email.trim().toLowerCase();
+    let user = null;
+
+    try {
+      const dbRes = await query('SELECT id, email, name FROM users WHERE LOWER(email) = $1 AND is_active = true', [trimmed]);
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) user = dbRes.rows[0];
+    } catch {
+      // ignore
+    }
+    if (!user) {
+      user = memoryDb.tables.users.find((u) => u.email.toLowerCase() === trimmed && u.is_active);
+    }
+
+    if (!user) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No registered account found with this email' } });
+    }
+
+    // Generate 6-digit code
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+    const record = {
+      email: trimmed,
+      token: resetCode,
+      expires_at: expiresAt,
+      used: false,
+      created_at: new Date().toISOString(),
+    };
+
+    memoryDb.tables.password_resets.push(record);
+
+    try {
+      await query(
+        `INSERT INTO password_resets (email, token, expires_at, used) VALUES ($1, $2, $3, false)`,
+        [trimmed, resetCode, expiresAt]
+      );
+    } catch {
+      // ignore
+    }
+
+    res.json({
+      success: true,
+      message: 'Password reset code generated. Use this code to set your new password within 15 minutes.',
+      code: resetCode, // Returned for user verification
+    });
+  });
+
+  // POST /api/v1/auth/reset-password - apply new password
+  router.post('/api/v1/auth/reset-password', async (req, res) => {
+    const { email, code, newPassword } = req.body || {};
+    if (!email?.trim()) {
+      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Email is required' } });
+    }
+    if (!code?.trim()) {
+      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Reset code is required' } });
+    }
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'New password must be at least 6 characters' } });
+    }
+
+    const trimmed = email.trim().toLowerCase();
+    const trimmedCode = code.trim();
+
+    // Check validity
+    let valid = false;
+    try {
+      const dbRes = await query(
+        `SELECT id FROM password_resets 
+         WHERE LOWER(email) = $1 AND token = $2 AND used = false AND expires_at > CURRENT_TIMESTAMP 
+         ORDER BY id DESC LIMIT 1`,
+        [trimmed, trimmedCode]
+      );
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) valid = true;
+    } catch {
+      // ignore
+    }
+
+    if (!valid) {
+      const memRecord = memoryDb.tables.password_resets
+        .slice()
+        .reverse()
+        .find((r) => r.email === trimmed && r.token === trimmedCode && !r.used && new Date(r.expires_at) > new Date());
+      if (memRecord) {
+        valid = true;
+        memRecord.used = true;
+      }
+    }
+
+    if (!valid) {
+      return res.status(400).json({
+        error: { code: 'INVALID_CODE', message: 'Invalid or expired password reset verification code' },
+      });
+    }
+
+    const newHash = hashPassword(newPassword);
+
+    // Update in memory
+    const memUser = memoryDb.tables.users.find((u) => u.email.toLowerCase() === trimmed);
+    if (memUser) {
+      memUser.password_hash = newHash;
+    }
+
+    // Update in PostgreSQL
+    try {
+      await query('UPDATE users SET password_hash = $1 WHERE LOWER(email) = $2', [newHash, trimmed]);
+      await query('UPDATE password_resets SET used = true WHERE LOWER(email) = $1 AND token = $2', [trimmed, trimmedCode]);
+    } catch {
+      // ignore
+    }
+
+    res.json({
+      success: true,
+      message: 'Password successfully updated. You can now log in with your new password.',
     });
   });
 

@@ -74,23 +74,45 @@ async function runQaTestSuite() {
   // -------------------------------------------------------------
   console.log('[SUITE 1] Authentication & Access Control');
 
-  // 1.1 Valid login
-  const loginRes = await makeRequest('POST', '/api/v1/auth/login', {
-    email: 'mahmud.kabir@uitc.edu',
-    password: 'Admin@123',
-    portal: 'admin',
-  });
-  assert(loginRes.status === 200 && loginRes.body?.accessToken, 'Valid staff login generates JWT access token');
-  const adminToken = loginRes.body?.accessToken;
+  // 1.0 Admin status check
+  const statusRes = await makeRequest('GET', '/api/v1/auth/admin-status');
+  assert(statusRes.status === 200 && typeof statusRes.body?.adminConfigured === 'boolean', 'Admin status endpoint returns system setup state');
+
+  // 1.1 Initial Admin Setup or Staff Login
+  let adminToken = '';
+  if (!statusRes.body?.adminConfigured) {
+    const setupRes = await makeRequest('POST', '/api/v1/auth/setup-admin', {
+      name: 'System Admin',
+      email: 'admin@uitc.edu',
+      password: 'Admin@123',
+      department: 'Facilities & IT Management',
+    });
+    assert((setupRes.status === 200 || setupRes.status === 201) && setupRes.body?.accessToken, 'First-time admin setup succeeds and returns JWT access token');
+    adminToken = setupRes.body?.accessToken;
+  } else {
+    const loginRes = await makeRequest('POST', '/api/v1/auth/login', {
+      email: 'admin@uitc.edu',
+      password: 'Admin@123',
+      portal: 'admin',
+    });
+    assert(loginRes.status === 200 && loginRes.body?.accessToken, 'Valid staff login generates JWT access token');
+    adminToken = loginRes.body?.accessToken;
+  }
 
   // 1.2 Invalid password
   const badLogin = await makeRequest('POST', '/api/v1/auth/login', {
-    email: 'mahmud.kabir@uitc.edu',
+    email: 'admin@uitc.edu',
     password: 'WrongPassword',
   });
   assert(badLogin.status === 401, 'Invalid credentials rejected with 401 Unauthorized');
 
-  // 1.3 Registration - non-edu email rejection
+  // 1.3 Forgot password flow
+  const forgotRes = await makeRequest('POST', '/api/v1/auth/forgot-password', {
+    email: 'admin@uitc.edu',
+  });
+  assert(forgotRes.status === 200 && forgotRes.body?.success, 'Forgot password triggers 6-digit reset code successfully');
+
+  // 1.4 Registration - non-edu email rejection
   const nonEduReg = await makeRequest('POST', '/api/v1/auth/register', {
     fullName: 'External User',
     email: 'user@gmail.com',
@@ -98,7 +120,7 @@ async function runQaTestSuite() {
   });
   assert(nonEduReg.status === 400 && nonEduReg.body?.error?.code === 'VALIDATION_ERROR', 'Non-.edu email rejected with 400 Validation Error');
 
-  // 1.4 Valid student registration
+  // 1.5 Valid student registration
   const testEmail = `student_${Date.now()}@uitc.edu`;
   const validReg = await makeRequest('POST', '/api/v1/auth/register', {
     fullName: 'Afsana Mimi',
@@ -110,7 +132,7 @@ async function runQaTestSuite() {
   });
   assert(validReg.status === 201 && validReg.body?.userId, 'Valid .edu student registration succeeds with 201 Created');
 
-  // 1.5 Duplicate email rejection
+  // 1.6 Duplicate email rejection
   const dupReg = await makeRequest('POST', '/api/v1/auth/register', {
     fullName: 'Afsana Mimi',
     email: testEmail,
@@ -123,8 +145,20 @@ async function runQaTestSuite() {
   // -------------------------------------------------------------
   console.log('\n[SUITE 2] Lab Directory & Technician Assignments');
 
-  const labsRes = await makeRequest('GET', '/api/v1/labs');
-  assert(labsRes.status === 200 && Array.isArray(labsRes.body?.data) && labsRes.body.data.length >= 6, 'Lab directory returns all campus laboratories');
+  let labsRes = await makeRequest('GET', '/api/v1/labs');
+  assert(labsRes.status === 200 && Array.isArray(labsRes.body?.data), 'Lab directory returns laboratory array');
+
+  // Ensure test lab exists for test suite
+  if (labsRes.body.data.length === 0) {
+    const createLabRes = await makeRequest('POST', '/api/v1/labs', {
+      room: 'CSE-402',
+      name: 'Networking Lab',
+      department: 'Computer Science',
+      technicianId: 'tech-1',
+    });
+    assert(createLabRes.status === 201, 'Test lab created dynamically');
+    labsRes = await makeRequest('GET', '/api/v1/labs');
+  }
 
   const targetLab = labsRes.body.data[0];
   const updateLabRes = await makeRequest(
@@ -146,7 +180,7 @@ async function runQaTestSuite() {
 
   // 3.2 Submission
   const submitRes = await makeRequest('POST', '/api/v1/issues', {
-    labId: 'lab-1',
+    labId: targetLab.id,
     equipmentType: 'Oscilloscope',
     assetTag: 'OSC-402-QA',
     description: 'CRT screen deflection horizontal amplifier drift.',
@@ -302,7 +336,7 @@ async function runQaTestSuite() {
   console.log('\n[SUITE 7] Query Filtering & Metadata Contracts');
 
   // 7.1 Search issues
-  const searchRes = await makeRequest('GET', '/api/v1/issues?search=Cisco');
+  const searchRes = await makeRequest('GET', '/api/v1/issues?search=Oscilloscope');
   assert(
     searchRes.status === 200 && searchRes.body?.data?.length > 0,
     'Issue search query successfully returns matching equipment tickets'
