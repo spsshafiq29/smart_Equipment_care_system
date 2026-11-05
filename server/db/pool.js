@@ -5,13 +5,12 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL || 'postgres://postgres:postgres@localhost:5432/secs_db';
+const isCloudDb = connectionString.includes('neon.tech') || connectionString.includes('supabase') || connectionString.includes('sslmode=require');
+
 const PG_CONFIG = {
-  connectionString: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/secs_db',
-  host: process.env.PGHOST || 'localhost',
-  port: parseInt(process.env.PGPORT || '5432', 10),
-  database: process.env.PGDATABASE || 'secs_db',
-  user: process.env.PGUSER || 'postgres',
-  password: process.env.PGPASSWORD || 'postgres',
+  connectionString,
+  ssl: isCloudDb || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
 };
 
 // Check if 'pg' is importable dynamically
