@@ -964,6 +964,15 @@ export const secsApi = {
         async () => engine.updateIssueStatus(issueId, payload)
       );
     },
+    checkSlaReminders: async (force: boolean = false): Promise<{ count: number; message: string }> => {
+      return tryApi(
+        async () => apiRequest<{ count: number; message: string }>("/api/v1/issues/check-sla", {
+          method: "POST",
+          body: JSON.stringify({ force }),
+        }),
+        async () => ({ count: 0, message: "SLA check simulated." })
+      );
+    },
   },
   labs: {
     getLabs: async (): Promise<Lab[]> => {
@@ -1062,6 +1071,7 @@ export const secsApi = {
       email: string;
       role: string;
       labId?: string;
+      password?: string;
     }): Promise<{ message: string; user: StaffAccount }> => {
       return tryApi(
         async () => {

@@ -153,7 +153,7 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
   const [notifications, setNotifications] = useState<string[]>([]);
   const [notice, setNotice] = useState("");
   const [showAccountForm, setShowAccountForm] = useState(false);
-  const [newAccount, setNewAccount] = useState({ name: "", email: "", role: "technician", labId: "" });
+  const [newAccount, setNewAccount] = useState({ name: "", email: "", role: "technician", labId: "", password: "" });
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [budgetDrafts, setBudgetDrafts] = useState<Record<string, { amount: string; description: string }>>({});
   const [reportSearch, setReportSearch] = useState("");
@@ -382,11 +382,12 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
         email: newAccount.email.trim(),
         role: newAccount.role,
         labId: newAccount.labId || undefined,
+        password: newAccount.password.trim() || undefined,
       });
 
-      setNewAccount({ name: "", email: "", role: "technician", labId: "" });
+      setNewAccount({ name: "", email: "", role: "technician", labId: "", password: "" });
       setShowAccountForm(false);
-      setNotice("Staff account created in database. Credentials sent to email.");
+      setNotice("Account provisioned! Official credentials (username & password) dispatched to email.");
       await loadData();
     } catch (err: any) {
       setNotice(err?.message || "Failed to create account.");
@@ -1127,7 +1128,7 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
               {showAccountForm && (
                 <form
                   onSubmit={createAccount}
-                  className="grid gap-4 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5 md:grid-cols-2 xl:grid-cols-5 xl:items-end"
+                  className="grid gap-4 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5 md:grid-cols-2 xl:grid-cols-3 xl:items-end"
                 >
                   <label className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                     Full name
@@ -1180,8 +1181,18 @@ export default function DashboardPage({ initialRole, issues, setIssues, incident
                       ))}
                     </select>
                   </label>
+                  <label className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                    Initial Password (sent via email)
+                    <input
+                      type="text"
+                      value={newAccount.password}
+                      onChange={(event) => setNewAccount({ ...newAccount, password: event.target.value })}
+                      className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm normal-case tracking-normal text-white outline-none focus:border-amber-400"
+                      placeholder="Auto-generated if empty"
+                    />
+                  </label>
                   <Button type="submit" className="py-2.5">
-                    Save to Database
+                    Save & Dispatch Email Credentials
                   </Button>
                 </form>
               )}

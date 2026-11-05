@@ -1,4 +1,5 @@
 import { memoryDb } from '../db/pool.js';
+import { emailOutbox, sendMail } from '../services/email.service.js';
 
 export function auditRoutes(router) {
   // GET /api/v1/audit/incidents
@@ -151,4 +152,35 @@ export function metaRoutes(router) {
 
   router.get('/api/v1/departments', departmentsHandler);
   router.get('/api/v1/metadata/departments', departmentsHandler);
+}
+
+export function emailRoutes(router) {
+  // GET /api/v1/email/outbox
+  router.get('/api/v1/email/outbox', (req, res) => {
+    res.json({
+      data: emailOutbox.slice(0, 50),
+      total: emailOutbox.length,
+    });
+  });
+
+  // POST /api/v1/email/test - test delivery
+  router.post('/api/v1/email/test', async (req, res) => {
+    const { to, subject, message } = req.body || {};
+    const recipient = to || 'spsshafiq95@gmail.com';
+    const result = await sendMail({
+      to: recipient,
+      subject: subject || '🧪 SECS University Email Delivery Test',
+      html: `<div style="font-family:sans-serif;padding:20px;background:#050d1f;color:#fff;">
+        <h2 style="color:#f59e0b;">SECS University Email Integration Test</h2>
+        <p>This is a test notification verifying Brevo SMTP credentials and template delivery.</p>
+        <p><strong>Message:</strong> ${message || 'All systems operational.'}</p>
+        <p style="font-size:12px;color:#94a3b8;">Sent via Brevo SMTP (smtp-relay.brevo.com:587)</p>
+      </div>`,
+    });
+
+    res.json({
+      message: result.success ? 'Test email dispatched successfully' : 'Email recorded to outbox (SMTP auth notice)',
+      result,
+    });
+  });
 }

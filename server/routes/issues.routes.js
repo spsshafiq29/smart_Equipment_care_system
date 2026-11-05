@@ -1,8 +1,55 @@
-import { memoryDb } from '../db/pool.js';
+import { memoryDb, query } from '../db/pool.js';
+import { sendIssueResolvedNotice, sendIssue7DayStatusUpdate } from '../services/email.service.js';
 
 function maskEmail(email) {
   const [name = '', domain = ''] = (email || '').split('@');
   return name.length <= 2 ? `${name}***@${domain}` : `${name.slice(0, 2)}***@${domain}`;
+}
+
+export async function checkAndSend7DayReminders(forceAll = false) {
+  const sent = [];
+  const now = Date.now();
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+  for (const issue of memoryDb.tables.issues) {
+    // Only target active unsolved issues
+    if (issue.status === 'Resolved' || issue.status.includes('Rejected') || issue.status.includes('Closed')) {
+      continue;
+    }
+
+    if (issue.seven_day_notified && !forceAll) {
+      continue;
+    }
+
+    let isOverdue = false;
+    if (forceAll) {
+      isOverdue = true;
+    } else {
+      const createdTime = new Date(issue.created_at).getTime();
+      if (!isNaN(createdTime) && now - createdTime >= SEVEN_DAYS_MS) {
+        isOverdue = true;
+      }
+    }
+
+    if (isOverdue && issue.reporter_email) {
+      await sendIssue7DayStatusUpdate({
+        to: issue.reporter_email,
+        reporterName: issue.reporter_name || 'Campus Member',
+        ticketId: issue.id,
+        equipmentType: issue.equipment_type || issue.item,
+        labName: issue.lab_name,
+        currentStage: issue.current_stage,
+        pendingWith: issue.pending_with,
+        status: issue.status,
+        submittedAt: issue.created_at,
+      }).catch((err) => console.warn(`[ISSUES] 7-Day reminder error for ${issue.id}:`, err.message));
+
+      issue.seven_day_notified = true;
+      sent.push({ ticketId: issue.id, email: issue.reporter_email, stage: issue.current_stage });
+    }
+  }
+
+  return sent;
 }
 
 export function issueRoutes(router) {
@@ -176,6 +223,19 @@ export function issueRoutes(router) {
       issue.current_stage = 'Repair completed and confirmed by technician';
       issue.pending_with = 'Closed';
       issue.resolved_at = new Date().toISOString();
+
+      // Dispatch resolution email to problem reporter
+      if (issue.reporter_email) {
+        sendIssueResolvedNotice({
+          to: issue.reporter_email,
+          reporterName: issue.reporter_name || 'Campus Member',
+          ticketId: issue.id,
+          equipmentType: issue.equipment_type || issue.item,
+          labName: issue.lab_name,
+          description: issue.description,
+          resolvedBy: tech.name || 'Assigned Technician',
+        }).catch((err) => console.warn(`[ISSUES] Resolution notice email error for ${issue.id}:`, err.message));
+      }
     } else if (action === 'dispute_payment') {
       issue.status = 'Payment Disputed';
       issue.current_stage = 'Payment discrepancy under public review';
@@ -198,6 +258,27 @@ export function issueRoutes(router) {
     }
 
     res.json({ message: 'Issue status updated successfully', issue });
+  });
+
+  // POST /api/v1/issues/check-sla - scans active issues and dispatches 7-day progress update emails
+  router.post('/api/v1/issues/check-sla', async (req, res) => {
+    const { force } = req.body || {};
+    const sent = await checkAndSend7DayReminders(Boolean(force));
+    res.json({
+      message: `SLA check completed. Dispatched 7-day condition emails to ${sent.length} reporter(s).`,
+      count: sent.length,
+      dispatched: sent,
+    });
+  });
+
+  router.get('/api/v1/issues/check-sla', async (req, res) => {
+    const force = req.query.force === 'true';
+    const sent = await checkAndSend7DayReminders(force);
+    res.json({
+      message: `SLA check completed. Dispatched 7-day condition emails to ${sent.length} reporter(s).`,
+      count: sent.length,
+      dispatched: sent,
+    });
   });
 }
 

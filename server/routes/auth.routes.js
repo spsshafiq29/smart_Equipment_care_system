@@ -1,5 +1,6 @@
 import { memoryDb, query } from '../db/pool.js';
 import { generateToken, hashPassword } from '../middleware/auth.js';
+import { sendPasswordResetEmail } from '../services/email.service.js';
 
 export function authRoutes(router) {
   // GET /api/v1/auth/admin-status - checks if primary admin has been set up
@@ -258,10 +259,20 @@ export function authRoutes(router) {
       // ignore
     }
 
+    // Dispatch professional password reset email via Brevo SMTP
+    await sendPasswordResetEmail({
+      to: trimmed,
+      name: user.name || 'Campus Member',
+      code: resetCode,
+      expiresMinutes: 15,
+    }).catch((err) => {
+      console.warn('[AUTH] Error sending password reset email:', err.message);
+    });
+
     res.json({
       success: true,
-      message: 'Password reset code generated. Use this code to set your new password within 15 minutes.',
-      code: resetCode, // Returned for user verification
+      message: 'Password reset code generated and sent to your email. Valid for 15 minutes.',
+      code: resetCode, // Returned for instant verification & fallback
     });
   });
 
