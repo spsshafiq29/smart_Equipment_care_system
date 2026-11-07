@@ -776,9 +776,8 @@ export default function App() {
                       {lab.room}
                     </span>
                     <span
-                      className={`w-2.5 h-2.5 rounded-full ${
-                        lab.technicianId ? "bg-emerald-400 shadow-sm shadow-emerald-400/50" : "bg-amber-400"
-                      }`}
+                      className={`w-2.5 h-2.5 rounded-full ${lab.technicianId ? "bg-emerald-400 shadow-sm shadow-emerald-400/50" : "bg-amber-400"
+                        }`}
                       title={lab.technicianId ? "Technician Assigned" : "Awaiting Technician"}
                     />
                   </div>
@@ -1017,17 +1016,16 @@ export default function App() {
                                 key={p}
                                 type="button"
                                 onClick={() => setFormData({ ...formData, priority: p })}
-                                className={`py-2 rounded-lg text-xs font-bold uppercase transition-all ${
-                                  isSelected
+                                className={`py-2 rounded-lg text-xs font-bold uppercase transition-all ${isSelected
                                     ? p === "critical"
                                       ? "bg-rose-500 text-white shadow-sm shadow-rose-500/30"
                                       : p === "high"
-                                      ? "bg-orange-500 text-white shadow-sm shadow-orange-500/30"
-                                      : p === "medium"
-                                      ? "bg-amber-400 text-slate-950 shadow-sm shadow-amber-400/30"
-                                      : "bg-emerald-500 text-white shadow-sm shadow-emerald-500/30"
+                                        ? "bg-orange-500 text-white shadow-sm shadow-orange-500/30"
+                                        : p === "medium"
+                                          ? "bg-amber-400 text-slate-950 shadow-sm shadow-amber-400/30"
+                                          : "bg-emerald-500 text-white shadow-sm shadow-emerald-500/30"
                                     : "border border-white/5 bg-white/[0.02] text-slate-400 hover:border-white/15"
-                                }`}
+                                  }`}
                               >
                                 {p}
                               </button>
@@ -1124,11 +1122,10 @@ export default function App() {
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
-                  className={`text-xs px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                    statusFilter === status
+                  className={`text-xs px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors ${statusFilter === status
                       ? "bg-blue-600 text-white font-semibold"
                       : "border border-white/5 bg-white/[0.02] text-slate-400 hover:text-white"
-                  }`}
+                    }`}
                 >
                   {status === "all" ? "All Tickets" : status}
                 </button>
