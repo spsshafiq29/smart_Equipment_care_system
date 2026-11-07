@@ -124,17 +124,7 @@ function getInitialState(): DatabaseState {
       { icon: "🌡️", label: "Autoclaves" },
       { icon: "📷", label: "Imaging Systems" },
     ],
-    departments: [
-      "Computer Science & Engineering",
-      "Electrical & Electronic Engineering",
-      "Mechanical Engineering",
-      "Civil Engineering",
-      "Physics",
-      "Chemistry",
-      "Biology & Biotechnology",
-      "Business Administration",
-      "Other",
-    ],
+    departments: [],
     counters: {
       ticketSeq: 1001,
       budgetSeq: 101,
@@ -162,6 +152,23 @@ class SECSBackendEngine {
           // Remove any legacy mock admin from earlier test runs
           parsed.users = parsed.users.filter(
             (u: any) => u.email !== "mahmud.kabir@uitc.edu" && u.id !== "admin-1"
+          );
+        }
+        if (parsed && Array.isArray(parsed.departments)) {
+          // Remove hardcoded legacy defaults so only user-created departments exist
+          const legacyDefaults = new Set([
+            "biology & biotechnology",
+            "business administration",
+            "chemistry",
+            "civil engineering",
+            "computer science & engineering",
+            "electrical & electronic engineering",
+            "mechanical engineering",
+            "physics",
+            "other",
+          ]);
+          parsed.departments = parsed.departments.filter(
+            (d: any) => typeof d === "string" && !legacyDefaults.has(d.trim().toLowerCase())
           );
         }
         return parsed;
@@ -587,11 +594,19 @@ class SECSBackendEngine {
 
   async deleteDepartment(nameOrId: string): Promise<{ message: string }> {
     await this.delay();
-    const idx = this.state.departments.findIndex((d) => d.toLowerCase() === nameOrId.toLowerCase());
-    if (idx !== -1) {
-      this.state.departments.splice(idx, 1);
-      this.persist();
+    let target = nameOrId;
+    try {
+      target = decodeURIComponent(nameOrId);
+    } catch {
+      // ignore
     }
+    const cleanTarget = target.trim().toLowerCase();
+    const cleanRaw = nameOrId.trim().toLowerCase();
+    this.state.departments = this.state.departments.filter((d) => {
+      const dClean = d.trim().toLowerCase();
+      return dClean !== cleanTarget && dClean !== cleanRaw;
+    });
+    this.persist();
     return { message: "Department removed." };
   }
 

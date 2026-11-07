@@ -734,7 +734,7 @@ export default function DashboardPage({
     }
 
     try {
-      setDepartments((prev) => prev.filter((d) => d !== deptName));
+      setDepartments((prev) => prev.filter((d) => d.trim().toLowerCase() !== deptName.trim().toLowerCase()));
       await secsApi.departments.deleteDepartment(deptName);
       setNotice(`Department "${deptName}" removed successfully.`);
       await loadData();

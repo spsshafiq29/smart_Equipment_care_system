@@ -91,7 +91,11 @@ class ExpressRouter {
           if (match) {
             req.params = {};
             r.paramNames.forEach((name, i) => {
-              req.params[name] = match[i + 1];
+              try {
+                req.params[name] = decodeURIComponent(match[i + 1]);
+              } catch {
+                req.params[name] = match[i + 1];
+              }
             });
             try {
               return await r.handler(req, res);

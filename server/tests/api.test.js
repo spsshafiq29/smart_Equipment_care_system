@@ -357,9 +357,22 @@ async function runQaTestSuite() {
   const equipRes = await makeRequest('GET', '/api/v1/metadata/equipment-types');
   assert(equipRes.status === 200 && Array.isArray(equipRes.body?.data) && equipRes.body?.data?.length >= 5, 'Metadata equipment types catalog contains full taxonomy');
 
-  // 7.5 Metadata: Departments
+  // 7.5 Metadata: Dynamic Departments Management
+  const addDeptRes = await makeRequest('POST', '/api/v1/departments', {
+    name: 'Computer Science & Engineering',
+  });
+  assert(addDeptRes.status === 201, 'Admin can dynamically create a department');
+
   const deptRes = await makeRequest('GET', '/api/v1/metadata/departments');
-  assert(deptRes.status === 200 && Array.isArray(deptRes.body?.data) && deptRes.body?.data?.includes('Computer Science & Engineering'), 'Metadata departments contains academic faculties');
+  assert(
+    deptRes.status === 200 &&
+      Array.isArray(deptRes.body?.data) &&
+      deptRes.body?.data?.some((d) => d.toLowerCase().includes('computer science')),
+    'Metadata departments contains dynamic faculties'
+  );
+
+  const delDeptRes = await makeRequest('DELETE', `/api/v1/departments/${encodeURIComponent('Computer Science & Engineering')}`);
+  assert(delDeptRes.status === 200, 'Admin can remove a department');
 
   // Summary
   console.log('\n================================================================');

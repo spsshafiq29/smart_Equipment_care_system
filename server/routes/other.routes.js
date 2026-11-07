@@ -137,7 +137,7 @@ export function metaRoutes(router) {
   const departmentsHandler = async (req, res) => {
     try {
       const dbRes = await query('SELECT id, name FROM departments ORDER BY name ASC');
-      if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      if (dbRes && Array.isArray(dbRes.rows)) {
         return res.json({
           data: dbRes.rows.map((r) => r.name),
           departments: dbRes.rows,
@@ -189,18 +189,31 @@ export function metaRoutes(router) {
 
   // DELETE /api/v1/departments/:id - Admin deletes department
   const deleteDeptHandler = async (req, res) => {
-    const { id } = req.params;
+    let { id } = req.params;
     try {
-      await query('DELETE FROM departments WHERE id = $1 OR name = $1', [id]);
+      id = decodeURIComponent(id || '').trim();
+    } catch {
+      id = (id || '').trim();
+    }
+
+    try {
+      await query(
+        'DELETE FROM departments WHERE id = $1 OR LOWER(TRIM(name)) = LOWER(TRIM($1)) OR name ILIKE $1',
+        [id]
+      );
     } catch {
       // ignore
     }
 
     if (memoryDb.tables.departments) {
-      const idx = memoryDb.tables.departments.findIndex((d) => (typeof d === 'string' ? d : d.id) === id || (typeof d === 'string' ? d : d.name) === id);
-      if (idx !== -1) {
-        memoryDb.tables.departments.splice(idx, 1);
-      }
+      memoryDb.tables.departments = memoryDb.tables.departments.filter((d) => {
+        const dId = typeof d === 'string' ? d : d.id;
+        const dName = typeof d === 'string' ? d : d.name;
+        return (
+          dId !== id &&
+          dName.toLowerCase().trim() !== id.toLowerCase().trim()
+        );
+      });
     }
 
     res.json({ message: 'Department removed successfully' });

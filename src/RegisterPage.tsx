@@ -12,17 +12,7 @@ const ROLES = [
 ];
 
 export default function RegisterPage({ onNavigate }: Props) {
-  const [departments, setDepartments] = useState<string[]>([
-    "Computer Science & Engineering",
-    "Electrical & Electronic Engineering",
-    "Mechanical Engineering",
-    "Civil Engineering",
-    "Physics",
-    "Chemistry",
-    "Biology & Biotechnology",
-    "Business Administration",
-    "Other",
-  ]);
+  const [departments, setDepartments] = useState<string[]>([]);
 
   const [form, setForm] = useState({
     fullName: "",
