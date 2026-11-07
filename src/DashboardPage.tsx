@@ -250,13 +250,21 @@ export default function DashboardPage({
   const [notifications, setNotifications] = useState<string[]>([]);
   const [notice, setNotice] = useState("");
   const [showAccountForm, setShowAccountForm] = useState(false);
-  const [newAccount, setNewAccount] = useState({ name: "", email: "", role: "technician", labId: "", password: "" });
+  const [newAccount, setNewAccount] = useState({ name: "", email: "", role: "technician", labId: "", password: "", department: "" });
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [budgetDrafts, setBudgetDrafts] = useState<Record<string, { amount: string; description: string }>>({});
   const [reportSearch, setReportSearch] = useState("");
   const [technicianQueue, setTechnicianQueue] = useState<TechnicianQueue>("incoming");
   const [showNotifications, setShowNotifications] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Dynamic Departments & Lab Management
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [newDeptInput, setNewDeptInput] = useState("");
+  const [showDeptSection, setShowDeptSection] = useState(false);
+
+  const [showNewLabForm, setShowNewLabForm] = useState(false);
+  const [newLab, setNewLab] = useState({ room: "", name: "", department: "", technicianId: "" });
 
   // Immediate On-Screen Provisioned Credentials State
   const [provisionedCredentials, setProvisionedCredentials] = useState<{
@@ -288,13 +296,14 @@ export default function DashboardPage({
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [labsData, issuesData, budgetsData, usersData, incidentsData, notifsData] = await Promise.all([
+      const [labsData, issuesData, budgetsData, usersData, incidentsData, notifsData, deptsData] = await Promise.all([
         secsApi.labs.getLabs().catch(() => []),
-        secsApi.issues.getIssues({ role }).catch(() => []),
+        secsApi.issues.getIssues({ role, technicianId: currentUser?.id }).catch(() => []),
         secsApi.budgets.getBudgets().catch(() => []),
         secsApi.users.getUsers().catch(() => []),
         secsApi.audit.getIncidents().catch(() => []),
         secsApi.notifications.getNotifications(role).catch(() => ({ data: [] })),
+        secsApi.departments.getDepartments().catch(() => []),
       ]);
 
       setLabs(labsData);
@@ -302,6 +311,7 @@ export default function DashboardPage({
       setBudgets(budgetsData);
       setStaffAccounts(usersData);
       setIncidents(incidentsData);
+      setDepartments(deptsData);
       if (notifsData?.data) {
         setNotifications(notifsData.data.map((n: any) => n.message));
       }
@@ -339,12 +349,31 @@ export default function DashboardPage({
   const isAcademicUser = role === "student" || role === "teacher" || role === "researcher";
 
   const visibleNav = NAV_ITEMS.filter((item) => item.roles.includes(role));
-  const assignedLabs = role === "technician" ? labs.filter((lab) => lab.technicianId === currentUserId || !lab.technicianId) : labs;
+
+  const technicianAssignedLabs = useMemo(() => {
+    return labs.filter((lab) => lab.technicianId === currentUserId);
+  }, [labs, currentUserId]);
+
+  const technicianAssignedLabIds = useMemo(() => {
+    return new Set(technicianAssignedLabs.map((l) => l.id));
+  }, [technicianAssignedLabs]);
+
+  const technicianAssignedLabRooms = useMemo(() => {
+    return technicianAssignedLabs.map((l) => l.room.toLowerCase());
+  }, [technicianAssignedLabs]);
+
+  const assignedLabs = role === "technician" ? technicianAssignedLabs : labs;
   const visibleBudgets = role === "technician" ? budgets.filter((budget) => budget.technicianId === currentUserId) : budgets;
 
-  const technicianAssignedIssues = issues.filter(
-    (issue) => issue.assignedTechnicianId === currentUserId || !issue.assignedTechnicianId
-  );
+  const technicianAssignedIssues = useMemo(() => {
+    return issues.filter((issue) => {
+      if (issue.assignedTechnicianId === currentUserId) return true;
+      if (issue.labId && technicianAssignedLabIds.has(issue.labId)) return true;
+      if (issue.labName && technicianAssignedLabRooms.some((room) => issue.labName.toLowerCase().includes(room))) return true;
+      return false;
+    });
+  }, [issues, currentUserId, technicianAssignedLabIds, technicianAssignedLabRooms]);
+
   const technicianIncomingIssues = technicianAssignedIssues.filter((issue) => issue.status === "Assigned");
   const technicianWorkIssues = technicianAssignedIssues
     .filter((issue) => issue.status !== "Assigned")
@@ -559,6 +588,7 @@ export default function DashboardPage({
         name: newAccount.name.trim(),
         email: newAccount.email.trim(),
         role: newAccount.role,
+        department: newAccount.department.trim() || undefined,
         labId: newAccount.labId || undefined,
         password: newAccount.password.trim() || undefined,
       });
@@ -573,7 +603,7 @@ export default function DashboardPage({
         emailError: res.emailError || null,
       });
 
-      setNewAccount({ name: "", email: "", role: "technician", labId: "", password: "" });
+      setNewAccount({ name: "", email: "", role: "technician", labId: "", password: "", department: "" });
       setShowAccountForm(false);
       setNotice(
         res.emailStatus === "failed"
@@ -615,21 +645,102 @@ export default function DashboardPage({
   }
 
   async function removeAccount(account: StaffAccount) {
-    if (account.role === "authority" && role !== "admin") {
-      setNotice("Higher Authority accounts can only be removed by System Admin.");
-      return;
-    }
     if (account.id === "admin-1") {
       setNotice("The primary System Admin account cannot be removed.");
       return;
     }
+    if (account.role === "authority" && role !== "admin") {
+      setNotice("Higher Authority accounts can only be removed by System Admin.");
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to permanently delete the account for ${account.name} (${account.email})?`)) {
+      return;
+    }
 
     try {
+      setStaffAccounts((prev) => prev.filter((a) => a.id !== account.id));
       await secsApi.users.deleteUser(account.id);
-      setNotice(`${account.name}'s account was removed from the database.`);
+      setNotice(`${account.name}'s account was permanently removed from PostgreSQL.`);
       await loadData();
     } catch (err: any) {
       setNotice(err?.message || "Failed to remove account.");
+      await loadData();
+    }
+  }
+
+  async function handleCreateLab(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newLab.room.trim() || !newLab.name.trim()) {
+      setNotice("Please provide both a room code and a lab name.");
+      return;
+    }
+
+    try {
+      const dept = newLab.department.trim() || departments[0] || "General Engineering";
+      await secsApi.labs.createLab({
+        room: newLab.room.trim(),
+        name: newLab.name.trim(),
+        department: dept,
+        technicianId: newLab.technicianId || undefined,
+      });
+
+      setNewLab({ room: "", name: "", department: "", technicianId: "" });
+      setShowNewLabForm(false);
+      setNotice(`Laboratory ${newLab.room.trim()} created successfully and saved to PostgreSQL.`);
+      await loadData();
+    } catch (err: any) {
+      setNotice(err?.message || "Failed to create lab room.");
+    }
+  }
+
+  async function handleRemoveLab(lab: Lab) {
+    if (!window.confirm(`Are you sure you want to delete ${lab.room} · ${lab.name}? All associated reports will be detached.`)) {
+      return;
+    }
+
+    try {
+      setLabs((prev) => prev.filter((l) => l.id !== lab.id));
+      await secsApi.labs.deleteLab(lab.id);
+      setNotice(`Laboratory ${lab.room} was removed from the database.`);
+      await loadData();
+    } catch (err: any) {
+      setNotice(err?.message || "Failed to remove lab.");
+      await loadData();
+    }
+  }
+
+  async function handleAddDepartment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newDeptInput.trim()) {
+      setNotice("Enter a department name.");
+      return;
+    }
+
+    try {
+      const name = newDeptInput.trim();
+      await secsApi.departments.createDepartment(name);
+      setNewDeptInput("");
+      setNotice(`Department "${name}" added successfully.`);
+      await loadData();
+    } catch (err: any) {
+      setNotice(err?.message || "Failed to add department.");
+    }
+  }
+
+  async function handleRemoveDepartment(deptName: string) {
+    if (!window.confirm(`Are you sure you want to delete "${deptName}" department?`)) {
+      return;
+    }
+
+    try {
+      setDepartments((prev) => prev.filter((d) => d !== deptName));
+      await secsApi.departments.deleteDepartment(deptName);
+      setNotice(`Department "${deptName}" removed successfully.`);
+      await loadData();
+    } catch (err: any) {
+      setNotice(err?.message || "Failed to remove department.");
+      await loadData();
     }
   }
 
@@ -1459,10 +1570,154 @@ export default function DashboardPage({
                     Control technician assignment to campus research and instructional facilities.
                   </p>
                 </div>
+                {role === "admin" && (
+                  <div className="flex items-center gap-2">
+                    <Button variant="secondary" onClick={() => setShowDeptSection(!showDeptSection)}>
+                      {showDeptSection ? "Hide Departments" : "🏢 Manage Departments"}
+                    </Button>
+                    <Button variant="primary" onClick={() => setShowNewLabForm(!showNewLabForm)}>
+                      {showNewLabForm ? "Close Form" : "+ Create New Lab Room"}
+                    </Button>
+                  </div>
+                )}
               </div>
 
+              {/* Dynamic Departments Manager Card */}
+              {showDeptSection && (
+                <div className="glass-card p-6 rounded-2xl space-y-4 border border-blue-500/20 bg-blue-950/20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-white">Academic Departments Directory</h3>
+                      <p className="text-xs text-slate-400">Add or remove campus departments used across laboratories and staff profiles.</p>
+                    </div>
+                    <button onClick={() => setShowDeptSection(false)} className="text-slate-400 hover:text-white text-xs px-2 py-1">✕</button>
+                  </div>
+
+                  <form onSubmit={handleAddDepartment} className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. Robotics & Mechatronics Engineering"
+                      value={newDeptInput}
+                      onChange={(e) => setNewDeptInput(e.target.value)}
+                      className="flex-1 rounded-xl px-4 py-2 text-xs glass-input"
+                    />
+                    <Button type="submit" variant="amber">
+                      + Add Department
+                    </Button>
+                  </form>
+
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {departments.map((dept) => (
+                      <span
+                        key={dept}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 border border-white/10 text-slate-200"
+                      >
+                        <span>{dept}</span>
+                        {role === "admin" && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveDepartment(dept)}
+                            className="text-slate-400 hover:text-rose-400 transition-colors ml-1 font-bold text-xs"
+                            title="Remove department"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                    {departments.length === 0 && (
+                      <p className="text-xs text-slate-500">No departments found. Add one above.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic Lab Creation Form */}
+              {showNewLabForm && (
+                <form onSubmit={handleCreateLab} className="glass-card p-6 rounded-2xl space-y-4 border border-amber-500/20">
+                  <h3 className="text-sm font-bold text-white pb-3 border-b border-white/5">
+                    Register New Laboratory Room
+                  </h3>
+
+                  <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        Room Identifier / Code
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Lab 301 or Room 502"
+                        value={newLab.room}
+                        onChange={(e) => setNewLab({ ...newLab, room: e.target.value })}
+                        className="w-full rounded-xl px-4 py-2 text-xs glass-input"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        Laboratory Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Computer Networks & Cloud Lab"
+                        value={newLab.name}
+                        onChange={(e) => setNewLab({ ...newLab, name: e.target.value })}
+                        className="w-full rounded-xl px-4 py-2 text-xs glass-input"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        Department
+                      </label>
+                      <select
+                        value={newLab.department}
+                        onChange={(e) => setNewLab({ ...newLab, department: e.target.value })}
+                        className="w-full rounded-xl px-4 py-2 text-xs glass-input bg-[#0b142c]"
+                      >
+                        <option value="">Select Department</option>
+                        {departments.map((d) => (
+                          <option key={d} value={d}>
+                            {d}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        Assign Staff / Technician (Optional)
+                      </label>
+                      <select
+                        value={newLab.technicianId}
+                        onChange={(e) => setNewLab({ ...newLab, technicianId: e.target.value })}
+                        className="w-full rounded-xl px-4 py-2 text-xs glass-input bg-[#0b142c]"
+                      >
+                        <option value="">Assign Later</option>
+                        {technicians.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name} ({t.department})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="ghost" type="button" onClick={() => setShowNewLabForm(false)}>
+                      Cancel
+                    </Button>
+                    <Button variant="primary" type="submit">
+                      Save Laboratory Room →
+                    </Button>
+                  </div>
+                </form>
+              )}
+
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {labs.map((lab) => (
+                {assignedLabs.map((lab) => (
                   <div key={lab.id} className="glass-card p-5 rounded-2xl flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between mb-2">
@@ -1509,11 +1764,30 @@ export default function DashboardPage({
                               </option>
                             ))}
                           </select>
+                          {role === "admin" && (
+                            <div className="pt-2 flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveLab(lab)}
+                                className="text-[11px] text-rose-400 hover:text-rose-300 font-semibold hover:underline"
+                              >
+                                ✕ Remove Lab
+                              </button>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>
                   </div>
                 ))}
+
+                {assignedLabs.length === 0 && (
+                  <div className="sm:col-span-2 lg:col-span-3 glass-card p-12 rounded-2xl text-center text-xs text-slate-500">
+                    {role === "technician"
+                      ? "You are currently not assigned to any laboratory rooms. Contact the System Administrator to receive an assignment."
+                      : "No laboratory facilities found. Click '+ Create New Lab Room' to register one."}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1778,7 +2052,25 @@ export default function DashboardPage({
                     </div>
                   </div>
 
-                  <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        Department
+                      </label>
+                      <select
+                        value={newAccount.department}
+                        onChange={(e) => setNewAccount({ ...newAccount, department: e.target.value })}
+                        className="w-full rounded-xl px-4 py-2 text-xs glass-input bg-[#0b142c]"
+                      >
+                        <option value="">Select Department</option>
+                        {departments.map((d) => (
+                          <option key={d} value={d}>
+                            {d}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
                     <div>
                       <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
                         Assign Lab Room (Optional)

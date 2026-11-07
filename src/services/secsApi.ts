@@ -548,6 +548,53 @@ class SECSBackendEngine {
     return { message: "Technician assigned.", lab };
   }
 
+  async createLab(payload: { room: string; name: string; department: string; technicianId?: string }): Promise<{ message: string; lab: Lab }> {
+    await this.delay();
+    const tech = payload.technicianId ? this.state.users.find((u) => u.id === payload.technicianId) : null;
+    const newLab: Lab = {
+      id: `lab-${Date.now()}`,
+      room: payload.room.trim(),
+      name: payload.name.trim(),
+      department: payload.department.trim(),
+      technicianId: payload.technicianId || null,
+      technicianName: tech ? tech.name : "Awaiting assignment",
+      openIssues: 0,
+    };
+    this.state.labs.push(newLab);
+    this.persist();
+    return { message: "Lab created.", lab: newLab };
+  }
+
+  async deleteLab(labId: string): Promise<{ message: string }> {
+    await this.delay();
+    const idx = this.state.labs.findIndex((l) => l.id === labId);
+    if (idx !== -1) {
+      this.state.labs.splice(idx, 1);
+      this.persist();
+    }
+    return { message: "Lab removed." };
+  }
+
+  async createDepartment(name: string): Promise<{ message: string }> {
+    await this.delay();
+    const trimmed = name.trim();
+    if (!this.state.departments.includes(trimmed)) {
+      this.state.departments.push(trimmed);
+      this.persist();
+    }
+    return { message: "Department created." };
+  }
+
+  async deleteDepartment(nameOrId: string): Promise<{ message: string }> {
+    await this.delay();
+    const idx = this.state.departments.findIndex((d) => d.toLowerCase() === nameOrId.toLowerCase());
+    if (idx !== -1) {
+      this.state.departments.splice(idx, 1);
+      this.persist();
+    }
+    return { message: "Department removed." };
+  }
+
   // --- Budgets ---
   async getBudgets(): Promise<Budget[]> {
     await this.delay();
@@ -986,14 +1033,15 @@ export const secsApi = {
         async () => engine.getPublicIssues()
       );
     },
-    getIssues: async (params?: { search?: string; status?: string; role?: string; userId?: string }): Promise<PublicIssue[]> => {
+    getIssues: async (params?: { search?: string; status?: string; role?: string; userId?: string; technicianId?: string }): Promise<PublicIssue[]> => {
       return tryApi(
         async () => {
           const qs = new URLSearchParams();
           if (params?.search) qs.append("search", params.search);
           if (params?.status) qs.append("status", params.status);
           if (params?.role) qs.append("role", params.role);
-          if (params?.userId) qs.append("technicianId", params.userId);
+          if (params?.technicianId) qs.append("technicianId", params.technicianId);
+          else if (params?.userId) qs.append("technicianId", params.userId);
           const url = `/api/v1/issues${qs.toString() ? `?${qs.toString()}` : ""}`;
           const res = await apiRequest<{ data: any[] }>(url);
           return res.data.map(normalizeIssue);
@@ -1063,7 +1111,7 @@ export const secsApi = {
         async () => engine.getLabs()
       );
     },
-    createLab: async (lab: { room: string; name: string; department: string }): Promise<{ message: string; lab: Lab }> => {
+    createLab: async (lab: { room: string; name: string; department: string; technicianId?: string }): Promise<{ message: string; lab: Lab }> => {
       return tryApi(
         async () => {
           const res = await apiRequest<{ message: string; lab: any }>("/api/v1/labs", {
@@ -1072,20 +1120,7 @@ export const secsApi = {
           });
           return { message: res.message, lab: normalizeLab(res.lab) };
         },
-        async () => {
-          const labs = await engine.getLabs();
-          const newLab: Lab = {
-            id: `lab-${Date.now()}`,
-            room: lab.room,
-            name: lab.name,
-            department: lab.department,
-            technicianId: null,
-            technicianName: "Awaiting assignment",
-            openIssues: 0,
-          };
-          labs.push(newLab);
-          return { message: "Lab created.", lab: newLab };
-        }
+        async () => engine.createLab(lab)
       );
     },
     assignTechnician: async (labId: string, technicianId: string | null): Promise<{ message: string; lab: Lab }> => {
@@ -1100,7 +1135,16 @@ export const secsApi = {
         async () => engine.assignTechnician(labId, technicianId)
       );
     },
-    deleteLab: async () => ({ message: "Lab removed." }),
+    deleteLab: async (labId: string): Promise<{ message: string }> => {
+      return tryApi(
+        async () => {
+          return await apiRequest(`/api/v1/labs/${labId}`, {
+            method: "DELETE",
+          });
+        },
+        async () => engine.deleteLab(labId)
+      );
+    },
   },
   budgets: {
     getBudgets: async (): Promise<Budget[]> => {
@@ -1328,6 +1372,59 @@ export const secsApi = {
           return res.data;
         },
         async () => engine.getDepartments()
+      );
+    },
+    createDepartment: async (name: string): Promise<{ message: string }> => {
+      return tryApi(
+        async () => {
+          return await apiRequest<{ message: string }>("/api/v1/departments", {
+            method: "POST",
+            body: JSON.stringify({ name }),
+          });
+        },
+        async () => engine.createDepartment(name)
+      );
+    },
+    deleteDepartment: async (nameOrId: string): Promise<{ message: string }> => {
+      return tryApi(
+        async () => {
+          return await apiRequest<{ message: string }>(`/api/v1/departments/${encodeURIComponent(nameOrId)}`, {
+            method: "DELETE",
+          });
+        },
+        async () => engine.deleteDepartment(nameOrId)
+      );
+    },
+  },
+  departments: {
+    getDepartments: async (): Promise<string[]> => {
+      return tryApi(
+        async () => {
+          const res = await apiRequest<{ data: string[] }>("/api/v1/departments");
+          return res.data;
+        },
+        async () => engine.getDepartments()
+      );
+    },
+    createDepartment: async (name: string): Promise<{ message: string }> => {
+      return tryApi(
+        async () => {
+          return await apiRequest<{ message: string }>("/api/v1/departments", {
+            method: "POST",
+            body: JSON.stringify({ name }),
+          });
+        },
+        async () => engine.createDepartment(name)
+      );
+    },
+    deleteDepartment: async (nameOrId: string): Promise<{ message: string }> => {
+      return tryApi(
+        async () => {
+          return await apiRequest<{ message: string }>(`/api/v1/departments/${encodeURIComponent(nameOrId)}`, {
+            method: "DELETE",
+          });
+        },
+        async () => engine.deleteDepartment(nameOrId)
       );
     },
   },

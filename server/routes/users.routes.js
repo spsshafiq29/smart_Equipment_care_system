@@ -223,6 +223,7 @@ export function userRoutes(router) {
     }
 
     try {
+      await query('UPDATE labs SET technician_id = NULL WHERE technician_id = $1', [id]);
       await query('DELETE FROM users WHERE id = $1', [id]);
     } catch {
       // ignore

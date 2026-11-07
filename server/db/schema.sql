@@ -145,3 +145,10 @@ CREATE TABLE password_resets (
 
 CREATE INDEX idx_password_resets_email ON password_resets(email);
 
+-- 9. DEPARTMENTS (Managed dynamically by Admin)
+CREATE TABLE IF NOT EXISTS departments (
+    id VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+

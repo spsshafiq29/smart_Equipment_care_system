@@ -63,18 +63,69 @@ export function issueRoutes(router) {
   });
 
   // GET /api/v1/issues
-  router.get('/api/v1/issues', (req, res) => {
+  router.get('/api/v1/issues', async (req, res) => {
     let list = [...memoryDb.tables.issues];
     const { search, role, technicianId } = req.query || {};
 
+    try {
+      const dbRes = await query(`
+        SELECT id, lab_id, lab_name, equipment_type, asset_tag, description, priority, status,
+               current_stage, pending_with, budget_amount, budget_status, reporter_id,
+               reporter_email, reporter_name, assigned_technician_id,
+               created_at, updated_at
+        FROM issues
+        ORDER BY created_at DESC
+      `);
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+        list = dbRes.rows;
+      }
+    } catch {
+      // fallback to memory
+    }
+
     if (search) {
       const q = search.trim().toLowerCase();
-      list = list.filter((i) => i.id.toLowerCase().includes(q) || i.item.toLowerCase().includes(q) || i.lab_name.toLowerCase().includes(q));
+      list = list.filter((i) =>
+        i.id.toLowerCase().includes(q) ||
+        (i.item || i.equipment_type || '').toLowerCase().includes(q) ||
+        (i.lab_name || '').toLowerCase().includes(q)
+      );
     }
 
     if (role === 'technician') {
-      const tech = technicianId || req.user?.id || 'tech-1';
-      list = list.filter((i) => i.assigned_technician_id === tech);
+      const tech = technicianId || req.user?.id;
+      if (tech) {
+        // Collect labs assigned to this technician
+        const assignedLabIds = new Set();
+        const assignedLabRooms = [];
+        for (const lab of memoryDb.tables.labs) {
+          if (lab.technician_id === tech) {
+            assignedLabIds.add(lab.id);
+            if (lab.room) assignedLabRooms.push(lab.room.toLowerCase());
+          }
+        }
+        try {
+          const lRes = await query('SELECT id, room FROM labs WHERE technician_id = $1', [tech]);
+          if (lRes && lRes.rows) {
+            for (const r of lRes.rows) {
+              assignedLabIds.add(r.id);
+              if (r.room) assignedLabRooms.push(r.room.toLowerCase());
+            }
+          }
+        } catch {
+          // ignore
+        }
+
+        list = list.filter((i) => {
+          const tId = i.assigned_technician_id;
+          const lId = i.lab_id;
+          const lName = (i.lab_name || '').toLowerCase();
+          if (tId === tech) return true;
+          if (lId && assignedLabIds.has(lId)) return true;
+          if (assignedLabRooms.some((r) => lName.includes(r))) return true;
+          return false;
+        });
+      }
     } else if (role === 'accounts') {
       list = list.filter((i) => i.budget_status === 'Approved by Higher Authority' || i.budget_status === 'Payment approved by Accounts');
     }
@@ -83,7 +134,7 @@ export function issueRoutes(router) {
   });
 
   // POST /api/v1/issues
-  router.post('/api/v1/issues', (req, res) => {
+  router.post('/api/v1/issues', async (req, res) => {
     const { labId, labName, equipmentType, assetTag, description, priority, reporterName, reporterEmail } = req.body || {};
 
     if (!labId && !labName) {
@@ -96,8 +147,19 @@ export function issueRoutes(router) {
       return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Please provide a detailed problem description' } });
     }
 
-    const lab = memoryDb.tables.labs.find((l) => l.id === labId || `${l.room} · ${l.name}` === labName);
-    const assignedTechnicianId = lab?.technician_id || '';
+    let lab = memoryDb.tables.labs.find((l) => l.id === labId || `${l.room} · ${l.name}` === labName || l.room === labId);
+    let assignedTechnicianId = lab?.technician_id || '';
+
+    try {
+      const lRes = await query('SELECT id, room, name, technician_id FROM labs WHERE id = $1 OR room = $1', [labId || labName]);
+      if (lRes && lRes.rows && lRes.rows[0]) {
+        lab = lRes.rows[0];
+        if (lab.technician_id) assignedTechnicianId = lab.technician_id;
+      }
+    } catch {
+      // ignore
+    }
+
     let pendingWith = 'Lab Coordinator';
     let currentStage = 'Awaiting lab review';
 
@@ -106,6 +168,16 @@ export function issueRoutes(router) {
       if (tech) {
         pendingWith = tech.name;
         currentStage = 'Awaiting technician assessment';
+      } else {
+        try {
+          const uRes = await query('SELECT name FROM users WHERE id = $1', [assignedTechnicianId]);
+          if (uRes && uRes.rows && uRes.rows[0]) {
+            pendingWith = uRes.rows[0].name;
+            currentStage = 'Awaiting technician assessment';
+          }
+        } catch {
+          // ignore
+        }
       }
     }
 
@@ -133,12 +205,37 @@ export function issueRoutes(router) {
       reporter_id: req.user?.id || 'guest',
       reporter_email: reporterEmail || req.user?.email || 'student@uitc.edu',
       reporter_name: reporterName || req.user?.name || 'Student Reporter',
-      assigned_technician_id: assignedTechnicianId,
+      assigned_technician_id: assignedTechnicianId || null,
       created_at: nowFormatted,
       updated_at: nowFormatted,
     };
 
     memoryDb.tables.issues.unshift(newIssue);
+
+    try {
+      await query(
+        `INSERT INTO issues (id, lab_id, lab_name, equipment_type, asset_tag, description, priority, status, current_stage, pending_with, reporter_id, reporter_email, reporter_name, assigned_technician_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+        [
+          newIssue.id,
+          newIssue.lab_id,
+          newIssue.lab_name,
+          newIssue.equipment_type,
+          newIssue.asset_tag,
+          newIssue.description,
+          newIssue.priority,
+          newIssue.status,
+          newIssue.current_stage,
+          newIssue.pending_with,
+          newIssue.reporter_id,
+          newIssue.reporter_email,
+          newIssue.reporter_name,
+          newIssue.assigned_technician_id,
+        ]
+      );
+    } catch {
+      // ignore
+    }
 
     if (assignedTechnicianId) {
       memoryDb.tables.notifications.unshift({

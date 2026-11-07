@@ -1,4 +1,4 @@
-import { memoryDb } from '../db/pool.js';
+import { memoryDb, query } from '../db/pool.js';
 import { emailOutbox, sendMail } from '../services/email.service.js';
 
 export function auditRoutes(router) {
@@ -134,24 +134,80 @@ export function metaRoutes(router) {
   router.get('/api/v1/equipment-types', equipmentTypesHandler);
   router.get('/api/v1/metadata/equipment-types', equipmentTypesHandler);
 
-  const departmentsHandler = (req, res) => {
+  const departmentsHandler = async (req, res) => {
+    try {
+      const dbRes = await query('SELECT id, name FROM departments ORDER BY name ASC');
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+        return res.json({
+          data: dbRes.rows.map((r) => r.name),
+          departments: dbRes.rows,
+          total: dbRes.rows.length,
+        });
+      }
+    } catch {
+      // ignore
+    }
+
+    const list = (memoryDb.tables.departments || []).map((d) => (typeof d === 'string' ? d : d.name));
     res.json({
-      data: [
-        'Computer Science & Engineering',
-        'Electrical & Electronic Engineering',
-        'Mechanical Engineering',
-        'Civil Engineering',
-        'Physics',
-        'Chemistry',
-        'Biology & Biotechnology',
-        'Business Administration',
-        'Other',
-      ],
+      data: list,
+      departments: memoryDb.tables.departments || [],
+      total: list.length,
     });
   };
 
   router.get('/api/v1/departments', departmentsHandler);
   router.get('/api/v1/metadata/departments', departmentsHandler);
+
+  // POST /api/v1/departments - Admin creates department
+  const createDeptHandler = async (req, res) => {
+    const { name } = req.body || {};
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Department name is required' } });
+    }
+
+    const trimmed = name.trim();
+    const id = `dept-${Date.now()}`;
+    const newDept = { id, name: trimmed };
+
+    if (!memoryDb.tables.departments) memoryDb.tables.departments = [];
+    if (!memoryDb.tables.departments.some((d) => (typeof d === 'string' ? d : d.name).toLowerCase() === trimmed.toLowerCase())) {
+      memoryDb.tables.departments.push(newDept);
+    }
+
+    try {
+      await query('INSERT INTO departments (id, name) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING', [id, trimmed]);
+    } catch {
+      // ignore
+    }
+
+    res.status(201).json({ message: 'Department created successfully', department: newDept });
+  };
+
+  router.post('/api/v1/departments', createDeptHandler);
+  router.post('/api/v1/metadata/departments', createDeptHandler);
+
+  // DELETE /api/v1/departments/:id - Admin deletes department
+  const deleteDeptHandler = async (req, res) => {
+    const { id } = req.params;
+    try {
+      await query('DELETE FROM departments WHERE id = $1 OR name = $1', [id]);
+    } catch {
+      // ignore
+    }
+
+    if (memoryDb.tables.departments) {
+      const idx = memoryDb.tables.departments.findIndex((d) => (typeof d === 'string' ? d : d.id) === id || (typeof d === 'string' ? d : d.name) === id);
+      if (idx !== -1) {
+        memoryDb.tables.departments.splice(idx, 1);
+      }
+    }
+
+    res.json({ message: 'Department removed successfully' });
+  };
+
+  router.delete('/api/v1/departments/:id', deleteDeptHandler);
+  router.delete('/api/v1/metadata/departments/:id', deleteDeptHandler);
 }
 
 export function emailRoutes(router) {

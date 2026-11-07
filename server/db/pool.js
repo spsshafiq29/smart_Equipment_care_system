@@ -54,6 +54,16 @@ class MemoryPostgres {
       notifications: [],
       announcements: [],
       password_resets: [],
+      departments: [
+        { id: 'dept-1', name: 'Computer Science & Engineering' },
+        { id: 'dept-2', name: 'Electrical & Electronic Engineering' },
+        { id: 'dept-3', name: 'Mechanical Engineering' },
+        { id: 'dept-4', name: 'Civil Engineering' },
+        { id: 'dept-5', name: 'Physics' },
+        { id: 'dept-6', name: 'Chemistry' },
+        { id: 'dept-7', name: 'Biology & Biotechnology' },
+        { id: 'dept-8', name: 'Business Administration' },
+      ],
     };
     this.counters = {
       ticketSeq: 1001,
