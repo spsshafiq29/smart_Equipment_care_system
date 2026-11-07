@@ -14,7 +14,7 @@ import type {
   StaffAccount,
 } from "./workflowTypes";
 
-type Page = "landing" | "login" | "register" | "dashboard";
+type Page = "landing" | "login" | "register" | "dashboard" | "setup-admin";
 
 const NAV_LINKS = [
   { label: "Home", href: "#home" },
@@ -171,6 +171,7 @@ export default function App() {
   const [portalRole, setPortalRole] = useState<PortalRole>("admin");
   const [currentUser, setCurrentUser] = useState<StaffAccount | null>(() => getCurrentUser());
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [adminConfigured, setAdminConfigured] = useState<boolean | null>(null);
 
   // Dynamic Backend Data State
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -200,13 +201,14 @@ export default function App() {
   const loadDynamicData = async () => {
     try {
       setIsLoading(true);
-      const [statsData, labsData, issuesData, eqData, annData, incData] = await Promise.all([
+      const [statsData, labsData, issuesData, eqData, annData, incData, adminStatus] = await Promise.all([
         secsApi.stats.getDashboardStats().catch(() => null),
         secsApi.labs.getLabs().catch(() => []),
         secsApi.issues.getPublicIssues().catch(() => []),
         secsApi.meta.getEquipmentTypes().catch(() => []),
         secsApi.meta.getAnnouncements().catch(() => []),
         secsApi.audit.getIncidents().catch(() => []),
+        secsApi.auth.checkAdminStatus().catch(() => ({ adminConfigured: false })),
       ]);
 
       if (statsData) setStats(statsData);
@@ -215,6 +217,7 @@ export default function App() {
       if (eqData) setEquipmentTypes(eqData);
       if (annData) setAnnouncements(annData);
       if (incData) setIncidents(incData);
+      if (adminStatus) setAdminConfigured(adminStatus.adminConfigured);
     } catch (err) {
       console.error("Failed to load initial SECS data:", err);
     } finally {
@@ -297,6 +300,9 @@ export default function App() {
   function openPortal(role: PortalRole) {
     if (currentUser) {
       setPage("dashboard");
+    } else if (role === "admin" && adminConfigured === false) {
+      setPortalRole("admin");
+      setPage("setup-admin");
     } else {
       setPortalRole(role);
       setPage("login");
@@ -305,6 +311,7 @@ export default function App() {
 
   function handleLoginSuccess(user: StaffAccount) {
     setCurrentUser(user);
+    setAdminConfigured(true);
     setPage("dashboard");
   }
 
@@ -314,10 +321,22 @@ export default function App() {
     setPage("landing");
   }
 
+  if (page === "setup-admin") {
+    return (
+      <LoginPage
+        initialPortal="admin"
+        initialView="setup-admin"
+        onNavigate={(p) => setPage(p)}
+        onLogin={handleLoginSuccess}
+      />
+    );
+  }
+
   if (page === "login") {
     return (
       <LoginPage
         initialPortal={portalRole}
+        initialView={portalRole === "admin" && adminConfigured === false ? "setup-admin" : "login"}
         onNavigate={(p) => setPage(p)}
         onLogin={handleLoginSuccess}
       />
@@ -345,6 +364,27 @@ export default function App() {
 
   return (
     <div className="min-h-full bg-[#050a18] text-slate-100 selection:bg-blue-500/30">
+      {/* ── ONE-TIME MASTER ADMIN SETUP BANNER (AUTO-HIDES ONCE INITIALIZED) ── */}
+      {adminConfigured === false && (
+        <aside aria-label="First-time setup banner" className="bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-600 text-slate-950 px-6 py-2.5 shadow-lg border-b border-amber-400/40 relative z-[60]">
+          <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-2.5 text-xs font-bold">
+              <span className="text-base">👑</span>
+              <span>First-Time Deployment Notice: Primary System Administrator account has not been configured yet.</span>
+            </div>
+            <button
+              onClick={() => {
+                setPortalRole("admin");
+                setPage("setup-admin");
+              }}
+              className="px-4 py-1.5 rounded-lg bg-slate-950 text-amber-300 hover:text-white font-bold text-xs shadow hover:bg-slate-900 transition-all flex items-center gap-1.5"
+            >
+              <span>Setup Master Admin Now (One-Time) →</span>
+            </button>
+          </div>
+        </aside>
+      )}
+
       {/* ── STICKY GLASS NAVIGATION ── */}
       <nav className="sticky top-0 z-50 glass-panel border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
@@ -399,6 +439,17 @@ export default function App() {
               </>
             ) : (
               <>
+                {adminConfigured === false && (
+                  <button
+                    onClick={() => {
+                      setPortalRole("admin");
+                      setPage("setup-admin");
+                    }}
+                    className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 hover:brightness-110 transition-all animate-pulse"
+                  >
+                    <span>👑</span> One-Time Admin Setup
+                  </button>
+                )}
                 <button
                   onClick={() => document.querySelector("#portal-access")?.scrollIntoView({ behavior: "smooth" })}
                   className="hidden sm:flex text-xs font-semibold px-4 py-2 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05] text-slate-300 hover:text-white transition-all"
@@ -466,6 +517,18 @@ export default function App() {
                 </>
               ) : (
                 <>
+                  {adminConfigured === false && (
+                    <button
+                      onClick={() => {
+                        setMobileOpen(false);
+                        setPortalRole("admin");
+                        setPage("setup-admin");
+                      }}
+                      className="w-full text-center py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-bold text-xs shadow-md flex items-center justify-center gap-1.5"
+                    >
+                      <span>👑</span> Setup Master Admin (One-Time)
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setMobileOpen(false);
@@ -706,42 +769,69 @@ export default function App() {
           </div>
 
           <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
-            {PORTAL_CARDS.map((portal) => (
-              <div
-                key={portal.role}
-                className="glass-card rounded-2xl p-6 flex flex-col justify-between border border-white/5"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-5">
-                    <span className="text-2xl">{portal.icon}</span>
-                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${portal.accentColor}`}>
-                      {portal.subtitle}
-                    </span>
-                  </div>
-
-                  <h3 className="text-lg font-bold text-white mb-2">{portal.title}</h3>
-                  <p className="text-xs text-slate-400 leading-relaxed mb-5 min-h-[48px]">
-                    {portal.description}
-                  </p>
-
-                  <div className="space-y-2 mb-6 pt-4 border-t border-white/5">
-                    {portal.actions.map((act) => (
-                      <div key={act} className="flex items-center gap-2 text-xs text-slate-300">
-                        <span className="text-emerald-400 text-[11px]">✓</span>
-                        <span>{act}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => openPortal(portal.role)}
-                  className="w-full py-2.5 rounded-xl btn-primary text-xs font-semibold text-center"
+            {PORTAL_CARDS.map((portal) => {
+              const isUnconfiguredAdmin = portal.role === "admin" && adminConfigured === false;
+              return (
+                <div
+                  key={portal.role}
+                  className={`glass-card rounded-2xl p-6 flex flex-col justify-between border transition-all ${
+                    isUnconfiguredAdmin
+                      ? "border-amber-500/50 shadow-xl shadow-amber-500/15 bg-amber-500/[0.04]"
+                      : "border-white/5"
+                  }`}
                 >
-                  Enter {portal.title} →
-                </button>
-              </div>
-            ))}
+                  <div>
+                    <div className="flex items-center justify-between mb-5">
+                      <span className="text-2xl">{portal.icon}</span>
+                      <span
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                          isUnconfiguredAdmin
+                            ? "bg-amber-500/20 border-amber-500/40 text-amber-300 animate-pulse"
+                            : portal.accentColor
+                        }`}
+                      >
+                        {isUnconfiguredAdmin ? "⚡ Setup Required (One-Time)" : portal.subtitle}
+                      </span>
+                    </div>
+
+                    <h3 className="text-lg font-bold text-white mb-2">{portal.title}</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed mb-5 min-h-[48px]">
+                      {isUnconfiguredAdmin
+                        ? "Master administrator account has not been set up. Click below to initialize your credentials now."
+                        : portal.description}
+                    </p>
+
+                    <div className="space-y-2 mb-6 pt-4 border-t border-white/5">
+                      {portal.actions.map((act) => (
+                        <div key={act} className="flex items-center gap-2 text-xs text-slate-300">
+                          <span className="text-emerald-400 text-[11px]">✓</span>
+                          <span>{act}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {isUnconfiguredAdmin ? (
+                    <button
+                      onClick={() => {
+                        setPortalRole("admin");
+                        setPage("setup-admin");
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold text-xs text-center shadow-lg shadow-amber-500/25 hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <span>👑</span> Setup Master Admin (One-Time) →
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => openPortal(portal.role)}
+                      className="w-full py-2.5 rounded-xl btn-primary text-xs font-semibold text-center"
+                    >
+                      Enter {portal.title} →
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

@@ -5,31 +5,42 @@ import { sendPasswordResetEmail } from '../services/email.service.js';
 export function authRoutes(router) {
   // GET /api/v1/auth/admin-status - checks if primary admin has been set up
   router.get('/api/v1/auth/admin-status', async (req, res) => {
+    let pgChecked = false;
+    let pgAdminExists = false;
     try {
       // Check Postgres if available
       const dbRes = await query("SELECT id FROM users WHERE role = 'admin' AND is_active = true LIMIT 1");
-      if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
-        return res.json({ adminConfigured: true });
+      if (dbRes && Array.isArray(dbRes.rows)) {
+        pgChecked = true;
+        pgAdminExists = dbRes.rows.length > 0;
       }
     } catch {
       // ignore
     }
 
+    if (pgChecked) {
+      return res.json({ adminConfigured: pgAdminExists });
+    }
+
     const memAdmin = memoryDb.tables.users.some((u) => u.role === 'admin' && u.is_active);
-    res.json({ adminConfigured: memAdmin });
+    res.json({ adminConfigured: Boolean(memAdmin) });
   });
 
   // POST /api/v1/auth/setup-admin - initial setup of the primary admin account
   router.post('/api/v1/auth/setup-admin', async (req, res) => {
     // Check if an admin is already configured
     let adminExists = false;
+    let pgChecked = false;
     try {
       const dbRes = await query("SELECT id FROM users WHERE role = 'admin' AND is_active = true LIMIT 1");
-      if (dbRes && dbRes.rows && dbRes.rows.length > 0) adminExists = true;
+      if (dbRes && Array.isArray(dbRes.rows)) {
+        pgChecked = true;
+        adminExists = dbRes.rows.length > 0;
+      }
     } catch {
       // ignore
     }
-    if (!adminExists) {
+    if (!pgChecked) {
       adminExists = memoryDb.tables.users.some((u) => u.role === 'admin' && u.is_active);
     }
 

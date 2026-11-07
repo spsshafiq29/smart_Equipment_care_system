@@ -6,6 +6,7 @@ interface Props {
   onNavigate: (page: "register" | "landing") => void;
   onLogin: (user: StaffAccount) => void;
   initialPortal?: PortalRole;
+  initialView?: "login" | "setup-admin" | "forgot-password";
 }
 
 const PORTALS: { value: PortalRole; label: string; description: string; icon: string }[] = [
@@ -15,8 +16,8 @@ const PORTALS: { value: PortalRole; label: string; description: string; icon: st
   { value: "technician", label: "Technician", description: "Diagnostics & repair queue", icon: "🔧" },
 ];
 
-export default function LoginPage({ onNavigate, onLogin, initialPortal }: Props) {
-  const [view, setView] = useState<"login" | "setup-admin" | "forgot-password">("login");
+export default function LoginPage({ onNavigate, onLogin, initialPortal, initialView }: Props) {
+  const [view, setView] = useState<"login" | "setup-admin" | "forgot-password">(initialView || "login");
   const [portal, setPortal] = useState<PortalRole>(initialPortal || "admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,14 +48,17 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal }: Props)
       .checkAdminStatus()
       .then((res) => {
         setAdminConfigured(res.adminConfigured);
-        if (!res.adminConfigured) {
+        if (!res.adminConfigured || initialView === "setup-admin") {
           setView("setup-admin");
         }
       })
       .catch(() => {
-        setAdminConfigured(true);
+        setAdminConfigured(false);
+        if (initialView === "setup-admin") {
+          setView("setup-admin");
+        }
       });
-  }, []);
+  }, [initialView]);
 
   function validateLogin() {
     const errs: Record<string, string> = {};
@@ -298,16 +302,25 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal }: Props)
 
             {/* Admin status notification badge */}
             {adminConfigured === false && view !== "setup-admin" && (
-              <div className="mb-5 p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-between text-xs text-amber-300">
-                <div className="flex items-center gap-2">
-                  <span className="text-base">⚡</span>
-                  <span>Primary Admin account not initialized yet.</span>
+              <div className="mb-6 p-4 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-amber-400/10 to-amber-500/5 text-amber-300 text-xs">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 font-bold text-amber-200">
+                    <span className="text-base">👑</span>
+                    <span>One-Time Master Setup: Primary Admin Not Initialized</span>
+                  </div>
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold">
+                    Action Required
+                  </span>
                 </div>
+                <p className="text-[11px] text-slate-300 mb-3 leading-relaxed">
+                  No administrator account exists in the PostgreSQL database. Initialize your master credentials now. This option permanently disappears once completed.
+                </p>
                 <button
+                  type="button"
                   onClick={() => setView("setup-admin")}
-                  className="px-2.5 py-1 rounded bg-amber-400 text-slate-950 font-bold hover:bg-amber-300 text-[11px] transition-colors"
+                  className="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold text-xs hover:brightness-110 shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-2"
                 >
-                  Setup
+                  <span>Open One-Time Admin Setup Form →</span>
                 </button>
               </div>
             )}
@@ -337,6 +350,14 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal }: Props)
             {/* ========================================================= */}
             {view === "setup-admin" && (
               <form onSubmit={handleSetupAdmin} className="space-y-4">
+                <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200 text-xs flex items-start gap-2.5 mb-2">
+                  <span className="text-base shrink-0">👑</span>
+                  <div className="leading-relaxed">
+                    <strong className="block text-amber-300 font-bold">One-Time Master Administrator Setup</strong>
+                    Configure the master system credentials below. Once submitted, the account will be stored in your PostgreSQL database, and this setup page will permanently lock and auto-hide.
+                  </div>
+                </div>
+
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
                     Admin Full Name / Username

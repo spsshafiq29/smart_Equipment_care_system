@@ -164,6 +164,11 @@ class SECSBackendEngine {
     this.saveState(this.state);
   }
 
+  clearAdminState() {
+    this.state.users = this.state.users.filter((u) => u.role !== "admin");
+    this.persist();
+  }
+
   // --- Auth ---
   async checkAdminStatus(): Promise<{ adminConfigured: boolean }> {
     await this.delay(20);
@@ -173,11 +178,6 @@ class SECSBackendEngine {
 
   async setupAdmin(payload: { name: string; email: string; password?: string; department?: string }) {
     await this.delay();
-    const hasAdmin = this.state.users.some((u) => u.role === "admin" && u.isActive !== false);
-    if (hasAdmin) {
-      throw new ApiError("Admin account has already been initialized.", 403, "FORBIDDEN");
-    }
-
     const email = payload.email.trim().toLowerCase();
     const adminUser: StaffAccount = {
       id: "admin-1",
@@ -188,7 +188,7 @@ class SECSBackendEngine {
       isActive: true,
     };
 
-    this.state.users = this.state.users.filter((u) => u.id !== "admin-1" && u.email !== email);
+    this.state.users = this.state.users.filter((u) => u.role !== "admin" && u.email !== email);
     this.state.users.push(adminUser);
     this.persist();
 
@@ -831,7 +831,13 @@ export const secsApi = {
   auth: {
     checkAdminStatus: async (): Promise<{ adminConfigured: boolean }> => {
       return tryApi(
-        async () => apiRequest<{ adminConfigured: boolean }>("/api/v1/auth/admin-status"),
+        async () => {
+          const res = await apiRequest<{ adminConfigured: boolean }>("/api/v1/auth/admin-status");
+          if (!res.adminConfigured) {
+            engine.clearAdminState();
+          }
+          return res;
+        },
         async () => engine.checkAdminStatus()
       );
     },
