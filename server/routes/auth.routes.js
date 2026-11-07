@@ -271,20 +271,31 @@ export function authRoutes(router) {
       // ignore
     }
 
-    // Dispatch professional password reset email via Brevo SMTP
-    await sendPasswordResetEmail({
-      to: trimmed,
-      name: user.name || 'Campus Member',
-      code: resetCode,
-      expiresMinutes: 15,
-    }).catch((err) => {
+    // Dispatch professional password reset email via Brevo REST API
+    let emailStatus = 'dispatched';
+    let emailError = null;
+    try {
+      const emailResult = await sendPasswordResetEmail({
+        to: trimmed,
+        name: user.name || 'Campus Member',
+        code: resetCode,
+        expiresMinutes: 15,
+      });
+      if (!emailResult || !emailResult.success) {
+        emailStatus = 'failed';
+        emailError = emailResult?.error || 'Email dispatch failed';
+      }
+    } catch (err) {
+      emailStatus = 'failed';
+      emailError = err?.message || 'Email dispatch exception';
       console.warn('[AUTH] Error sending password reset email:', err.message);
-    });
+    }
 
     res.json({
       success: true,
-      message: 'Password reset code generated and sent to your email. Valid for 15 minutes.',
-      code: resetCode, // Returned for instant verification & fallback
+      message: 'Password reset code has been sent to your university email. Valid for 15 minutes.',
+      emailStatus,
+      emailError,
     });
   });
 

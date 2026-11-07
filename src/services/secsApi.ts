@@ -231,7 +231,7 @@ class SECSBackendEngine {
     };
   }
 
-  async forgotPassword(email: string): Promise<{ success: boolean; message: string; code?: string }> {
+  async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
     await this.delay();
     const trimmed = email.trim().toLowerCase();
     const user = this.state.users.find((u) => u.email.toLowerCase() === trimmed);
@@ -242,8 +242,7 @@ class SECSBackendEngine {
     (this.state as any)._resetCode = { email: trimmed, code, exp: Date.now() + 15 * 60 * 1000 };
     return {
       success: true,
-      message: "Password reset verification code generated.",
-      code,
+      message: "Verification code dispatched to your email! Please enter the code from your email to choose a new password.",
     };
   }
 
@@ -958,10 +957,10 @@ export const secsApi = {
         }
       );
     },
-    forgotPassword: async (email: string) => {
+    forgotPassword: async (email: string): Promise<{ success: boolean; message: string }> => {
       return tryApi(
         async () =>
-          apiRequest<{ success: boolean; message: string; code?: string }>("/api/v1/auth/forgot-password", {
+          apiRequest<{ success: boolean; message: string }>("/api/v1/auth/forgot-password", {
             method: "POST",
             body: JSON.stringify({ email }),
           }),

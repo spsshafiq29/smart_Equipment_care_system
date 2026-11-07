@@ -40,7 +40,6 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal, initialV
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotCode, setForgotCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [generatedCodeHint, setGeneratedCodeHint] = useState("");
 
   // Check admin status on load
   useEffect(() => {
@@ -144,15 +143,12 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal, initialV
 
     setLoading(true);
     try {
-      const res = await secsApi.auth.forgotPassword(forgotEmail.trim());
-      if (res.code) {
-        setForgotCode(res.code);
-        setGeneratedCodeHint(res.code);
-      }
-      setSuccessMessage("Verification code dispatched to your email! Please enter the code and choose a new password.");
+      await secsApi.auth.forgotPassword(forgotEmail.trim());
+      setForgotCode("");
+      setSuccessMessage("Verification code dispatched to your email! Please check your inbox and enter the 6-digit code below.");
       setForgotStep(2);
     } catch (err: any) {
-      setServerError(err?.message || "Could not generate reset code.");
+      setServerError(err?.message || "Could not dispatch reset code.");
     } finally {
       setLoading(false);
     }

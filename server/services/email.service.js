@@ -14,13 +14,17 @@ export const emailOutbox = [];
 // Lazy-initialized transporter
 let transporter = null;
 
+function getBrevoApiKey() {
+  return process.env.BREVO_API_KEY || process.env.SMTP_PASS || '';
+}
+
 function getTransporter() {
   if (transporter) return transporter;
 
   const host = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
   const port = Number(process.env.SMTP_PORT) || 587;
-  const user = process.env.SMTP_USER || process.env.BREVO_USER || '';
-  const pass = process.env.SMTP_PASS || process.env.BREVO_API_KEY || '';
+  const user = process.env.SMTP_USER || process.env.BREVO_USER || 'bf0ff3001@smtp-brevo.com';
+  const pass = process.env.SMTP_PASS || getBrevoApiKey() || '';
 
   transporter = nodemailer.createTransport({
     host,
@@ -125,7 +129,7 @@ function renderEmailLayout({ title, subtitle, contentHtml, badgeText, badgeColor
  * Send email via Brevo REST API v3 (primary high-reliability channel)
  */
 async function sendViaBrevoApi({ to, subject, html, text }) {
-  const apiKey = process.env.BREVO_API_KEY || process.env.SMTP_PASS;
+  const apiKey = getBrevoApiKey();
   if (!apiKey || !apiKey.startsWith('xkeysib-')) {
     return null;
   }

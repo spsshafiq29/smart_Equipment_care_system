@@ -206,8 +206,8 @@ async function runQaTestSuite() {
   });
   assert(
     budgetReqRes.status === 200 &&
-      budgetReqRes.body?.issue?.status === 'Budget Requested' &&
-      budgetReqRes.body?.issue?.pending_with === 'Higher Authority',
+    budgetReqRes.body?.issue?.status === 'Budget Requested' &&
+    budgetReqRes.body?.issue?.pending_with === 'Higher Authority',
     'request_budget transitions status to Budget Requested, pending Higher Authority'
   );
 
@@ -217,8 +217,8 @@ async function runQaTestSuite() {
   });
   assert(
     authApproveRes.status === 200 &&
-      authApproveRes.body?.issue?.status === 'Payment Review' &&
-      authApproveRes.body?.issue?.pending_with === 'Accounts Office',
+    authApproveRes.body?.issue?.status === 'Payment Review' &&
+    authApproveRes.body?.issue?.pending_with === 'Accounts Office',
     'approve_budget transitions status to Payment Review, pending Accounts Office'
   );
 
@@ -228,8 +228,8 @@ async function runQaTestSuite() {
   });
   assert(
     acctPayRes.status === 200 &&
-      acctPayRes.body?.issue?.status === 'Funds Approved' &&
-      acctPayRes.body?.issue?.budget_status === 'Payment approved by Accounts',
+    acctPayRes.body?.issue?.status === 'Funds Approved' &&
+    acctPayRes.body?.issue?.budget_status === 'Payment approved by Accounts',
     'approve_payment transitions status to Funds Approved, awaiting tech completion'
   );
 
@@ -325,8 +325,8 @@ async function runQaTestSuite() {
   const statsRes = await makeRequest('GET', '/api/v1/dashboard/stats');
   assert(
     statsRes.status === 200 &&
-      typeof statsRes.body?.issuesResolvedCount === 'number' &&
-      typeof statsRes.body?.approvedBudgetTotal === 'number',
+    typeof statsRes.body?.issuesResolvedCount === 'number' &&
+    typeof statsRes.body?.approvedBudgetTotal === 'number',
     'Dynamic dashboard stats calculate resolved count and budget totals accurately'
   );
 
@@ -366,8 +366,8 @@ async function runQaTestSuite() {
   const deptRes = await makeRequest('GET', '/api/v1/metadata/departments');
   assert(
     deptRes.status === 200 &&
-      Array.isArray(deptRes.body?.data) &&
-      deptRes.body?.data?.some((d) => d.toLowerCase().includes('computer science')),
+    Array.isArray(deptRes.body?.data) &&
+    deptRes.body?.data?.some((d) => d.toLowerCase().includes('computer science')),
     'Metadata departments contains dynamic faculties'
   );
 
