@@ -315,6 +315,9 @@ export default function DashboardPage({
       if (notifsData?.data) {
         setNotifications(notifsData.data.map((n: any) => n.message));
       }
+
+      // Automatically check SLA & dispatch 7-day progress emails
+      secsApi.issues.checkSlaReminders().catch(() => {});
     } catch (e) {
       console.error("Failed to load dashboard data:", e);
     } finally {
@@ -575,7 +578,7 @@ export default function DashboardPage({
     const trimmedEmail = newAccount.email.trim().toLowerCase();
     const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
     if (!newAccount.name.trim() || !isValidEmail) {
-      setNotice("Enter a name and a valid university email address (e.g. username@uits.edu.bd or uitc.edu).");
+      setNotice("Enter a name and a valid email address (e.g. spsshafiq29@gmail.com or username@uits.edu.bd).");
       return;
     }
     if (role === "authority" && (newAccount.role === "authority" || newAccount.role === "admin")) {
@@ -2017,11 +2020,11 @@ export default function DashboardPage({
 
                     <div>
                       <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
-                        Staff University Email (.edu, .edu.bd)
+                        Staff Email Address (Gmail, University or Personal)
                       </label>
                       <input
                         type="email"
-                        placeholder="e.g. shafiq_mollah1087@uits.edu.bd"
+                        placeholder="e.g. spsshafiq29@gmail.com or shafiq_mollah1087@uits.edu.bd"
                         value={newAccount.email}
                         onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })}
                         className="w-full rounded-xl px-4 py-2 text-xs glass-input"

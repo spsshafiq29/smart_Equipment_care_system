@@ -51,10 +51,9 @@ export default function RegisterPage({ onNavigate }: Props) {
     if (!form.fullName.trim()) errs.fullName = "Full name is required.";
     if (!form.studentId.trim()) errs.studentId = "University ID is required.";
     if (!form.email.trim()) {
-      errs.email = "University email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) ||
-               (!form.email.toLowerCase().includes(".edu") && !form.email.toLowerCase().includes(".ac."))) {
-      errs.email = "Please enter a valid university email address (e.g. user@uits.edu.bd or user@uitc.edu).";
+      errs.email = "Email address is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      errs.email = "Please enter a valid email address.";
     }
     if (!form.department) errs.department = "Please select your academic department.";
     if (!form.password) {
@@ -206,8 +205,8 @@ export default function RegisterPage({ onNavigate }: Props) {
                 <div className="mb-6 pb-4 border-b border-white/5">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-blue-400">New Registration</span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20">
-                      .edu only
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                      Open Registration
                     </span>
                   </div>
                   <h1 className="text-2xl font-bold font-display text-white mt-1">Create Your Account</h1>
@@ -286,14 +285,14 @@ export default function RegisterPage({ onNavigate }: Props) {
                     </div>
                   </div>
 
-                  {/* University Email */}
+                  {/* Email */}
                   <div>
                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
-                      University Email (.edu)
+                      Email Address (Gmail, University or Personal)
                     </label>
                     <input
                       type="email"
-                      placeholder="student@uitc.edu"
+                      placeholder="e.g. afsana@gmail.com or student@uits.edu.bd"
                       value={form.email}
                       onChange={(e) => set("email", e.target.value)}
                       className={`w-full rounded-xl px-3.5 py-2.5 text-sm glass-input ${

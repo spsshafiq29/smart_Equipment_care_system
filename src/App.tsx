@@ -254,10 +254,9 @@ export default function App() {
       setIsSubmitting(false);
       return;
     }
-    const isAcademic = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim()) &&
-      (formData.email.toLowerCase().includes(".edu") || formData.email.toLowerCase().includes(".ac.") || formData.email.toLowerCase().endsWith(".edu"));
-    if (!isAcademic) {
-      setFormError("Please enter a valid university email address (e.g. user@uits.edu.bd or user@uitc.edu).");
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
+    if (!isValidEmail) {
+      setFormError("Please enter a valid email address.");
       setIsSubmitting(false);
       return;
     }
@@ -1041,12 +1040,12 @@ export default function App() {
                       </div>
                       <div>
                         <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
-                          University Email (.edu) *
+                          Reporter Email Address *
                         </label>
                         <input
                           type="email"
                           required
-                          placeholder="username@uitc.edu"
+                          placeholder="e.g. your.email@gmail.com or student@uits.edu.bd"
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                           className="w-full rounded-xl px-4 py-2.5 text-sm glass-input"

@@ -11,9 +11,35 @@ export async function checkAndSend7DayReminders(forceAll = false) {
   const now = Date.now();
   const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
-  for (const issue of memoryDb.tables.issues) {
+  const issueMap = new Map();
+  for (const i of memoryDb.tables.issues) {
+    issueMap.set(i.id, i);
+  }
+
+  try {
+    const dbRes = await query(`
+      SELECT id, lab_id, lab_name, equipment_type, asset_tag, item, description, priority, status, 
+             current_stage, pending_with, reporter_id, reporter_email, reporter_name, assigned_technician_id,
+             created_at, seven_day_notified
+      FROM issues
+      WHERE status NOT IN ('Resolved', 'Rejected by Higher Authority')
+    `);
+    if (dbRes && dbRes.rows) {
+      for (const row of dbRes.rows) {
+        if (!issueMap.has(row.id)) {
+          issueMap.set(row.id, row);
+        } else {
+          Object.assign(issueMap.get(row.id), row);
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  for (const issue of issueMap.values()) {
     // Only target active unsolved issues
-    if (issue.status === 'Resolved' || issue.status.includes('Rejected') || issue.status.includes('Closed')) {
+    if (issue.status === 'Resolved' || issue.status?.includes('Rejected') || issue.status?.includes('Closed')) {
       continue;
     }
 
@@ -45,6 +71,12 @@ export async function checkAndSend7DayReminders(forceAll = false) {
       }).catch((err) => console.warn(`[ISSUES] 7-Day reminder error for ${issue.id}:`, err.message));
 
       issue.seven_day_notified = true;
+      try {
+        await query('UPDATE issues SET seven_day_notified = true WHERE id = $1', [issue.id]);
+      } catch {
+        // ignore
+      }
+
       sent.push({ ticketId: issue.id, email: issue.reporter_email, stage: issue.current_stage });
     }
   }
@@ -64,6 +96,9 @@ export function issueRoutes(router) {
 
   // GET /api/v1/issues
   router.get('/api/v1/issues', async (req, res) => {
+    // Automatically trigger SLA 7-day progress update checks in background
+    checkAndSend7DayReminders().catch(() => {});
+
     let list = [...memoryDb.tables.issues];
     const { search, role, technicianId } = req.query || {};
 
@@ -252,9 +287,20 @@ export function issueRoutes(router) {
   });
 
   // PATCH /api/v1/issues/:id/status
-  router.patch('/api/v1/issues/:id/status', (req, res) => {
+  router.patch('/api/v1/issues/:id/status', async (req, res) => {
     const { id } = req.params;
-    const issue = memoryDb.tables.issues.find((i) => i.id === id);
+    let issue = memoryDb.tables.issues.find((i) => i.id === id);
+    if (!issue) {
+      try {
+        const dbRes = await query('SELECT * FROM issues WHERE id = $1', [id]);
+        if (dbRes && dbRes.rows && dbRes.rows[0]) {
+          issue = dbRes.rows[0];
+          memoryDb.tables.issues.push(issue);
+        }
+      } catch {
+        // ignore
+      }
+    }
     if (!issue) {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Issue ticket not found' } });
     }
@@ -321,6 +367,15 @@ export function issueRoutes(router) {
       issue.pending_with = 'Closed';
       issue.resolved_at = new Date().toISOString();
 
+      try {
+        await query(
+          `UPDATE issues SET status = 'Resolved', current_stage = $1, pending_with = 'Closed', resolved_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+          [issue.current_stage, id]
+        );
+      } catch {
+        // ignore
+      }
+
       // Dispatch resolution email to problem reporter
       if (issue.reporter_email) {
         sendIssueResolvedNotice({
@@ -352,6 +407,15 @@ export function issueRoutes(router) {
       issue.pending_with = 'Closed';
     } else {
       return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: `Unknown action: ${action}` } });
+    }
+
+    try {
+      await query(
+        `UPDATE issues SET status = $1, current_stage = $2, pending_with = $3, budget_amount = $4, budget_description = $5, budget_status = $6, updated_at = CURRENT_TIMESTAMP WHERE id = $7`,
+        [issue.status, issue.current_stage, issue.pending_with, issue.budget_amount || null, issue.budget_description || null, issue.budget_status || null, id]
+      );
+    } catch {
+      // ignore
     }
 
     res.json({ message: 'Issue status updated successfully', issue });

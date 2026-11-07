@@ -112,16 +112,16 @@ async function runQaTestSuite() {
   });
   assert(forgotRes.status === 200 && forgotRes.body?.success, 'Forgot password triggers 6-digit reset code successfully');
 
-  // 1.4 Registration - non-edu email rejection
-  const nonEduReg = await makeRequest('POST', '/api/v1/auth/register', {
+  // 1.4 Registration - invalid email format rejection
+  const invalidEmailReg = await makeRequest('POST', '/api/v1/auth/register', {
     fullName: 'External User',
-    email: 'user@gmail.com',
+    email: 'not-an-email-format',
     password: 'Password123',
   });
-  assert(nonEduReg.status === 400 && nonEduReg.body?.error?.code === 'VALIDATION_ERROR', 'Non-.edu email rejected with 400 Validation Error');
+  assert(invalidEmailReg.status === 400 && invalidEmailReg.body?.error?.code === 'VALIDATION_ERROR', 'Invalid email format rejected with 400 Validation Error');
 
-  // 1.5 Valid student registration
-  const testEmail = `student_${Date.now()}@uitc.edu`;
+  // 1.5 Valid student registration with any email
+  const testEmail = `student_${Date.now()}@gmail.com`;
   const validReg = await makeRequest('POST', '/api/v1/auth/register', {
     fullName: 'Afsana Mimi',
     studentId: '0432320005101099',
@@ -130,7 +130,7 @@ async function runQaTestSuite() {
     role: 'student',
     password: 'SecureP@ssword1',
   });
-  assert(validReg.status === 201 && validReg.body?.userId, 'Valid .edu student registration succeeds with 201 Created');
+  assert(validReg.status === 201 && validReg.body?.userId, 'Valid registration with any email succeeds with 201 Created');
 
   // 1.6 Duplicate email rejection
   const dupReg = await makeRequest('POST', '/api/v1/auth/register', {
@@ -313,9 +313,17 @@ async function runQaTestSuite() {
   // 5.2 Create staff member validation
   const invalidStaffRes = await makeRequest('POST', '/api/v1/users', {
     name: 'Invalid Staff',
-    email: 'external@gmail.com',
+    email: 'not-an-email',
   });
-  assert(invalidStaffRes.status === 400, 'Creation of staff member with non-.edu email rejected with 400');
+  assert(invalidStaffRes.status === 400, 'Creation of staff member with invalid email rejected with 400');
+
+  // 5.3 Create staff member with any valid email
+  const validStaffRes = await makeRequest('POST', '/api/v1/users', {
+    name: 'Lab Tech Assistant',
+    email: `staff_${Date.now()}@gmail.com`,
+    role: 'technician',
+  });
+  assert(validStaffRes.status === 201 && validStaffRes.body?.user?.id, 'Creation of staff member with any valid email succeeds with 201');
 
   // -------------------------------------------------------------
   // SUITE 6: DYNAMIC AGGREGATIONS & METRICS
