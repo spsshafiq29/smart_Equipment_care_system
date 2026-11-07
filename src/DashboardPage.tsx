@@ -528,8 +528,10 @@ export default function DashboardPage({
 
   async function createAccount(event: React.FormEvent) {
     event.preventDefault();
-    if (!newAccount.name.trim() || !newAccount.email.toLowerCase().endsWith(".edu")) {
-      setNotice("Enter a name and a valid university .edu email.");
+    const trimmedEmail = newAccount.email.trim().toLowerCase();
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+    if (!newAccount.name.trim() || !isValidEmail) {
+      setNotice("Enter a name and a valid university email address (e.g. username@uits.edu.bd or uitc.edu).");
       return;
     }
     if (role === "authority" && (newAccount.role === "authority" || newAccount.role === "admin")) {
@@ -1553,11 +1555,11 @@ export default function DashboardPage({
 
                     <div>
                       <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
-                        University Email (.edu)
+                        University Email (.edu, .edu.bd)
                       </label>
                       <input
                         type="email"
-                        placeholder="username@uitc.edu"
+                        placeholder="username@uits.edu.bd"
                         value={newAccount.email}
                         onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })}
                         className="w-full rounded-xl px-4 py-2 text-xs glass-input"

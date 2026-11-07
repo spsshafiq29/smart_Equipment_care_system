@@ -159,8 +159,9 @@ export function authRoutes(router) {
     if (!fullName?.trim()) {
       return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Full name is required' } });
     }
-    if (!email?.trim() || !email.toLowerCase().endsWith('.edu')) {
-      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Only university .edu email addresses are accepted' } });
+    const isAcademic = email && (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && (email.toLowerCase().includes('.edu') || email.toLowerCase().includes('.ac.') || email.toLowerCase().endsWith('.edu')));
+    if (!email?.trim() || !isAcademic) {
+      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Only university email addresses (.edu, .edu.bd, .ac.bd) are accepted' } });
     }
     if (!password || password.length < 6) {
       return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Password must be at least 6 characters' } });

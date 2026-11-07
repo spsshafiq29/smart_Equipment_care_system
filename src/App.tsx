@@ -254,8 +254,10 @@ export default function App() {
       setIsSubmitting(false);
       return;
     }
-    if (!formData.email.toLowerCase().endsWith(".edu")) {
-      setFormError("Only university .edu email addresses are permitted.");
+    const isAcademic = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim()) &&
+      (formData.email.toLowerCase().includes(".edu") || formData.email.toLowerCase().includes(".ac.") || formData.email.toLowerCase().endsWith(".edu"));
+    if (!isAcademic) {
+      setFormError("Please enter a valid university email address (e.g. user@uits.edu.bd or user@uitc.edu).");
       setIsSubmitting(false);
       return;
     }

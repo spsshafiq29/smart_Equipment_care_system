@@ -28,11 +28,13 @@ export function userRoutes(router) {
   // POST /api/v1/users
   router.post('/api/v1/users', async (req, res) => {
     const { name, email, role, labId, department, password } = req.body || {};
+    const isUniversityEmail = email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
+      (email.toLowerCase().includes('.edu') || email.toLowerCase().includes('.ac.') || email.toLowerCase().endsWith('.edu'));
     if (!name?.trim()) {
       return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Staff member name is required' } });
     }
-    if (!email?.trim() || !email.toLowerCase().endsWith('.edu')) {
-      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'A valid university .edu email is required' } });
+    if (!isUniversityEmail) {
+      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'A valid university email address (.edu, .edu.bd, .ac.bd) is required' } });
     }
 
     const trimmedEmail = email.trim().toLowerCase();

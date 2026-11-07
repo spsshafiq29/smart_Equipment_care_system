@@ -62,10 +62,9 @@ export default function RegisterPage({ onNavigate }: Props) {
     if (!form.studentId.trim()) errs.studentId = "University ID is required.";
     if (!form.email.trim()) {
       errs.email = "University email is required.";
-    } else if (!form.email.toLowerCase().endsWith(".edu")) {
-      errs.email = "Only university .edu email addresses are accepted.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      errs.email = "Enter a valid email address.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) ||
+               (!form.email.toLowerCase().includes(".edu") && !form.email.toLowerCase().includes(".ac."))) {
+      errs.email = "Please enter a valid university email address (e.g. user@uits.edu.bd or user@uitc.edu).";
     }
     if (!form.department) errs.department = "Please select your academic department.";
     if (!form.password) {
