@@ -589,6 +589,31 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal, initialV
                   </div>
                 </div>
 
+                {/* Admin Setup Helper Banner (visible when admin role is selected) */}
+                {portal === "admin" && (
+                  <div className="p-3.5 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-amber-400/10 to-amber-500/5 text-xs text-amber-200 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="font-bold flex items-center gap-1.5 text-amber-300">
+                        <span>👑</span> First-Time Administrator Setup
+                      </div>
+                      <div className="text-[11px] text-slate-300 mt-0.5">
+                        Have not created your master admin account yet?
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setView("setup-admin");
+                        setServerError("");
+                        setSuccessMessage("");
+                      }}
+                      className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 hover:brightness-110 text-slate-950 font-bold text-xs shadow-md whitespace-nowrap transition-all"
+                    >
+                      Setup Admin →
+                    </button>
+                  </div>
+                )}
+
                 {/* Email Address */}
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
@@ -686,6 +711,20 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal, initialV
 
             {/* Bottom Actions */}
             <div className="mt-7 pt-5 border-t border-white/5 text-center space-y-2.5">
+              <p className="text-xs text-slate-400">
+                Primary Administrator setting up for the first time?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setView("setup-admin");
+                    setServerError("");
+                    setSuccessMessage("");
+                  }}
+                  className="text-amber-400 hover:text-amber-300 font-semibold underline underline-offset-4 ml-1"
+                >
+                  Create Master Admin Account
+                </button>
+              </p>
               <p className="text-xs text-slate-400">
                 Student or Faculty without staff portal access?{" "}
                 <button

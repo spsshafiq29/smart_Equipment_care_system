@@ -171,7 +171,7 @@ export default function App() {
   const [portalRole, setPortalRole] = useState<PortalRole>("admin");
   const [currentUser, setCurrentUser] = useState<StaffAccount | null>(() => getCurrentUser());
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [adminConfigured, setAdminConfigured] = useState<boolean | null>(null);
+  const [adminConfigured, setAdminConfigured] = useState<boolean>(false);
 
   // Dynamic Backend Data State
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -365,7 +365,7 @@ export default function App() {
   return (
     <div className="min-h-full bg-[#050a18] text-slate-100 selection:bg-blue-500/30">
       {/* ── ONE-TIME MASTER ADMIN SETUP BANNER (AUTO-HIDES ONCE INITIALIZED) ── */}
-      {adminConfigured === false && (
+      {!adminConfigured && (
         <aside aria-label="First-time setup banner" className="bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-600 text-slate-950 px-6 py-2.5 shadow-lg border-b border-amber-400/40 relative z-[60]">
           <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-2.5 text-xs font-bold">
@@ -439,13 +439,13 @@ export default function App() {
               </>
             ) : (
               <>
-                {adminConfigured === false && (
+                {!adminConfigured && (
                   <button
                     onClick={() => {
                       setPortalRole("admin");
                       setPage("setup-admin");
                     }}
-                    className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 hover:brightness-110 transition-all animate-pulse"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 hover:brightness-110 transition-all animate-pulse"
                   >
                     <span>👑</span> One-Time Admin Setup
                   </button>
@@ -517,7 +517,7 @@ export default function App() {
                 </>
               ) : (
                 <>
-                  {adminConfigured === false && (
+                  {!adminConfigured && (
                     <button
                       onClick={() => {
                         setMobileOpen(false);
@@ -588,7 +588,7 @@ export default function App() {
                 A unified university platform for logging laboratory device faults, tracking repairs with complete financial transparency, and guaranteeing SLA response times.
               </p>
 
-              <div className="flex flex-wrap gap-4 mb-10">
+              <div className="flex flex-wrap gap-4 mb-8">
                 <a
                   href="#submit"
                   className="font-semibold px-7 py-3.5 rounded-xl btn-primary text-sm flex items-center gap-2.5"
@@ -602,6 +602,18 @@ export default function App() {
                 >
                   Staff Portal Sign In
                 </button>
+                {!adminConfigured && (
+                  <button
+                    onClick={() => {
+                      setPortalRole("admin");
+                      setPage("setup-admin");
+                    }}
+                    className="font-semibold px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 hover:brightness-110 shadow-lg shadow-amber-500/20 text-sm flex items-center gap-2 transition-all animate-pulse"
+                  >
+                    <span>👑</span>
+                    <span>Master Admin Setup (One-Time)</span>
+                  </button>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-2 pt-2">
@@ -770,7 +782,7 @@ export default function App() {
 
           <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
             {PORTAL_CARDS.map((portal) => {
-              const isUnconfiguredAdmin = portal.role === "admin" && adminConfigured === false;
+              const isUnconfiguredAdmin = portal.role === "admin" && !adminConfigured;
               return (
                 <div
                   key={portal.role}

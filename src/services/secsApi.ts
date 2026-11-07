@@ -68,7 +68,22 @@ function maskEmail(email: string): string {
   return `${name.slice(0, 2)}***@${domain}`;
 }
 
-const STORAGE_KEY = "secs_dynamic_db_v2";
+const STORAGE_KEY = "secs_enterprise_v4";
+
+// Automatic cleanup of legacy mock localStorage keys
+try {
+  if (typeof window !== "undefined" && window.localStorage) {
+    localStorage.removeItem("secs_dynamic_db_v2");
+    localStorage.removeItem("secs_db_state_v2");
+    const savedUser = localStorage.getItem("secs_user");
+    if (savedUser && savedUser.includes("mahmud.kabir")) {
+      localStorage.removeItem("secs_user");
+      localStorage.removeItem("secs_token");
+    }
+  }
+} catch {
+  // ignore
+}
 
 interface DatabaseState {
   users: StaffAccount[];
@@ -142,7 +157,14 @@ class SECSBackendEngine {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.users)) {
+          // Remove any legacy mock admin from earlier test runs
+          parsed.users = parsed.users.filter(
+            (u: any) => u.email !== "mahmud.kabir@uitc.edu" && u.id !== "admin-1"
+          );
+        }
+        return parsed;
       }
     } catch {
       // ignore
