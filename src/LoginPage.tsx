@@ -336,12 +336,26 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal, initialV
             )}
 
             {serverError && (
-              <div className="mb-5 p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs flex items-center gap-2.5">
-                <svg className="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" strokeWidth={2} />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01" />
-                </svg>
-                <span>{serverError}</span>
+              <div className="mb-5 p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs flex items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <svg className="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" strokeWidth={2} />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01" />
+                  </svg>
+                  <span>{serverError}</span>
+                </div>
+                {serverError.includes("already been initialized") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView("login");
+                      setServerError("");
+                    }}
+                    className="px-2.5 py-1 rounded bg-rose-400 hover:bg-rose-300 text-slate-950 font-bold text-[11px] whitespace-nowrap transition-colors shrink-0"
+                  >
+                    Go to Sign In →
+                  </button>
+                )}
               </div>
             )}
 
