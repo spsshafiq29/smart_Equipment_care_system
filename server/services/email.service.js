@@ -122,10 +122,51 @@ function renderEmailLayout({ title, subtitle, contentHtml, badgeText, badgeColor
 }
 
 /**
- * Low-level send routine with fallback and safe logging
+ * Send email via Brevo REST API v3 (primary high-reliability channel)
+ */
+async function sendViaBrevoApi({ to, subject, html, text }) {
+  const apiKey = process.env.BREVO_API_KEY || process.env.SMTP_PASS;
+  if (!apiKey || !apiKey.startsWith('xkeysib-')) {
+    return null;
+  }
+
+  const senderEmail = process.env.SMTP_FROM_EMAIL || 'shafiq_mollah1087@uits.edu.bd';
+  const senderName = 'SECS University Support';
+
+  const toList = Array.isArray(to)
+    ? to.map((t) => (typeof t === 'string' ? { email: t } : t))
+    : [{ email: to }];
+
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'api-key': apiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { name: senderName, email: senderEmail },
+      to: toList,
+      subject,
+      htmlContent: html,
+      textContent: text || subject,
+    }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (res.status >= 200 && res.status < 300) {
+    return { success: true, messageId: data.messageId || `brevo-${Date.now()}` };
+  } else {
+    throw new Error(data.message || `Brevo API HTTP ${res.status}`);
+  }
+}
+
+/**
+ * Low-level send routine with dual-channel (Brevo REST API + SMTP Fallback)
  */
 export async function sendMail({ to, subject, html, text }) {
-  const from = process.env.SMTP_FROM || `"SECS University Care" <${process.env.SMTP_USER || 'spsshafiq95@gmail.com'}>`;
+  const senderEmail = process.env.SMTP_FROM_EMAIL || 'shafiq_mollah1087@uits.edu.bd';
+  const from = process.env.SMTP_FROM || `"SECS University Care" <${senderEmail}>`;
   const mailRecord = {
     id: `mail-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     to,
@@ -135,6 +176,22 @@ export async function sendMail({ to, subject, html, text }) {
     status: 'queued',
   };
 
+  // 1. Try Brevo REST API v3 first
+  try {
+    const apiResult = await sendViaBrevoApi({ to, subject, html, text });
+    if (apiResult && apiResult.success) {
+      mailRecord.status = 'delivered';
+      mailRecord.messageId = apiResult.messageId;
+      mailRecord.channel = 'brevo-v3-api';
+      emailOutbox.unshift(mailRecord);
+      console.log(`[EMAIL DISPATCHED - BREVO API] To: ${to} | Subject: "${subject}" | ID: ${apiResult.messageId}`);
+      return { success: true, messageId: apiResult.messageId, mailRecord };
+    }
+  } catch (apiErr) {
+    console.warn(`[EMAIL NOTICE - Brevo API] API attempt error: ${apiErr.message}; trying SMTP fallback...`);
+  }
+
+  // 2. Fallback to Nodemailer SMTP
   try {
     const client = getTransporter();
     const info = await client.sendMail({
@@ -147,8 +204,9 @@ export async function sendMail({ to, subject, html, text }) {
 
     mailRecord.status = 'delivered';
     mailRecord.messageId = info.messageId;
+    mailRecord.channel = 'smtp-relay';
     emailOutbox.unshift(mailRecord);
-    console.log(`[EMAIL DISPATCHED] To: ${to} | Subject: "${subject}" | ID: ${info.messageId}`);
+    console.log(`[EMAIL DISPATCHED - SMTP] To: ${to} | Subject: "${subject}" | ID: ${info.messageId}`);
     return { success: true, messageId: info.messageId, mailRecord };
   } catch (err) {
     mailRecord.status = 'failed';
