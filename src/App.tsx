@@ -113,7 +113,7 @@ const PRIORITY_BADGES: Record<string, { label: string; color: string; badge: str
 const FAQS = [
   {
     q: "Who is eligible to report laboratory equipment faults?",
-    a: "Any university student, faculty member, or research assistant with an active .edu email address can submit an issue report. Reports are authenticated and dispatched directly to the technician responsible for that specific laboratory room.",
+    a: "Any university student, faculty member, or researcher with an active email address can submit an issue report. Reports are authenticated and dispatched directly to the technician responsible for that specific laboratory room.",
   },
   {
     q: "How does the system ensure resolution accountability?",
@@ -121,7 +121,7 @@ const FAQS = [
   },
   {
     q: "Is my personal email address publicly exposed?",
-    a: "No. On the public transparency tracker, all reporter email addresses are cryptographically masked (e.g. sa***@uitc.edu) to strictly protect your privacy while maintaining public verification integrity.",
+    a: "No. On the public transparency tracker, all reporter email addresses are cryptographically masked (e.g. sa***@campus.edu) to strictly protect your privacy while maintaining public verification integrity.",
   },
   {
     q: "What procedure should be followed for high-hazard or electrical safety risks?",
@@ -172,6 +172,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<StaffAccount | null>(() => getCurrentUser());
   const [mobileOpen, setMobileOpen] = useState(false);
   const [adminConfigured, setAdminConfigured] = useState<boolean>(false);
+  const [universityName, setUniversityName] = useState<string>("");
 
   // Dynamic Backend Data State
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -201,7 +202,7 @@ export default function App() {
   const loadDynamicData = async () => {
     try {
       setIsLoading(true);
-      const [statsData, labsData, issuesData, eqData, annData, incData, adminStatus] = await Promise.all([
+      const [statsData, labsData, issuesData, eqData, annData, incData, adminStatus, univName] = await Promise.all([
         secsApi.stats.getDashboardStats().catch(() => null),
         secsApi.labs.getLabs().catch(() => []),
         secsApi.issues.getPublicIssues().catch(() => []),
@@ -209,6 +210,7 @@ export default function App() {
         secsApi.meta.getAnnouncements().catch(() => []),
         secsApi.audit.getIncidents().catch(() => []),
         secsApi.auth.checkAdminStatus().catch(() => ({ adminConfigured: false })),
+        secsApi.settings.getUniversityName().catch(() => ""),
       ]);
 
       if (statsData) setStats(statsData);
@@ -218,12 +220,21 @@ export default function App() {
       if (annData) setAnnouncements(annData);
       if (incData) setIncidents(incData);
       if (adminStatus) setAdminConfigured(adminStatus.adminConfigured);
+      if (typeof univName === "string") setUniversityName(univName);
     } catch (err) {
       console.error("Failed to load initial SECS data:", err);
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (universityName) {
+      document.title = `${universityName} · Smart Equipment Care System`;
+    } else {
+      document.title = "Smart Equipment Care System (SECS)";
+    }
+  }, [universityName]);
 
   useEffect(() => {
     // Check local session
@@ -359,6 +370,7 @@ export default function App() {
         setIncidents={setIncidents}
         onLogout={handleLogout}
         onNavigateHome={() => setPage("landing")}
+        onUniversityNameChange={(name) => setUniversityName(name)}
       />
     );
   }
@@ -398,7 +410,7 @@ export default function App() {
             <div>
               <span className="font-display font-extrabold text-xl tracking-tight text-white">SECS</span>
               <span className="hidden sm:inline-block text-xs font-semibold text-blue-400 tracking-wider ml-2.5 uppercase">
-                Smart Equipment Care System
+                {universityName ? `${universityName} · Smart Equipment Care` : "Smart Equipment Care System"}
               </span>
             </div>
           </div>
@@ -576,7 +588,7 @@ export default function App() {
             <div className="lg:col-span-7">
               <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-7">
                 <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                UITC University · Live Campus Operations
+                {universityName ? `${universityName} · Live Campus Operations` : "Live Campus Operations"}
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold font-display text-white tracking-tight leading-[1.12] mb-6">
@@ -951,7 +963,7 @@ export default function App() {
                 {[
                   { title: "Instant Sequential Ticket Number", desc: "A verifiable TKT-xxxx ID is generated upon submission." },
                   { title: "Automatic Room-Tech Assignment", desc: "Routes straight to the staff technician assigned to the lab." },
-                  { title: "Public Masked Privacy", desc: "Your identity remains masked to external viewers (sa***@uitc.edu)." },
+                  { title: "Public Masked Privacy", desc: "Your identity remains masked to external viewers (sa***@campus.edu)." },
                   { title: "Email Notifications via Brevo", desc: "Receive email updates upon resolution or 7-day progress reviews." },
                 ].map((item) => (
                   <div key={item.title} className="glass-card p-4 rounded-xl flex items-start gap-3.5">

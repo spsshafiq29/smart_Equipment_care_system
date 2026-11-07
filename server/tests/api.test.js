@@ -382,6 +382,19 @@ async function runQaTestSuite() {
   const delDeptRes = await makeRequest('DELETE', `/api/v1/departments/${encodeURIComponent('Computer Science & Engineering')}`);
   assert(delDeptRes.status === 200, 'Admin can remove a department');
 
+  // Dynamic University Settings & Branding
+  const updateSettingsRes = await makeRequest('PATCH', '/api/v1/settings/university', { universityName: 'UITS University' });
+  assert(
+    updateSettingsRes.status === 200 && updateSettingsRes.body?.universityName === 'UITS University',
+    'Admin can dynamically set university name'
+  );
+
+  const clearSettingsRes = await makeRequest('PATCH', '/api/v1/settings/university', { universityName: '' });
+  assert(
+    clearSettingsRes.status === 200 && clearSettingsRes.body?.universityName === '',
+    'Admin can clear university name to operate neutrally without name'
+  );
+
   // Summary
   console.log('\n================================================================');
   console.log(`QA TEST SUMMARY: ${passed} PASSED, ${failed} FAILED (TOTAL: ${passed + failed})`);

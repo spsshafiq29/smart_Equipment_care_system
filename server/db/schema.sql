@@ -152,3 +152,10 @@ CREATE TABLE IF NOT EXISTS departments (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 10. SYSTEM SETTINGS & BRANDING (Dynamic university name, config)
+CREATE TABLE IF NOT EXISTS system_settings (
+    key VARCHAR(64) PRIMARY KEY,
+    value TEXT,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+

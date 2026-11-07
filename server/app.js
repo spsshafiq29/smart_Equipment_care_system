@@ -4,7 +4,7 @@ import { issueRoutes } from './routes/issues.routes.js';
 import { labRoutes } from './routes/labs.routes.js';
 import { budgetRoutes } from './routes/budgets.routes.js';
 import { userRoutes } from './routes/users.routes.js';
-import { auditRoutes, notificationRoutes, statsRoutes, metaRoutes, emailRoutes } from './routes/other.routes.js';
+import { auditRoutes, notificationRoutes, statsRoutes, metaRoutes, emailRoutes, settingsRoutes } from './routes/other.routes.js';
 import { neonRoutes } from './routes/neon.routes.js';
 import { authMiddleware } from './middleware/auth.js';
 import { errorHandler } from './middleware/error.js';
@@ -147,6 +147,7 @@ export function createExpressApp() {
   metaRoutes(app);
   neonRoutes(app);
   emailRoutes(app);
+  settingsRoutes(app);
 
   return app;
 }

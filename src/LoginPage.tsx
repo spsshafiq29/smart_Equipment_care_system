@@ -393,7 +393,7 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal, initialV
                   </label>
                   <input
                     type="email"
-                    placeholder="admin@uitc.edu"
+                    placeholder="admin@example.com"
                     value={adminEmail}
                     onChange={(e) => {
                       setAdminEmail(e.target.value);
@@ -473,7 +473,7 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal, initialV
                       </label>
                       <input
                         type="email"
-                        placeholder="your.name@uitc.edu"
+                        placeholder="your.name@example.com"
                         value={forgotEmail}
                         onChange={(e) => {
                           setForgotEmail(e.target.value);
@@ -631,7 +631,7 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal, initialV
                   </label>
                   <input
                     type="email"
-                    placeholder="user@uitc.edu"
+                    placeholder="user@example.com"
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);

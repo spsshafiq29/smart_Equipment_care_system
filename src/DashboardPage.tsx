@@ -171,8 +171,8 @@ function StatusPill({ status }: { status: BudgetStatus }) {
     status === "Payment confirmed"
       ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
       : status === "Approved"
-      ? "bg-blue-500/10 text-blue-400 border-blue-500/25"
-      : "bg-amber-500/10 text-amber-300 border-amber-500/25";
+        ? "bg-blue-500/10 text-blue-400 border-blue-500/25"
+        : "bg-amber-500/10 text-amber-300 border-amber-500/25";
   return <span className={`inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${style}`}>{status}</span>;
 }
 
@@ -227,6 +227,7 @@ interface DashboardProps {
   setIncidents: Dispatch<SetStateAction<AuditIncident[]>>;
   onLogout: () => void;
   onNavigateHome?: () => void;
+  onUniversityNameChange?: (name: string) => void;
 }
 
 export default function DashboardPage({
@@ -238,6 +239,7 @@ export default function DashboardPage({
   setIncidents,
   onLogout,
   onNavigateHome,
+  onUniversityNameChange,
 }: DashboardProps) {
   const role: Role = (currentUser?.role as Role) || initialRole || "technician";
   const [section, setSection] = useState<Section>("overview");
@@ -257,6 +259,12 @@ export default function DashboardPage({
   const [technicianQueue, setTechnicianQueue] = useState<TechnicianQueue>("incoming");
   const [showNotifications, setShowNotifications] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Dynamic University Branding State
+  const [universityName, setUniversityName] = useState("");
+  const [univInput, setUnivInput] = useState("");
+  const [isSavingUniv, setIsSavingUniv] = useState(false);
+  const [univFeedback, setUnivFeedback] = useState("");
 
   // Dynamic Departments & Lab Management
   const [departments, setDepartments] = useState<string[]>([]);
@@ -296,7 +304,7 @@ export default function DashboardPage({
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [labsData, issuesData, budgetsData, usersData, incidentsData, notifsData, deptsData] = await Promise.all([
+      const [labsData, issuesData, budgetsData, usersData, incidentsData, notifsData, deptsData, univNameData] = await Promise.all([
         secsApi.labs.getLabs().catch(() => []),
         secsApi.issues.getIssues({ role, technicianId: currentUser?.id }).catch(() => []),
         secsApi.budgets.getBudgets().catch(() => []),
@@ -304,6 +312,7 @@ export default function DashboardPage({
         secsApi.audit.getIncidents().catch(() => []),
         secsApi.notifications.getNotifications(role).catch(() => ({ data: [] })),
         secsApi.departments.getDepartments().catch(() => []),
+        secsApi.settings.getUniversityName().catch(() => ""),
       ]);
 
       setLabs(labsData);
@@ -312,16 +321,59 @@ export default function DashboardPage({
       setStaffAccounts(usersData);
       setIncidents(incidentsData);
       setDepartments(deptsData);
+      if (typeof univNameData === "string") {
+        setUniversityName(univNameData);
+        setUnivInput(univNameData);
+      }
       if (notifsData?.data) {
         setNotifications(notifsData.data.map((n: any) => n.message));
       }
 
       // Automatically check SLA & dispatch 7-day progress emails
-      secsApi.issues.checkSlaReminders().catch(() => {});
+      secsApi.issues.checkSlaReminders().catch(() => { });
     } catch (e) {
       console.error("Failed to load dashboard data:", e);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSaveUniversityName = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsSavingUniv(true);
+    setUnivFeedback("");
+    try {
+      const res = await secsApi.settings.updateUniversityName(univInput.trim());
+      setUniversityName(res.universityName);
+      setUnivInput(res.universityName);
+      if (onUniversityNameChange) onUniversityNameChange(res.universityName);
+      setUnivFeedback(
+        res.universityName
+          ? `✓ University branding updated to "${res.universityName}".`
+          : "✓ Operating neutrally without university name."
+      );
+      setTimeout(() => setUnivFeedback(""), 4000);
+    } catch (err: any) {
+      setUnivFeedback(`Failed to update university name: ${err?.message || "Server error"}`);
+    } finally {
+      setIsSavingUniv(false);
+    }
+  };
+
+  const handleClearUniversityName = async () => {
+    setIsSavingUniv(true);
+    setUnivFeedback("");
+    try {
+      const res = await secsApi.settings.updateUniversityName("");
+      setUniversityName("");
+      setUnivInput("");
+      if (onUniversityNameChange) onUniversityNameChange("");
+      setUnivFeedback("✓ University name removed. System operates neutrally without name.");
+      setTimeout(() => setUnivFeedback(""), 4000);
+    } catch (err: any) {
+      setUnivFeedback(`Failed to clear university name: ${err?.message || "Server error"}`);
+    } finally {
+      setIsSavingUniv(false);
     }
   };
 
@@ -393,11 +445,11 @@ export default function DashboardPage({
       ? reportSearch.trim()
         ? technicianAssignedIssues
         : technicianQueue === "incoming"
-        ? technicianIncomingIssues
-        : technicianWorkIssues
+          ? technicianIncomingIssues
+          : technicianWorkIssues
       : isAcademicUser
-      ? userSubmittedIssues
-      : issues;
+        ? userSubmittedIssues
+        : issues;
 
   const visibleIssues = roleVisibleIssues.filter((issue) => issue.id.toLowerCase().includes(reportSearch.trim().toLowerCase()));
   const approvedTotal = budgets.filter((budget) => budget.status !== "Pending approval").reduce((sum, budget) => sum + budget.amount, 0);
@@ -772,9 +824,8 @@ export default function DashboardPage({
     <div className="min-h-screen bg-[#050a18] text-slate-100 selection:bg-blue-500/30">
       {/* ── SIDEBAR NAVIGATION ── */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/5 bg-[#060b18]/95 backdrop-blur-2xl transition-transform duration-200 lg:translate-x-0 ${
-          mobileNav ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/5 bg-[#060b18]/95 backdrop-blur-2xl transition-transform duration-200 lg:translate-x-0 ${mobileNav ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         {/* Brand bar */}
         <div className="flex h-20 items-center justify-between border-b border-white/5 px-6">
@@ -783,8 +834,12 @@ export default function DashboardPage({
               S
             </div>
             <div>
-              <span className="font-display font-extrabold text-base tracking-tight text-white block">SECS Portal</span>
-              <span className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider block">Enterprise Hub</span>
+              <span className="font-display font-extrabold text-base tracking-tight text-white block truncate max-w-[150px]">
+                {universityName ? `${universityName} SECS` : "SECS Portal"}
+              </span>
+              <span className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider block">
+                {universityName ? "Campus Operations Hub" : "Enterprise Hub"}
+              </span>
             </div>
           </div>
           <button className="lg:hidden text-slate-400 hover:text-white" onClick={() => setMobileNav(false)}>
@@ -830,11 +885,10 @@ export default function DashboardPage({
                   setSection(item.id);
                   setMobileNav(false);
                 }}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                  isActive
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${isActive
                     ? "bg-blue-600/15 border border-blue-500/30 text-blue-400 shadow-sm shadow-blue-500/10"
                     : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]"
-                }`}
+                  }`}
               >
                 <Icon name={item.icon} className="h-4 w-4 shrink-0" />
                 <span className="truncate">{item.label}</span>
@@ -975,17 +1029,17 @@ export default function DashboardPage({
                     {isAcademicUser
                       ? `Welcome, ${currentUser?.name || "Campus Member"}`
                       : role === "technician"
-                      ? "Assigned Laboratory Repair Operations"
-                      : role === "accounts"
-                      ? "Fiscal Approvals & Disbursement Ledger"
-                      : "Campus Infrastructure Control & Oversight"}
+                        ? "Assigned Laboratory Repair Operations"
+                        : role === "accounts"
+                          ? "Fiscal Approvals & Disbursement Ledger"
+                          : "Campus Infrastructure Control & Oversight"}
                   </h2>
                   <p className="text-slate-400 text-xs md:text-sm mt-2 leading-relaxed">
                     {isAcademicUser
                       ? "Track your reported laboratory malfunctions in real-time, submit new problem reports, or check current campus laboratory availability."
                       : role === "technician"
-                      ? "Only issues originating in your assigned laboratories appear here. You can request budget for parts, complete repairs, or contest inaccurate payment records."
-                      : "End-to-end digital tracking guarantees that no repair, budget release, or technician handover occurs without an immutable database audit trail."}
+                        ? "Only issues originating in your assigned laboratories appear here. You can request budget for parts, complete repairs, or contest inaccurate payment records."
+                        : "End-to-end digital tracking guarantees that no repair, budget release, or technician handover occurs without an immutable database audit trail."}
                   </p>
                   {isAcademicUser && (
                     <div className="mt-4 flex flex-wrap gap-3">
@@ -1006,45 +1060,133 @@ export default function DashboardPage({
                 </div>
               </div>
 
+              {/* ── ADMIN ONLY: UNIVERSITY BRANDING & INSTITUTION SETTINGS ── */}
+              {role === "admin" && (
+                <div className="glass-card p-6 md:p-7 rounded-2xl border border-blue-500/25 bg-gradient-to-r from-blue-950/40 via-slate-900/60 to-indigo-950/30 space-y-5 shadow-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 text-lg font-bold">
+                        🏛️
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-white">University & Institution Branding</h3>
+                        <p className="text-xs text-slate-400">
+                          Set or modify your institution name dynamically across landing pages, titles, and reports, or operate without any name.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Current Status:</span>
+                      {universityName ? (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                          {universityName}
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-500/15 text-slate-300 border border-slate-500/30">
+                          Operating Without Name (Generic)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {univFeedback && (
+                    <div
+                      className={`p-3 rounded-xl text-xs font-semibold ${
+                        univFeedback.startsWith("✓")
+                          ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
+                          : "bg-rose-500/10 border border-rose-500/30 text-rose-300"
+                      }`}
+                    >
+                      {univFeedback}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSaveUniversityName} className="space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
+                        Campus / University Name
+                      </label>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="text"
+                          placeholder="e.g. UITS University, Dhaka University, or leave blank to clear"
+                          value={univInput}
+                          onChange={(e) => setUnivInput(e.target.value)}
+                          className="flex-1 rounded-xl px-4 py-2.5 text-xs glass-input"
+                        />
+                        <div className="flex items-center gap-2">
+                          <Button type="submit" variant="primary" disabled={isSavingUniv}>
+                            {isSavingUniv ? "Saving..." : "Save Branding"}
+                          </Button>
+                          {universityName && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              onClick={handleClearUniversityName}
+                              disabled={isSavingUniv}
+                              className="text-slate-400 hover:text-rose-300 border border-white/5 hover:border-rose-500/30"
+                            >
+                              Operate Without Name
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-2">
+                        Tip: Leaving this empty removes the university prefix completely (e.g. displays &quot;• Live Campus Operations&quot; neutrally).
+                      </p>
+                    </div>
+
+                    {/* Live Badge Preview */}
+                    <div className="pt-3 border-t border-white/5 flex flex-wrap items-center gap-4 text-xs">
+                      <span className="text-slate-400 font-medium">Landing Page Hero Badge Preview:</span>
+                      <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider">
+                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                        {univInput.trim() ? `${univInput.trim()} · Live Campus Operations` : "Live Campus Operations"}
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              )}
+
               {/* 4 Metric Cards */}
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {(isAcademicUser
                   ? [
-                      {
-                        label: "My Reported Issues",
-                        value: userSubmittedIssues.length,
-                        helper: "Total equipment tickets filed",
-                      },
-                      {
-                        label: "Active In-Progress",
-                        value: userSubmittedIssues.filter((i) => i.status !== "Resolved").length,
-                        helper: "Under technician review",
-                      },
-                      {
-                        label: "Resolved Equipment",
-                        value: userSubmittedIssues.filter((i) => i.status === "Resolved").length,
-                        helper: "Verified & operating",
-                      },
-                      {
-                        label: "Campus Laboratories",
-                        value: labs.length,
-                        helper: "Supported research facilities",
-                      },
-                    ]
+                    {
+                      label: "My Reported Issues",
+                      value: userSubmittedIssues.length,
+                      helper: "Total equipment tickets filed",
+                    },
+                    {
+                      label: "Active In-Progress",
+                      value: userSubmittedIssues.filter((i) => i.status !== "Resolved").length,
+                      helper: "Under technician review",
+                    },
+                    {
+                      label: "Resolved Equipment",
+                      value: userSubmittedIssues.filter((i) => i.status === "Resolved").length,
+                      helper: "Verified & operating",
+                    },
+                    {
+                      label: "Campus Laboratories",
+                      value: labs.length,
+                      helper: "Supported research facilities",
+                    },
+                  ]
                   : [
-                      {
-                        label: role === "technician" ? "My Assigned Labs" : "Active Laboratories",
-                        value: role === "technician" ? assignedLabs.length : labs.length,
-                        helper: "Room-level authority",
-                      },
-                      {
-                        label: "Pending Issues",
-                        value: assignedLabs.reduce((sum, lab) => sum + (lab.openIssues || 0), 0),
-                        helper: "Across visible labs",
-                      },
-                      { label: "Approved Budget", value: formatMoney(approvedTotal), helper: "Public ledger verified" },
-                      { label: "Public Disputes", value: incidents.length, helper: "Audit incident trail" },
-                    ]
+                    {
+                      label: role === "technician" ? "My Assigned Labs" : "Active Laboratories",
+                      value: role === "technician" ? assignedLabs.length : labs.length,
+                      helper: "Room-level authority",
+                    },
+                    {
+                      label: "Pending Issues",
+                      value: assignedLabs.reduce((sum, lab) => sum + (lab.openIssues || 0), 0),
+                      helper: "Across visible labs",
+                    },
+                    { label: "Approved Budget", value: formatMoney(approvedTotal), helper: "Public ledger verified" },
+                    { label: "Public Disputes", value: incidents.length, helper: "Audit incident trail" },
+                  ]
                 ).map((stat) => (
                   <div key={stat.label} className="glass-card p-5 rounded-2xl">
                     <p className="text-xs font-medium text-slate-400">{stat.label}</p>
@@ -1328,17 +1470,16 @@ export default function DashboardPage({
                             key={p}
                             type="button"
                             onClick={() => setNewFault({ ...newFault, priority: p })}
-                            className={`py-2 px-1 text-center rounded-xl text-xs font-bold uppercase transition-all border ${
-                              isSelected
+                            className={`py-2 px-1 text-center rounded-xl text-xs font-bold uppercase transition-all border ${isSelected
                                 ? p === "critical"
                                   ? "bg-rose-500/20 border-rose-500 text-rose-300"
                                   : p === "high"
-                                  ? "bg-orange-500/20 border-orange-500 text-orange-300"
-                                  : p === "medium"
-                                  ? "bg-amber-500/20 border-amber-500 text-amber-300"
-                                  : "bg-emerald-500/20 border-emerald-500 text-emerald-300"
+                                    ? "bg-orange-500/20 border-orange-500 text-orange-300"
+                                    : p === "medium"
+                                      ? "bg-amber-500/20 border-amber-500 text-amber-300"
+                                      : "bg-emerald-500/20 border-emerald-500 text-emerald-300"
                                 : "border-white/5 bg-white/[0.02] text-slate-400 hover:text-white"
-                            }`}
+                              }`}
                           >
                             {p}
                           </button>
@@ -1408,11 +1549,10 @@ export default function DashboardPage({
                 <div className="grid sm:grid-cols-2 gap-4">
                   <button
                     onClick={() => setTechnicianQueue("incoming")}
-                    className={`p-4 rounded-2xl text-left border transition-all ${
-                      technicianQueue === "incoming"
+                    className={`p-4 rounded-2xl text-left border transition-all ${technicianQueue === "incoming"
                         ? "bg-blue-600/15 border-blue-500 text-white"
                         : "glass-card border-white/5 text-slate-400 hover:text-white"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold uppercase tracking-wider">1. New Incoming Reports</span>
@@ -1425,11 +1565,10 @@ export default function DashboardPage({
 
                   <button
                     onClick={() => setTechnicianQueue("work")}
-                    className={`p-4 rounded-2xl text-left border transition-all ${
-                      technicianQueue === "work"
+                    className={`p-4 rounded-2xl text-left border transition-all ${technicianQueue === "work"
                         ? "bg-blue-600/15 border-blue-500 text-white"
                         : "glass-card border-white/5 text-slate-400 hover:text-white"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold uppercase tracking-wider">2. Active In-Progress Work</span>

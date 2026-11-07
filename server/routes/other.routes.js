@@ -253,3 +253,61 @@ export function emailRoutes(router) {
     });
   });
 }
+
+export function settingsRoutes(router) {
+  // GET /api/v1/settings or /api/v1/settings/university
+  const getSettingsHandler = async (req, res) => {
+    let universityName = memoryDb.tables.settings?.university_name || '';
+    try {
+      const dbRes = await query("SELECT value FROM system_settings WHERE key = 'university_name'");
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+        universityName = dbRes.rows[0].value || '';
+        if (memoryDb.tables.settings) {
+          memoryDb.tables.settings.university_name = universityName;
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    res.json({
+      universityName,
+      appName: universityName ? `${universityName} · Smart Equipment Care` : 'Smart Equipment Care System',
+      hasCustomName: Boolean(universityName.trim()),
+    });
+  };
+
+  router.get('/api/v1/settings', getSettingsHandler);
+  router.get('/api/v1/settings/university', getSettingsHandler);
+
+  // PATCH /api/v1/settings/university - update or clear university name
+  const updateSettingsHandler = async (req, res) => {
+    const { universityName } = req.body || {};
+    const trimmed = (universityName ?? '').trim();
+
+    if (memoryDb.tables.settings) {
+      memoryDb.tables.settings.university_name = trimmed;
+    }
+
+    try {
+      await query(
+        `INSERT INTO system_settings (key, value, updated_at) 
+         VALUES ('university_name', $1, CURRENT_TIMESTAMP)
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP`,
+        [trimmed]
+      );
+    } catch {
+      // ignore
+    }
+
+    res.json({
+      success: true,
+      message: trimmed ? `University name updated to "${trimmed}".` : 'University name cleared (operating without name).',
+      universityName: trimmed,
+      hasCustomName: Boolean(trimmed),
+    });
+  };
+
+  router.patch('/api/v1/settings/university', updateSettingsHandler);
+  router.post('/api/v1/settings/university', updateSettingsHandler);
+}

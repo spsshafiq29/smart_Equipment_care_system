@@ -95,6 +95,7 @@ interface DatabaseState {
   announcements: Announcement[];
   equipmentTypes: EquipmentTypeOption[];
   departments: string[];
+  universityName?: string;
   counters: {
     ticketSeq: number;
     budgetSeq: number;
@@ -125,6 +126,7 @@ function getInitialState(): DatabaseState {
       { icon: "📷", label: "Imaging Systems" },
     ],
     departments: [],
+    universityName: "",
     counters: {
       ticketSeq: 1001,
       budgetSeq: 101,
@@ -379,7 +381,7 @@ class SECSBackendEngine {
 
     const labDisplayName = payload.labName || (lab ? `${lab.room} · ${lab.name}` : "General University Lab");
     const item = payload.assetTag?.trim() || payload.equipmentType;
-    const email = payload.reporterEmail || "student@uitc.edu";
+    const email = payload.reporterEmail || "student@campus.edu";
 
     const newIssue: PublicIssue = {
       id: ticketId,
@@ -804,6 +806,16 @@ class SECSBackendEngine {
   async getDepartments(): Promise<string[]> {
     await this.delay();
     return [...this.state.departments];
+  }
+
+  getUniversityName(): string {
+    return this.state.universityName || "";
+  }
+
+  setUniversityName(name: string): { success: boolean; universityName: string } {
+    this.state.universityName = (name ?? "").trim();
+    this.persist();
+    return { success: true, universityName: this.state.universityName };
   }
 
   private delay(ms = 60) {
@@ -1410,35 +1422,32 @@ export const secsApi = {
       );
     },
   },
-  departments: {
-    getDepartments: async (): Promise<string[]> => {
+  settings: {
+    getUniversityName: async (): Promise<string> => {
       return tryApi(
         async () => {
-          const res = await apiRequest<{ data: string[] }>("/api/v1/departments");
-          return res.data;
+          const res = await apiRequest<{ universityName: string }>("/api/v1/settings/university");
+          return res.universityName ?? "";
         },
-        async () => engine.getDepartments()
+        async () => engine.getUniversityName()
       );
     },
-    createDepartment: async (name: string): Promise<{ message: string }> => {
+    updateUniversityName: async (name: string): Promise<{ success: boolean; message: string; universityName: string }> => {
       return tryApi(
         async () => {
-          return await apiRequest<{ message: string }>("/api/v1/departments", {
-            method: "POST",
-            body: JSON.stringify({ name }),
+          return await apiRequest<{ success: boolean; message: string; universityName: string }>("/api/v1/settings/university", {
+            method: "PATCH",
+            body: JSON.stringify({ universityName: name }),
           });
         },
-        async () => engine.createDepartment(name)
-      );
-    },
-    deleteDepartment: async (nameOrId: string): Promise<{ message: string }> => {
-      return tryApi(
         async () => {
-          return await apiRequest<{ message: string }>(`/api/v1/departments/${encodeURIComponent(nameOrId)}`, {
-            method: "DELETE",
-          });
-        },
-        async () => engine.deleteDepartment(nameOrId)
+          const res = engine.setUniversityName(name);
+          return {
+            success: true,
+            message: res.universityName ? `University name updated to "${res.universityName}".` : "University name cleared (without name).",
+            universityName: res.universityName,
+          };
+        }
       );
     },
   },

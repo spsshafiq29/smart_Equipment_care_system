@@ -55,6 +55,7 @@ class MemoryPostgres {
       announcements: [],
       password_resets: [],
       departments: [],
+      settings: { university_name: '' },
     };
     this.counters = {
       ticketSeq: 1001,
