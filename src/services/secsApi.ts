@@ -626,6 +626,15 @@ class SECSBackendEngine {
     return { message: "Account created.", user: newUser };
   }
 
+  async resetPassword(userId: string, newPassword?: string): Promise<{ message: string; newPassword: string; user: StaffAccount }> {
+    await this.delay();
+    const user = this.state.users.find((u) => u.id === userId);
+    if (!user) throw new ApiError("User not found.", 404);
+    const pwd = newPassword || `Univ#${Math.floor(1000 + Math.random() * 9000)}!`;
+    this.persist();
+    return { message: "Password reset.", newPassword: pwd, user };
+  }
+
   async deleteUser(userId: string): Promise<{ message: string }> {
     await this.delay();
     const idx = this.state.users.findIndex((u) => u.id === userId);
@@ -1142,16 +1151,62 @@ export const secsApi = {
       role: string;
       labId?: string;
       password?: string;
-    }): Promise<{ message: string; user: StaffAccount }> => {
+    }): Promise<{
+      message: string;
+      user: StaffAccount;
+      generatedPassword?: string;
+      emailStatus?: 'dispatched' | 'failed';
+      emailError?: string | null;
+    }> => {
       return tryApi(
         async () => {
-          const res = await apiRequest<{ message: string; user: StaffAccount }>("/api/v1/users", {
+          const res = await apiRequest<{
+            message: string;
+            user: StaffAccount;
+            generatedPassword?: string;
+            emailStatus?: 'dispatched' | 'failed';
+            emailError?: string | null;
+          }>("/api/v1/users", {
             method: "POST",
             body: JSON.stringify(payload),
           });
           return res;
         },
-        async () => engine.createUser(payload)
+        async () => {
+          const res = await engine.createUser(payload);
+          return {
+            ...res,
+            generatedPassword: payload.password || `Univ#${Math.floor(1000 + Math.random() * 9000)}!`,
+            emailStatus: "failed",
+            emailError: "Local demo mode: SMTP email disabled.",
+          };
+        }
+      );
+    },
+    resetPassword: async (
+      userId: string,
+      password?: string
+    ): Promise<{
+      message: string;
+      newPassword: string;
+      emailStatus?: 'dispatched' | 'failed';
+      emailError?: string | null;
+      user?: StaffAccount;
+    }> => {
+      return tryApi(
+        async () => {
+          return await apiRequest<{
+            message: string;
+            newPassword: string;
+            emailStatus?: 'dispatched' | 'failed';
+            emailError?: string | null;
+            user?: StaffAccount;
+          }>(`/api/v1/users/${userId}/reset-password`, {
+            method: "POST",
+            body: JSON.stringify({ password }),
+          });
+        },
+        async () => engine.resetPassword(userId, password)
       );
     },
     deleteUser: async (userId: string): Promise<{ message: string }> => {

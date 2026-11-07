@@ -1,3 +1,11 @@
+try {
+  if (process.loadEnvFile) {
+    process.loadEnvFile('.env.local');
+  }
+} catch {
+  // ignore
+}
+
 import nodemailer from 'nodemailer';
 
 // Email outbox log for auditing and fallback inspection

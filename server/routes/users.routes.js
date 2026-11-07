@@ -83,52 +83,158 @@ export function userRoutes(router) {
     }
 
     // Send credentials via email according to role
-    if (assignedRole === 'authority') {
-      // Admin creating Higher Authority
-      sendHigherAuthorityAccountEmail({
-        to: trimmedEmail,
-        name: newUser.name,
-        email: trimmedEmail,
-        password: initialPassword,
-        department: assignedDept,
-      }).catch((err) => console.warn('[USERS] Higher Authority email delivery notice:', err.message));
-    } else {
-      // Higher Authority / Admin creating Staff / Technician / Accounts
-      sendStaffAccountEmail({
-        to: trimmedEmail,
-        name: newUser.name,
-        email: trimmedEmail,
-        password: initialPassword,
-        role: assignedRole,
-        department: assignedDept,
-        labName: assignedLabName || undefined,
-      }).catch((err) => console.warn('[USERS] Staff account email delivery notice:', err.message));
+    let emailStatus = 'failed';
+    let emailError = null;
+
+    try {
+      if (assignedRole === 'authority') {
+        // Admin creating Higher Authority
+        const mailRes = await sendHigherAuthorityAccountEmail({
+          to: trimmedEmail,
+          name: newUser.name,
+          email: trimmedEmail,
+          password: initialPassword,
+          department: assignedDept,
+        });
+        if (mailRes && mailRes.success) {
+          emailStatus = 'dispatched';
+        } else {
+          emailStatus = 'failed';
+          emailError = mailRes?.error || 'Brevo SMTP authentication or relay failure';
+        }
+      } else {
+        // Higher Authority / Admin creating Staff / Technician / Accounts
+        const mailRes = await sendStaffAccountEmail({
+          to: trimmedEmail,
+          name: newUser.name,
+          email: trimmedEmail,
+          password: initialPassword,
+          role: assignedRole,
+          department: assignedDept,
+          labName: assignedLabName || undefined,
+        });
+        if (mailRes && mailRes.success) {
+          emailStatus = 'dispatched';
+        } else {
+          emailStatus = 'failed';
+          emailError = mailRes?.error || 'Brevo SMTP authentication or relay failure';
+        }
+      }
+    } catch (mailErr) {
+      emailStatus = 'failed';
+      emailError = mailErr?.message || 'SMTP exception';
+      console.warn('[USERS] Staff account email delivery notice:', mailErr?.message);
     }
 
     const { password_hash, ...safeUser } = newUser;
     res.status(201).json({
-      message: 'Staff account created successfully. Credentials dispatched to university email.',
+      message: emailStatus === 'dispatched'
+        ? 'Staff account created successfully. Credentials dispatched to university email.'
+        : 'Staff account created successfully. Email delivery could not be completed; credentials available on screen.',
       user: safeUser,
       generatedPassword: initialPassword,
+      emailStatus,
+      emailError,
+    });
+  });
+
+  // POST /api/v1/users/:id/reset-password
+  router.post('/api/v1/users/:id/reset-password', async (req, res) => {
+    const { id } = req.params;
+    const { password } = req.body || {};
+
+    const targetUser = memoryDb.tables.users.find((u) => u.id === id);
+
+    let pgUser = null;
+    try {
+      const qRes = await query('SELECT * FROM users WHERE id = $1', [id]);
+      if (qRes && qRes.rows && qRes.rows.length > 0) {
+        pgUser = qRes.rows[0];
+      }
+    } catch {
+      // ignore
+    }
+
+    if (!targetUser && !pgUser) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
+    }
+
+    const newPassword = password?.trim() || `Univ#${Math.floor(1000 + Math.random() * 9000)}!`;
+    const newHash = hashPassword(newPassword);
+
+    if (targetUser) {
+      targetUser.password_hash = newHash;
+    }
+
+    try {
+      await query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, id]);
+    } catch {
+      // ignore
+    }
+
+    const userEmail = targetUser?.email || pgUser?.email;
+    const userName = targetUser?.name || pgUser?.name || 'Staff Member';
+    const userRole = targetUser?.role || pgUser?.role || 'staff';
+    const userDept = targetUser?.department || pgUser?.department || 'University Staff';
+
+    let emailStatus = 'failed';
+    let emailError = null;
+
+    try {
+      const mailRes = await sendStaffAccountEmail({
+        to: userEmail,
+        name: userName,
+        email: userEmail,
+        password: newPassword,
+        role: userRole,
+        department: userDept,
+      });
+      if (mailRes && mailRes.success) {
+        emailStatus = 'dispatched';
+      } else {
+        emailStatus = 'failed';
+        emailError = mailRes?.error || 'Brevo SMTP authentication or relay failure';
+      }
+    } catch (mErr) {
+      emailStatus = 'failed';
+      emailError = mErr?.message || 'SMTP exception';
+    }
+
+    res.json({
+      message: 'Password reset successfully.',
+      newPassword,
+      emailStatus,
+      emailError,
+      user: {
+        id,
+        name: userName,
+        email: userEmail,
+        role: userRole,
+        department: userDept,
+      },
     });
   });
 
   // DELETE /api/v1/users/:id
-  router.delete('/api/v1/users/:id', (req, res) => {
+  router.delete('/api/v1/users/:id', async (req, res) => {
     const { id } = req.params;
     if (id === 'admin-1') {
       return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Primary System Admin account cannot be removed' } });
     }
 
-    const idx = memoryDb.tables.users.findIndex((u) => u.id === id);
-    if (idx === -1) {
-      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
+    try {
+      await query('DELETE FROM users WHERE id = $1', [id]);
+    } catch {
+      // ignore
     }
 
-    const removed = memoryDb.tables.users.splice(idx, 1)[0];
-    if (removed.role === 'technician') {
-      for (const lab of memoryDb.tables.labs) {
-        if (lab.technician_id === id) lab.technician_id = null;
+    const idx = memoryDb.tables.users.findIndex((u) => u.id === id);
+    if (idx !== -1) {
+      const removed = memoryDb.tables.users.splice(idx, 1)[0];
+      if (removed.role === 'technician') {
+        for (const lab of memoryDb.tables.labs) {
+          if (lab.technician_id === id) lab.technician_id = null;
+        }
       }
     }
 

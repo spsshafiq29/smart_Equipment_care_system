@@ -258,6 +258,21 @@ export default function DashboardPage({
   const [showNotifications, setShowNotifications] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Immediate On-Screen Provisioned Credentials State
+  const [provisionedCredentials, setProvisionedCredentials] = useState<{
+    name: string;
+    email: string;
+    role: string;
+    password: string;
+    emailStatus: "dispatched" | "failed";
+    emailError?: string | null;
+  } | null>(null);
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  // Reset Password Modal State
+  const [resetModalUser, setResetModalUser] = useState<StaffAccount | null>(null);
+  const [customResetPassword, setCustomResetPassword] = useState("");
+
   // Direct Student/Faculty Fault Report state
   const [newFault, setNewFault] = useState({
     lab: "",
@@ -540,7 +555,7 @@ export default function DashboardPage({
     }
 
     try {
-      await secsApi.users.createUser({
+      const res = await secsApi.users.createUser({
         name: newAccount.name.trim(),
         email: newAccount.email.trim(),
         role: newAccount.role,
@@ -548,13 +563,55 @@ export default function DashboardPage({
         password: newAccount.password.trim() || undefined,
       });
 
+      const effectivePassword = res.generatedPassword || newAccount.password.trim();
+      setProvisionedCredentials({
+        name: newAccount.name.trim(),
+        email: newAccount.email.trim(),
+        role: newAccount.role,
+        password: effectivePassword,
+        emailStatus: res.emailStatus || "dispatched",
+        emailError: res.emailError || null,
+      });
+
       setNewAccount({ name: "", email: "", role: "technician", labId: "", password: "" });
       setShowAccountForm(false);
-      setNotice("Staff account created! Official credentials (username & password) dispatched via email.");
+      setNotice(
+        res.emailStatus === "failed"
+          ? `Staff account created! ⚠️ Brevo Email Notice: ${res.emailError || "SMTP Auth Failed"}. Official credentials are shown below.`
+          : "Staff account created! Official credentials dispatched via email and displayed below."
+      );
       await loadData();
     } catch (err: any) {
       setNotice(err?.message || "Failed to create account.");
     }
+  }
+
+  async function handleResetPassword(user: StaffAccount) {
+    try {
+      const res = await secsApi.users.resetPassword(user.id, customResetPassword.trim() || undefined);
+      setProvisionedCredentials({
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        password: res.newPassword,
+        emailStatus: res.emailStatus || "dispatched",
+        emailError: res.emailError || null,
+      });
+      setResetModalUser(null);
+      setCustomResetPassword("");
+      setNotice(`Password for ${user.name} reset! New credentials displayed below.`);
+      await loadData();
+    } catch (err: any) {
+      setNotice(err?.message || "Failed to reset password.");
+    }
+  }
+
+  function copyCredentials(creds: { name: string; email: string; role: string; password: string }) {
+    const text = `SECS CAMPUS PORTAL CREDENTIALS\nName: ${creds.name}\nRole: ${creds.role}\nLogin Email: ${creds.email}\nPassword: ${creds.password}\nPortal URL: ${window.location.origin}`;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 3000);
+    });
   }
 
   async function removeAccount(account: StaffAccount) {
@@ -1525,13 +1582,144 @@ export default function DashboardPage({
                 <div>
                   <h2 className="text-2xl font-bold font-display text-white">Staff Account Management</h2>
                   <p className="text-xs text-slate-400 mt-1">
-                    Provision new technician, accounts, or higher authority accounts. Credentials are sent via Brevo email.
+                    Provision new technician, accounts, or higher authority accounts. Credentials are created in PostgreSQL and dispatched via Brevo email.
                   </p>
                 </div>
                 <Button variant="primary" onClick={() => setShowAccountForm(!showAccountForm)}>
                   {showAccountForm ? "Close Form" : "+ Provision New Staff Account"}
                 </Button>
               </div>
+
+              {/* Immediate Credentials Card */}
+              {provisionedCredentials && (
+                <div className="p-6 rounded-2xl bg-gradient-to-r from-blue-950/70 via-slate-900/90 to-amber-950/50 border-2 border-amber-500/50 shadow-2xl space-y-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-lg font-bold">
+                        🔐
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-white">Official Account Credentials Ready</h3>
+                        <p className="text-xs text-slate-300">
+                          Active in PostgreSQL database. Copy or share these details with the staff member.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setProvisionedCredentials(null)}
+                      className="text-slate-400 hover:text-white text-xs px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10"
+                    >
+                      ✕ Close
+                    </button>
+                  </div>
+
+                  {provisionedCredentials.emailStatus === "failed" ? (
+                    <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-2.5">
+                      <span className="text-base shrink-0">⚠️</span>
+                      <div className="space-y-1">
+                        <p className="font-semibold text-amber-300">
+                          Brevo SMTP Notice: Email could not be delivered directly ({provisionedCredentials.emailError || "SMTP 535 Authentication"}).
+                        </p>
+                        <p className="text-[11px] text-amber-200/80">
+                          The account has been created in the database. Please copy the credentials below to provide them to the user directly via WhatsApp or message.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                      <span>✓</span>
+                      <span>Credentials dispatched to <strong>{provisionedCredentials.email}</strong> via Brevo email.</span>
+                    </div>
+                  )}
+
+                  <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-xl bg-black/40 border border-white/5">
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                        Staff Name
+                      </span>
+                      <span className="text-xs font-bold text-white">{provisionedCredentials.name}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                        Portal Role
+                      </span>
+                      <span className="text-xs font-bold text-amber-400 capitalize">{provisionedCredentials.role}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                        Login Email / Username
+                      </span>
+                      <span className="text-xs font-mono font-bold text-blue-300 select-all">{provisionedCredentials.email}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                        Password
+                      </span>
+                      <span className="text-xs font-mono font-bold text-emerald-300 px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/30 select-all">
+                        {provisionedCredentials.password}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                    <p className="text-[11px] text-slate-400">
+                      Login URL: <code className="text-slate-300">{window.location.origin}</code>
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="amber"
+                        onClick={() => copyCredentials(provisionedCredentials)}
+                      >
+                        {copySuccess ? "✓ Copied to Clipboard!" : "📋 Copy All Credentials"}
+                      </Button>
+                      <Button variant="ghost" onClick={() => setProvisionedCredentials(null)}>
+                        Dismiss
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Reset Password Modal */}
+              {resetModalUser && (
+                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="glass-card max-w-md w-full p-6 rounded-2xl border border-white/10 space-y-4 shadow-2xl">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-bold text-white">Reset Staff Password</h3>
+                      <button
+                        onClick={() => setResetModalUser(null)}
+                        className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-300">
+                      Reset credentials for <strong className="text-white">{resetModalUser.name}</strong> (
+                      <span className="text-amber-400">{resetModalUser.email}</span>).
+                    </p>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                        New Password (leave blank to auto-generate)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Staff@2026! or leave blank"
+                        value={customResetPassword}
+                        onChange={(e) => setCustomResetPassword(e.target.value)}
+                        className="w-full rounded-xl px-4 py-2 text-xs glass-input font-mono"
+                      />
+                    </div>
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <Button variant="ghost" onClick={() => setResetModalUser(null)}>
+                        Cancel
+                      </Button>
+                      <Button variant="primary" onClick={() => handleResetPassword(resetModalUser)}>
+                        Confirm & Update Password →
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {showAccountForm && (
                 <form onSubmit={createAccount} className="glass-card p-6 rounded-2xl space-y-4">
@@ -1555,15 +1743,18 @@ export default function DashboardPage({
 
                     <div>
                       <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
-                        University Email (.edu, .edu.bd)
+                        Staff University Email (.edu, .edu.bd)
                       </label>
                       <input
                         type="email"
-                        placeholder="username@uits.edu.bd"
+                        placeholder="e.g. shafiq_mollah1087@uits.edu.bd"
                         value={newAccount.email}
                         onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })}
                         className="w-full rounded-xl px-4 py-2 text-xs glass-input"
                       />
+                      <span className="text-[10px] text-slate-500 mt-1 block">
+                        Login username & email recipient
+                      </span>
                     </div>
 
                     <div>
@@ -1609,20 +1800,23 @@ export default function DashboardPage({
 
                     <div>
                       <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
-                        Initial Password (Sent to Email)
+                        Set Password (Optional — Auto-generated if empty)
                       </label>
                       <input
                         type="text"
-                        placeholder="Auto-generated if empty"
+                        placeholder="Leave empty to auto-generate"
                         value={newAccount.password}
                         onChange={(e) => setNewAccount({ ...newAccount, password: e.target.value })}
-                        className="w-full rounded-xl px-4 py-2 text-xs glass-input"
+                        className="w-full rounded-xl px-4 py-2 text-xs glass-input font-mono"
                       />
+                      <span className="text-[10px] text-slate-500 mt-1 block">
+                        Will be displayed on screen and sent to email
+                      </span>
                     </div>
                   </div>
 
                   <Button type="submit" variant="primary" className="w-full py-2.5">
-                    Save Account & Dispatch Credentials via Email →
+                    Save Account & Generate Credentials →
                   </Button>
                 </form>
               )}
@@ -1633,6 +1827,10 @@ export default function DashboardPage({
                   const canRemove =
                     account.id !== "admin-1" &&
                     (role === "admin" || account.role === "technician" || account.role === "accounts");
+
+                  const canReset =
+                    role === "admin" ||
+                    (role === "authority" && account.role !== "admin" && account.role !== "authority");
 
                   return (
                     <div key={account.id} className="p-4 flex items-center justify-between gap-4">
@@ -1650,6 +1848,18 @@ export default function DashboardPage({
                         <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-white/[0.03] border border-white/5 text-slate-300">
                           {ROLE_META[account.role]?.label || account.role}
                         </span>
+
+                        {canReset && (
+                          <Button
+                            variant="secondary"
+                            onClick={() => {
+                              setResetModalUser(account);
+                              setCustomResetPassword("");
+                            }}
+                          >
+                            🔑 Reset Password
+                          </Button>
+                        )}
 
                         {canRemove ? (
                           <Button variant="danger" onClick={() => removeAccount(account)}>
