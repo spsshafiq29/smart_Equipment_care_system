@@ -274,8 +274,13 @@ class SECSBackendEngine {
 
   async login(credentials: { email: string; password?: string; portal?: PortalRole }) {
     await this.delay();
-    const email = (credentials.email || "").trim().toLowerCase();
-    const user = this.state.users.find((u) => u.email.toLowerCase() === email);
+    const identifier = (credentials.email || "").trim().toLowerCase();
+    const user = this.state.users.find(
+      (u) =>
+        u.email.toLowerCase() === identifier ||
+        (u.name && u.name.toLowerCase() === identifier) ||
+        (u.studentId && u.studentId.toLowerCase() === identifier)
+    );
 
     if (!user) {
       throw new ApiError("User account not found. Please verify your credentials or register.", 401, "UNAUTHORIZED");
@@ -303,8 +308,9 @@ class SECSBackendEngine {
       id: `usr-${Date.now()}`,
       name: payload.fullName.trim(),
       email,
-      role: (payload.role as PortalRole) || "technician",
+      role: (payload.role as any) || "student",
       department: payload.department,
+      studentId: payload.studentId,
       isActive: true,
     };
 
@@ -590,34 +596,6 @@ class SECSBackendEngine {
     return { message: "Lab removed." };
   }
 
-  async createDepartment(name: string): Promise<{ message: string }> {
-    await this.delay();
-    const trimmed = name.trim();
-    if (!this.state.departments.includes(trimmed)) {
-      this.state.departments.push(trimmed);
-      this.persist();
-    }
-    return { message: "Department created." };
-  }
-
-  async deleteDepartment(nameOrId: string): Promise<{ message: string }> {
-    await this.delay();
-    let target = nameOrId;
-    try {
-      target = decodeURIComponent(nameOrId);
-    } catch {
-      // ignore
-    }
-    const cleanTarget = target.trim().toLowerCase();
-    const cleanRaw = nameOrId.trim().toLowerCase();
-    this.state.departments = this.state.departments.filter((d) => {
-      const dClean = d.trim().toLowerCase();
-      return dClean !== cleanTarget && dClean !== cleanRaw;
-    });
-    this.persist();
-    return { message: "Department removed." };
-  }
-
   // --- Budgets ---
   async getBudgets(): Promise<Budget[]> {
     await this.delay();
@@ -671,13 +649,14 @@ class SECSBackendEngine {
     return [...this.state.users];
   }
 
-  async createUser(payload: { name: string; email: string; role: string; labId?: string }): Promise<{ message: string; user: StaffAccount }> {
+  async createUser(payload: { name: string; email: string; role: string; labId?: string; password?: string; department?: string }): Promise<{ message: string; user: StaffAccount }> {
     await this.delay();
     const newUser: StaffAccount = {
       id: `${payload.role}-${Date.now()}`,
       name: payload.name.trim(),
       email: payload.email.trim(),
       role: payload.role as PortalRole,
+      department: payload.department?.trim(),
       assignedLabs: payload.labId ? [payload.labId] : [],
       isActive: true,
     };
@@ -696,7 +675,7 @@ class SECSBackendEngine {
     return { message: "Account created.", user: newUser };
   }
 
-  async resetPassword(userId: string, newPassword?: string): Promise<{ message: string; newPassword: string; user: StaffAccount }> {
+  async adminResetUserPassword(userId: string, newPassword?: string): Promise<{ message: string; newPassword: string; user: StaffAccount }> {
     await this.delay();
     const user = this.state.users.find((u) => u.id === userId);
     if (!user) throw new ApiError("User not found.", 404);
@@ -1274,6 +1253,7 @@ export const secsApi = {
       role: string;
       labId?: string;
       password?: string;
+      department?: string;
     }): Promise<{
       message: string;
       user: StaffAccount;
@@ -1329,7 +1309,7 @@ export const secsApi = {
             body: JSON.stringify({ password }),
           });
         },
-        async () => engine.resetPassword(userId, password)
+        async () => engine.adminResetUserPassword(userId, password)
       );
     },
     deleteUser: async (userId: string): Promise<{ message: string }> => {

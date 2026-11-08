@@ -370,7 +370,13 @@ export default function App() {
   }
 
   if (page === "register") {
-    return <RegisterPage onNavigate={(p) => setPage(p)} />;
+    return (
+      <LoginPage
+        initialView="register"
+        onNavigate={(p) => setPage(p)}
+        onLogin={handleLoginSuccess}
+      />
+    );
   }
 
   if (page === "dashboard") {

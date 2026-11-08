@@ -114,9 +114,12 @@ export function authRoutes(router) {
     const trimmed = email.trim().toLowerCase();
     let user = null;
 
-    // First try PostgreSQL
+    // First try PostgreSQL (support email, username/name, or student_id)
     try {
-      const dbRes = await query('SELECT * FROM users WHERE LOWER(email) = $1 AND is_active = true', [trimmed]);
+      const dbRes = await query(
+        'SELECT * FROM users WHERE (LOWER(email) = $1 OR LOWER(name) = $1 OR LOWER(student_id) = $1) AND is_active = true',
+        [trimmed]
+      );
       if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
         user = dbRes.rows[0];
       }
@@ -126,7 +129,13 @@ export function authRoutes(router) {
 
     // Fall back to memoryDb
     if (!user) {
-      user = memoryDb.tables.users.find((u) => u.email.toLowerCase() === trimmed && u.is_active);
+      user = memoryDb.tables.users.find(
+        (u) =>
+          (u.email.toLowerCase() === trimmed ||
+            (u.name && u.name.toLowerCase() === trimmed) ||
+            (u.student_id && u.student_id.toLowerCase() === trimmed)) &&
+          u.is_active
+      );
     }
 
     if (!user) {
@@ -148,6 +157,7 @@ export function authRoutes(router) {
         email: user.email,
         role: user.role,
         department: user.department,
+        studentId: user.student_id,
       },
     });
   });
