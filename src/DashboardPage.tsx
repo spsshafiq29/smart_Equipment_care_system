@@ -443,11 +443,22 @@ export default function DashboardPage({
     .filter((issue) => issue.status !== "Assigned")
     .sort((a, b) => Number(a.status === "Resolved") - Number(b.status === "Resolved"));
 
-  const userSubmittedIssues = issues.filter(
-    (issue) =>
-      issue.reporterEmail?.toLowerCase() === currentUserEmail.toLowerCase() ||
-      (currentUser?.name && (issue.reporter || issue.reporterName || "").toLowerCase().includes(currentUser.name.toLowerCase()))
-  );
+  const userSubmittedIssues = issues.filter((issue) => {
+    const curEmail = currentUserEmail.trim().toLowerCase();
+    const repEmail = (issue.reporterEmail || (issue as any).reporter_email || "").trim().toLowerCase();
+    if (curEmail && repEmail && (repEmail === curEmail || repEmail.includes(curEmail) || curEmail.includes(repEmail))) {
+      return true;
+    }
+    if (currentUser?.id && ((issue as any).reporterId === currentUser.id || (issue as any).reporter_id === currentUser.id)) {
+      return true;
+    }
+    const curName = (currentUser?.name || "").trim().toLowerCase();
+    const repName = (issue.reporterName || (issue as any).reporter_name || issue.reporter || "").trim().toLowerCase();
+    if (curName && repName && (repName.includes(curName) || curName.includes(repName))) {
+      return true;
+    }
+    return false;
+  });
 
   const roleVisibleIssues =
     role === "technician"
@@ -508,6 +519,9 @@ export default function DashboardPage({
         description: "",
       });
       setCustomFaultEquipment("");
+      if (res?.issue) {
+        setIssues((prev) => [res.issue, ...prev.filter((i) => i.id !== res.issue.id)]);
+      }
       await loadData();
       setSection("my-issues");
     } catch (err: any) {

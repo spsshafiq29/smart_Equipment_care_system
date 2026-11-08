@@ -86,12 +86,29 @@ export async function checkAndSend7DayReminders(forceAll = false) {
 
 export function issueRoutes(router) {
   // GET /api/v1/issues/public
-  router.get('/api/v1/issues/public', (req, res) => {
-    const list = memoryDb.tables.issues.map((i) => ({
+  router.get('/api/v1/issues/public', async (req, res) => {
+    let list = [...memoryDb.tables.issues];
+    try {
+      const dbRes = await query(`
+        SELECT id, lab_id, lab_name, equipment_type, asset_tag, item, description, priority, status,
+               current_stage, pending_with, budget_amount, budget_status, reporter_id,
+               reporter_email, reporter_name, assigned_technician_id,
+               created_at, updated_at
+        FROM issues
+        ORDER BY created_at DESC
+      `);
+      if (dbRes && Array.isArray(dbRes.rows)) {
+        list = dbRes.rows;
+      }
+    } catch {
+      // ignore
+    }
+
+    const publicList = list.map((i) => ({
       ...i,
-      reporter: maskEmail(i.reporter_email),
+      reporter: maskEmail(i.reporter_email || ''),
     }));
-    res.json({ data: list, total: list.length });
+    res.json({ data: publicList, total: publicList.length });
   });
 
   // GET /api/v1/issues
@@ -100,18 +117,18 @@ export function issueRoutes(router) {
     checkAndSend7DayReminders().catch(() => {});
 
     let list = [...memoryDb.tables.issues];
-    const { search, role, technicianId } = req.query || {};
+    const { search, role, technicianId, reporterEmail } = req.query || {};
 
     try {
       const dbRes = await query(`
-        SELECT id, lab_id, lab_name, equipment_type, asset_tag, description, priority, status,
+        SELECT id, lab_id, lab_name, equipment_type, asset_tag, item, description, priority, status,
                current_stage, pending_with, budget_amount, budget_status, reporter_id,
                reporter_email, reporter_name, assigned_technician_id,
                created_at, updated_at
         FROM issues
         ORDER BY created_at DESC
       `);
-      if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+      if (dbRes && Array.isArray(dbRes.rows)) {
         list = dbRes.rows;
       }
     } catch {
@@ -125,6 +142,11 @@ export function issueRoutes(router) {
         (i.item || i.equipment_type || '').toLowerCase().includes(q) ||
         (i.lab_name || '').toLowerCase().includes(q)
       );
+    }
+
+    if (reporterEmail) {
+      const targetEmail = reporterEmail.trim().toLowerCase();
+      list = list.filter((i) => (i.reporter_email || '').toLowerCase() === targetEmail);
     }
 
     if (role === 'technician') {
@@ -182,41 +204,82 @@ export function issueRoutes(router) {
       return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Please provide a detailed problem description' } });
     }
 
-    let lab = memoryDb.tables.labs.find((l) => l.id === labId || `${l.room} · ${l.name}` === labName || l.room === labId);
-    let assignedTechnicianId = lab?.technician_id || '';
+    // Resolve lab & technician safely from memory or Postgres
+    let resolvedLabId = null;
+    let assignedTechnicianId = null;
+    let resolvedLabName = labName || 'General Campus Lab';
 
+    // 1. Try finding in memoryDb
+    let lab = memoryDb.tables.labs.find(
+      (l) => l.id === labId || `${l.room} · ${l.name}` === labName || l.room === labId || l.name === labName
+    );
+    if (lab) {
+      resolvedLabId = lab.id;
+      resolvedLabName = `${lab.room} · ${lab.name}`;
+      if (lab.technician_id) assignedTechnicianId = lab.technician_id;
+    }
+
+    // 2. Query Postgres labs table for fuzzy or exact match
     try {
-      const lRes = await query('SELECT id, room, name, technician_id FROM labs WHERE id = $1 OR room = $1', [labId || labName]);
+      const lRes = await query(
+        `SELECT id, room, name, technician_id FROM labs 
+         WHERE id = $1 OR room = $1 OR room = $2 OR name = $1 OR name = $2 
+            OR $2 ILIKE (room || '%') OR $2 ILIKE ('%' || name || '%')
+         LIMIT 1`,
+        [labId || '', labName || '']
+      );
       if (lRes && lRes.rows && lRes.rows[0]) {
-        lab = lRes.rows[0];
-        if (lab.technician_id) assignedTechnicianId = lab.technician_id;
+        resolvedLabId = lRes.rows[0].id;
+        resolvedLabName = `${lRes.rows[0].room} · ${lRes.rows[0].name}`;
+        if (lRes.rows[0].technician_id) assignedTechnicianId = lRes.rows[0].technician_id;
       }
     } catch {
       // ignore
     }
 
+    // Safe reporter resolution (foreign key checks)
+    let validReporterId = null;
+    let pgReporterId = null;
+    if (req.user?.id) {
+      validReporterId = req.user.id;
+      try {
+        const uRes = await query('SELECT id FROM users WHERE id = $1', [req.user.id]);
+        if (uRes && uRes.rows && uRes.rows[0]) pgReporterId = uRes.rows[0].id;
+      } catch {}
+    }
+
+    // Safe technician resolution (foreign key checks)
+    let pgTechId = null;
     let pendingWith = 'Lab Coordinator';
     let currentStage = 'Awaiting lab review';
 
     if (assignedTechnicianId) {
+      currentStage = 'Awaiting technician assessment';
       const tech = memoryDb.tables.users.find((u) => u.id === assignedTechnicianId);
       if (tech) {
         pendingWith = tech.name;
-        currentStage = 'Awaiting technician assessment';
-      } else {
-        try {
-          const uRes = await query('SELECT name FROM users WHERE id = $1', [assignedTechnicianId]);
-          if (uRes && uRes.rows && uRes.rows[0]) {
-            pendingWith = uRes.rows[0].name;
-            currentStage = 'Awaiting technician assessment';
-          }
-        } catch {
-          // ignore
-        }
+        pgTechId = tech.id;
       }
+      try {
+        const tRes = await query('SELECT id, name FROM users WHERE id = $1', [assignedTechnicianId]);
+        if (tRes && tRes.rows && tRes.rows[0]) {
+          pgTechId = tRes.rows[0].id;
+          pendingWith = tRes.rows[0].name;
+        }
+      } catch {}
     }
 
-    const ticketId = `TKT-${memoryDb.counters.ticketSeq++}`;
+    // Safe lab resolution for PostgreSQL foreign key
+    let pgLabId = null;
+    if (resolvedLabId) {
+      try {
+        const lCheck = await query('SELECT id FROM labs WHERE id = $1', [resolvedLabId]);
+        if (lCheck && lCheck.rows && lCheck.rows[0]) pgLabId = lCheck.rows[0].id;
+      } catch {}
+    }
+
+    const ticketSeq = memoryDb.counters.ticketSeq++;
+    const ticketId = `TKT-${ticketSeq}`;
     const nowFormatted = new Intl.DateTimeFormat('en-GB', {
       day: '2-digit',
       month: 'short',
@@ -225,22 +288,27 @@ export function issueRoutes(router) {
       minute: '2-digit',
     }).format(new Date());
 
+    const item = assetTag?.trim() || equipmentType;
+    const finalReporterEmail = reporterEmail || req.user?.email || 'student@campus.edu';
+    const finalReporterName = reporterName || req.user?.name || 'Campus Member';
+    const finalTechId = assignedTechnicianId || null;
+
     const newIssue = {
       id: ticketId,
-      lab_id: lab?.id || labId || 'lab-1',
-      lab_name: labName || (lab ? `${lab.room} · ${lab.name}` : 'General University Lab'),
+      lab_id: resolvedLabId,
+      lab_name: resolvedLabName,
       equipment_type: equipmentType,
       asset_tag: assetTag || 'N/A',
-      item: assetTag?.trim() || equipmentType,
+      item,
       description: description.trim(),
       priority: priority ? priority.charAt(0).toUpperCase() + priority.slice(1) : 'Medium',
-      status: assignedTechnicianId ? 'Assigned' : 'Under Review',
+      status: finalTechId ? 'Assigned' : 'Under Review',
       current_stage: currentStage,
       pending_with: pendingWith,
-      reporter_id: req.user?.id || 'guest',
-      reporter_email: reporterEmail || req.user?.email || 'student@uitc.edu',
-      reporter_name: reporterName || req.user?.name || 'Student Reporter',
-      assigned_technician_id: assignedTechnicianId || null,
+      reporter_id: validReporterId,
+      reporter_email: finalReporterEmail,
+      reporter_name: finalReporterName,
+      assigned_technician_id: finalTechId,
       created_at: nowFormatted,
       updated_at: nowFormatted,
     };
@@ -249,33 +317,34 @@ export function issueRoutes(router) {
 
     try {
       await query(
-        `INSERT INTO issues (id, lab_id, lab_name, equipment_type, asset_tag, description, priority, status, current_stage, pending_with, reporter_id, reporter_email, reporter_name, assigned_technician_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+        `INSERT INTO issues (id, lab_id, lab_name, equipment_type, asset_tag, item, description, priority, status, current_stage, pending_with, reporter_id, reporter_email, reporter_name, assigned_technician_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
         [
           newIssue.id,
-          newIssue.lab_id,
+          pgLabId,
           newIssue.lab_name,
           newIssue.equipment_type,
           newIssue.asset_tag,
+          newIssue.item,
           newIssue.description,
           newIssue.priority,
           newIssue.status,
           newIssue.current_stage,
           newIssue.pending_with,
-          newIssue.reporter_id,
+          pgReporterId,
           newIssue.reporter_email,
           newIssue.reporter_name,
-          newIssue.assigned_technician_id,
+          pgTechId,
         ]
       );
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('PostgreSQL issue insert error:', err);
     }
 
-    if (assignedTechnicianId) {
+    if (finalTechId) {
       memoryDb.tables.notifications.unshift({
         id: `notif-${Date.now()}`,
-        user_id: assignedTechnicianId,
+        user_id: finalTechId,
         target_role: 'technician',
         message: `New report ${ticketId} assigned for ${newIssue.lab_name}.`,
         read: false,

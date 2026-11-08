@@ -312,6 +312,9 @@ export default function App() {
 
       setSubmittedTicket(res.issue.id);
       setCustomEquipmentName("");
+      if (res?.issue) {
+        setIssues((prev) => [res.issue, ...prev.filter((i) => i.id !== res.issue.id)]);
+      }
       await loadDynamicData();
     } catch (err: any) {
       setFormError(err?.message || "Failed to submit fault report.");

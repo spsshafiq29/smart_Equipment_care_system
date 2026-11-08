@@ -3,12 +3,19 @@ import { emailOutbox, sendMail } from '../services/email.service.js';
 
 export function auditRoutes(router) {
   // GET /api/v1/audit/incidents
-  router.get('/api/v1/audit/incidents', (req, res) => {
-    res.json({ data: memoryDb.tables.audit_incidents, total: memoryDb.tables.audit_incidents.length });
+  router.get('/api/v1/audit/incidents', async (req, res) => {
+    let list = [...memoryDb.tables.audit_incidents];
+    try {
+      const dbRes = await query('SELECT id, ticket_id, message, amount, reported_by_role, created_at FROM audit_incidents ORDER BY created_at DESC');
+      if (dbRes && Array.isArray(dbRes.rows) && dbRes.rows.length > 0) {
+        list = dbRes.rows;
+      }
+    } catch {}
+    res.json({ data: list, total: list.length });
   });
 
   // POST /api/v1/audit/incidents
-  router.post('/api/v1/audit/incidents', (req, res) => {
+  router.post('/api/v1/audit/incidents', async (req, res) => {
     const { ticketId, message, amount } = req.body || {};
     if (!ticketId || !message?.trim()) {
       return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Ticket ID and description are required' } });
@@ -31,6 +38,17 @@ export function auditRoutes(router) {
       issue.current_stage = 'Payment discrepancy under public review';
       issue.pending_with = 'Higher Authority';
     }
+
+    try {
+      await query(
+        'INSERT INTO audit_incidents (ticket_id, message, amount, reported_by_role, created_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)',
+        [ticketId, incident.message, incident.amount, 'Technician']
+      );
+      await query(
+        "UPDATE issues SET status = 'Payment Disputed', current_stage = 'Payment discrepancy under public review', pending_with = 'Higher Authority', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
+        [ticketId]
+      );
+    } catch {}
 
     res.status(201).json({ message: 'Dispute recorded to public ledger', incident });
   });
