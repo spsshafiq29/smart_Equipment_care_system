@@ -47,7 +47,12 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal, initialV
       .checkAdminStatus()
       .then((res) => {
         setAdminConfigured(res.adminConfigured);
-        if (!res.adminConfigured || initialView === "setup-admin") {
+        if (res.adminConfigured) {
+          if (view === "setup-admin" || initialView === "setup-admin") {
+            setView("login");
+            setPortal("admin");
+          }
+        } else {
           setView("setup-admin");
         }
       })
@@ -359,6 +364,25 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal, initialV
             {/* VIEW 1: FIRST-TIME ADMIN SETUP                             */}
             {/* ========================================================= */}
             {view === "setup-admin" && (
+              adminConfigured === true ? (
+                <div className="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-center space-y-4">
+                  <div className="text-3xl">🛡️</div>
+                  <h3 className="text-base font-bold text-white">System Admin Already Initialized</h3>
+                  <p className="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
+                    The master system administrator account has already been initialized in the database. First-time setup is permanently locked for security.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView("login");
+                      setPortal("admin");
+                    }}
+                    className="btn-primary px-6 py-2.5 rounded-xl text-xs font-bold shadow-lg"
+                  >
+                    Sign In as Administrator →
+                  </button>
+                </div>
+              ) : (
               <form onSubmit={handleSetupAdmin} className="space-y-4">
                 <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200 text-xs flex items-start gap-2.5 mb-2">
                   <span className="text-base shrink-0">👑</span>
@@ -455,6 +479,7 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal, initialV
                   )}
                 </button>
               </form>
+              )
             )}
 
             {/* ========================================================= */}
@@ -599,8 +624,8 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal, initialV
                   </div>
                 </div>
 
-                {/* Admin Setup Helper Banner (visible when admin role is selected) */}
-                {portal === "admin" && (
+                {/* Admin Setup Helper Banner (visible ONLY when admin role is selected AND admin is NOT configured) */}
+                {portal === "admin" && adminConfigured === false && (
                   <div className="p-3.5 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-amber-400/10 to-amber-500/5 text-xs text-amber-200 flex items-center justify-between gap-3">
                     <div>
                       <div className="font-bold flex items-center gap-1.5 text-amber-300">
@@ -621,6 +646,13 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal, initialV
                     >
                       Setup Admin →
                     </button>
+                  </div>
+                )}
+
+                {portal === "admin" && adminConfigured === true && (
+                  <div className="p-2.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-xs text-emerald-300 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="font-medium">Master System Admin configured. Enter credentials to access portal.</span>
                   </div>
                 )}
 
@@ -721,20 +753,22 @@ export default function LoginPage({ onNavigate, onLogin, initialPortal, initialV
 
             {/* Bottom Actions */}
             <div className="mt-7 pt-5 border-t border-white/5 text-center space-y-2.5">
-              <p className="text-xs text-slate-400">
-                Primary Administrator setting up for the first time?{" "}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setView("setup-admin");
-                    setServerError("");
-                    setSuccessMessage("");
-                  }}
-                  className="text-amber-400 hover:text-amber-300 font-semibold underline underline-offset-4 ml-1"
-                >
-                  Create Master Admin Account
-                </button>
-              </p>
+              {adminConfigured === false && (
+                <p className="text-xs text-slate-400">
+                  Primary Administrator setting up for the first time?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView("setup-admin");
+                      setServerError("");
+                      setSuccessMessage("");
+                    }}
+                    className="text-amber-400 hover:text-amber-300 font-semibold underline underline-offset-4 ml-1"
+                  >
+                    Create Master Admin Account
+                  </button>
+                </p>
+              )}
               <p className="text-xs text-slate-400">
                 Student or Faculty without staff portal access?{" "}
                 <button

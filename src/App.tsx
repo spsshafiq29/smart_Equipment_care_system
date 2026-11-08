@@ -337,7 +337,7 @@ export default function App() {
     return (
       <LoginPage
         initialPortal="admin"
-        initialView="setup-admin"
+        initialView={adminConfigured ? "login" : "setup-admin"}
         onNavigate={(p) => setPage(p)}
         onLogin={handleLoginSuccess}
       />

@@ -153,7 +153,7 @@ class SECSBackendEngine {
         if (parsed && Array.isArray(parsed.users)) {
           // Remove any legacy mock admin from earlier test runs
           parsed.users = parsed.users.filter(
-            (u: any) => u.email !== "mahmud.kabir@uitc.edu" && u.id !== "admin-1"
+            (u: any) => u.email !== "mahmud.kabir@uitc.edu"
           );
         }
         if (parsed && Array.isArray(parsed.departments)) {
@@ -808,6 +808,29 @@ class SECSBackendEngine {
     return [...this.state.departments];
   }
 
+  async createDepartment(name: string): Promise<{ message: string }> {
+    await this.delay();
+    const trimmed = (name || "").trim();
+    if (!this.state.departments) this.state.departments = [];
+    if (trimmed && !this.state.departments.some((d) => d.toLowerCase() === trimmed.toLowerCase())) {
+      this.state.departments.push(trimmed);
+      this.persist();
+    }
+    return { message: "Department created successfully" };
+  }
+
+  async deleteDepartment(nameOrId: string): Promise<{ message: string }> {
+    await this.delay();
+    const target = (nameOrId || "").trim().toLowerCase();
+    if (this.state.departments) {
+      this.state.departments = this.state.departments.filter(
+        (d) => d.toLowerCase().trim() !== target
+      );
+      this.persist();
+    }
+    return { message: "Department deleted successfully" };
+  }
+
   getUniversityName(): string {
     return this.state.universityName || "";
   }
@@ -1394,7 +1417,39 @@ export const secsApi = {
     getDepartments: async (): Promise<string[]> => {
       return tryApi(
         async () => {
-          const res = await apiRequest<{ data: string[] }>("/api/v1/metadata/departments");
+          const res = await apiRequest<{ data: string[] }>("/api/v1/departments");
+          return res.data;
+        },
+        async () => engine.getDepartments()
+      );
+    },
+    createDepartment: async (name: string): Promise<{ message: string }> => {
+      return tryApi(
+        async () => {
+          return await apiRequest<{ message: string }>("/api/v1/departments", {
+            method: "POST",
+            body: JSON.stringify({ name }),
+          });
+        },
+        async () => engine.createDepartment(name)
+      );
+    },
+    deleteDepartment: async (nameOrId: string): Promise<{ message: string }> => {
+      return tryApi(
+        async () => {
+          return await apiRequest<{ message: string }>(`/api/v1/departments/${encodeURIComponent(nameOrId)}`, {
+            method: "DELETE",
+          });
+        },
+        async () => engine.deleteDepartment(nameOrId)
+      );
+    },
+  },
+  departments: {
+    getDepartments: async (): Promise<string[]> => {
+      return tryApi(
+        async () => {
+          const res = await apiRequest<{ data: string[] }>("/api/v1/departments");
           return res.data;
         },
         async () => engine.getDepartments()
