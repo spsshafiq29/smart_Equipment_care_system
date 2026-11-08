@@ -116,23 +116,99 @@ export function metaRoutes(router) {
     res.json({ data: memoryDb.tables.announcements });
   });
 
-  const equipmentTypesHandler = (req, res) => {
+  const equipmentTypesHandler = async (req, res) => {
+    try {
+      const dbRes = await query('SELECT id, name, icon FROM equipment_types ORDER BY name ASC');
+      if (dbRes && Array.isArray(dbRes.rows)) {
+        return res.json({
+          data: dbRes.rows.map((r) => ({ icon: r.icon || '⚙️', label: r.name, id: r.id })),
+          equipmentTypes: dbRes.rows,
+          total: dbRes.rows.length,
+        });
+      }
+    } catch {
+      // ignore
+    }
+
+    const list = (memoryDb.tables.equipment_types || []).map((e) =>
+      typeof e === 'string'
+        ? { icon: '⚙️', label: e, id: e }
+        : { icon: e.icon || '⚙️', label: e.name || e.label, id: e.id || e.name }
+    );
     res.json({
-      data: [
-        { icon: '🔬', label: 'Microscopes' },
-        { icon: '⚗️', label: 'Centrifuges' },
-        { icon: '💻', label: 'Lab Computers' },
-        { icon: '📡', label: 'Oscilloscopes' },
-        { icon: '🧪', label: 'Spectrophotometers' },
-        { icon: '🔋', label: 'Power Supplies' },
-        { icon: '🌡️', label: 'Autoclaves' },
-        { icon: '📷', label: 'Imaging Systems' },
-      ],
+      data: list,
+      equipmentTypes: memoryDb.tables.equipment_types || [],
+      total: list.length,
     });
   };
 
   router.get('/api/v1/equipment-types', equipmentTypesHandler);
   router.get('/api/v1/metadata/equipment-types', equipmentTypesHandler);
+
+  // POST /api/v1/equipment-types - Admin adds equipment classification
+  const createEquipmentTypeHandler = async (req, res) => {
+    const { name, label, icon } = req.body || {};
+    const finalName = (name || label || '').trim();
+    const finalIcon = (icon || '⚙️').trim();
+
+    if (!finalName) {
+      return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Equipment classification name is required' } });
+    }
+
+    const id = `eq-${Date.now()}`;
+    const newEntry = { id, name: finalName, label: finalName, icon: finalIcon };
+
+    if (!memoryDb.tables.equipment_types) memoryDb.tables.equipment_types = [];
+    if (!memoryDb.tables.equipment_types.some((e) => (typeof e === 'string' ? e : e.name || e.label).toLowerCase() === finalName.toLowerCase())) {
+      memoryDb.tables.equipment_types.push(newEntry);
+    }
+
+    try {
+      await query(
+        'INSERT INTO equipment_types (id, name, icon) VALUES ($1, $2, $3) ON CONFLICT (name) DO UPDATE SET icon = EXCLUDED.icon',
+        [id, finalName, finalIcon]
+      );
+    } catch {
+      // ignore
+    }
+
+    res.status(201).json({ message: 'Equipment classification created successfully', equipmentType: newEntry });
+  };
+
+  router.post('/api/v1/equipment-types', createEquipmentTypeHandler);
+  router.post('/api/v1/metadata/equipment-types', createEquipmentTypeHandler);
+
+  // DELETE /api/v1/equipment-types/:id - Admin deletes equipment classification
+  const deleteEquipmentTypeHandler = async (req, res) => {
+    let { id } = req.params;
+    try {
+      id = decodeURIComponent(id || '').trim();
+    } catch {
+      id = (id || '').trim();
+    }
+
+    try {
+      await query(
+        'DELETE FROM equipment_types WHERE id = $1 OR LOWER(TRIM(name)) = LOWER(TRIM($1)) OR name ILIKE $1',
+        [id]
+      );
+    } catch {
+      // ignore
+    }
+
+    if (memoryDb.tables.equipment_types) {
+      memoryDb.tables.equipment_types = memoryDb.tables.equipment_types.filter((e) => {
+        const eId = typeof e === 'string' ? e : e.id;
+        const eName = typeof e === 'string' ? e : (e.name || e.label);
+        return eId !== id && eName.toLowerCase().trim() !== id.toLowerCase().trim();
+      });
+    }
+
+    res.json({ message: 'Equipment classification deleted successfully' });
+  };
+
+  router.delete('/api/v1/equipment-types/:id', deleteEquipmentTypeHandler);
+  router.delete('/api/v1/metadata/equipment-types/:id', deleteEquipmentTypeHandler);
 
   const departmentsHandler = async (req, res) => {
     try {

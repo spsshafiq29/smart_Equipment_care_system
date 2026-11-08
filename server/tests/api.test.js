@@ -361,9 +361,26 @@ async function runQaTestSuite() {
   const annRes = await makeRequest('GET', '/api/v1/announcements');
   assert(annRes.status === 200 && Array.isArray(annRes.body?.data), 'Campus announcements endpoint responds with announcement array');
 
-  // 7.4 Metadata: Equipment types
+  // 7.4 Metadata: Dynamic Equipment Types Management
   const equipRes = await makeRequest('GET', '/api/v1/metadata/equipment-types');
-  assert(equipRes.status === 200 && Array.isArray(equipRes.body?.data) && equipRes.body?.data?.length >= 5, 'Metadata equipment types catalog contains full taxonomy');
+  assert(equipRes.status === 200 && Array.isArray(equipRes.body?.data), 'Metadata equipment types endpoint responds with array');
+
+  const addEquipRes = await makeRequest('POST', '/api/v1/equipment-types', {
+    label: 'Digital Multimeter',
+    icon: '⚡',
+  });
+  assert(addEquipRes.status === 201, 'Admin can dynamically create an equipment type');
+
+  const getEquipRes = await makeRequest('GET', '/api/v1/equipment-types');
+  assert(
+    getEquipRes.status === 200 &&
+    Array.isArray(getEquipRes.body?.data) &&
+    getEquipRes.body?.data?.some((e) => (e.label || e.name || '').toLowerCase().includes('digital multimeter')),
+    'Equipment types catalog contains dynamically added equipment'
+  );
+
+  const delEquipRes = await makeRequest('DELETE', `/api/v1/equipment-types/${encodeURIComponent('Digital Multimeter')}`);
+  assert(delEquipRes.status === 200, 'Admin can remove an equipment type');
 
   // 7.5 Metadata: Dynamic Departments Management
   const addDeptRes = await makeRequest('POST', '/api/v1/departments', {

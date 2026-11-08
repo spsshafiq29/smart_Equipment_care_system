@@ -55,6 +55,7 @@ class MemoryPostgres {
       announcements: [],
       password_resets: [],
       departments: [],
+      equipment_types: [],
       settings: { university_name: '' },
     };
     this.counters = {

@@ -193,6 +193,7 @@ export default function App() {
     description: "",
     priority: "medium",
   });
+  const [customEquipmentName, setCustomEquipmentName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedTicket, setSubmittedTicket] = useState<string | null>(null);
   const [formError, setFormError] = useState("");
@@ -281,18 +282,27 @@ export default function App() {
       setIsSubmitting(false);
       return;
     }
+    if (formData.equipmentType === "Others" && !customEquipmentName.trim()) {
+      setFormError("Please specify the custom device / equipment name.");
+      setIsSubmitting(false);
+      return;
+    }
     if (!formData.description.trim() || formData.description.trim().length < 5) {
       setFormError("Please describe the fault with at least 5 characters.");
       setIsSubmitting(false);
       return;
     }
 
+    const finalEquipmentType = formData.equipmentType === "Others"
+      ? customEquipmentName.trim()
+      : formData.equipmentType;
+
     try {
       const selectedLab = labs.find((l) => `${l.room} · ${l.name}` === formData.lab);
       const res = await secsApi.issues.submitIssue({
         labId: selectedLab?.id || "lab-1",
         labName: formData.lab,
-        equipmentType: formData.equipmentType,
+        equipmentType: finalEquipmentType,
         assetTag: formData.assetTag.trim() || undefined,
         description: formData.description.trim(),
         priority: formData.priority,
@@ -301,6 +311,7 @@ export default function App() {
       });
 
       setSubmittedTicket(res.issue.id);
+      setCustomEquipmentName("");
       await loadDynamicData();
     } catch (err: any) {
       setFormError(err?.message || "Failed to submit fault report.");
@@ -919,27 +930,40 @@ export default function App() {
           </div>
 
           {/* Supported Categories */}
-          <div className="pt-6">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-4">
-              Supported Equipment Classifications
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-              {equipmentTypes.map((eq) => (
+          {equipmentTypes.length > 0 && (
+            <div className="pt-6">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-4">
+                Supported Equipment Classifications
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+                {equipmentTypes.map((eq) => (
+                  <button
+                    key={eq.label}
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev) => ({ ...prev, equipmentType: eq.label }));
+                      document.querySelector("#submit")?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    className="glass-card p-4 rounded-xl flex flex-col items-center gap-2 hover:border-blue-500/40 text-center"
+                  >
+                    <span className="text-2xl">{eq.icon}</span>
+                    <span className="text-xs font-medium text-slate-300">{eq.label}</span>
+                  </button>
+                ))}
                 <button
-                  key={eq.label}
                   type="button"
                   onClick={() => {
-                    setFormData((prev) => ({ ...prev, equipmentType: eq.label }));
+                    setFormData((prev) => ({ ...prev, equipmentType: "Others" }));
                     document.querySelector("#submit")?.scrollIntoView({ behavior: "smooth" });
                   }}
-                  className="glass-card p-4 rounded-xl flex flex-col items-center gap-2 hover:border-blue-500/40 text-center"
+                  className="glass-card p-4 rounded-xl flex flex-col items-center gap-2 hover:border-amber-500/40 text-center"
                 >
-                  <span className="text-2xl">{eq.icon}</span>
-                  <span className="text-xs font-medium text-slate-300">{eq.label}</span>
+                  <span className="text-2xl">➕</span>
+                  <span className="text-xs font-medium text-amber-300">Others</span>
                 </button>
-              ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -1007,6 +1031,7 @@ export default function App() {
                       <button
                         onClick={() => {
                           setSubmittedTicket(null);
+                          setCustomEquipmentName("");
                           setFormData({
                             name: "",
                             email: "",
@@ -1092,7 +1117,10 @@ export default function App() {
                         <select
                           required
                           value={formData.equipmentType}
-                          onChange={(e) => setFormData({ ...formData, equipmentType: e.target.value })}
+                          onChange={(e) => {
+                            setFormData({ ...formData, equipmentType: e.target.value });
+                            if (e.target.value !== "Others") setCustomEquipmentName("");
+                          }}
                           className="w-full rounded-xl px-4 py-2.5 text-sm glass-input bg-[#0b142c]"
                         >
                           <option value="">Select equipment type</option>
@@ -1101,7 +1129,24 @@ export default function App() {
                               {eq.label}
                             </option>
                           ))}
+                          <option value="Others">Others</option>
                         </select>
+
+                        {formData.equipmentType === "Others" && (
+                          <div className="mt-2.5">
+                            <label className="text-[11px] font-semibold uppercase tracking-wider text-amber-400 block mb-1">
+                              Specify Custom Device / Equipment Name *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="e.g. Digital Multimeter, 3D Printer, Laser Cutter"
+                              value={customEquipmentName}
+                              onChange={(e) => setCustomEquipmentName(e.target.value)}
+                              className="w-full rounded-xl px-4 py-2 text-sm glass-input border-amber-500/50 focus:border-amber-400 text-white placeholder-slate-500"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 

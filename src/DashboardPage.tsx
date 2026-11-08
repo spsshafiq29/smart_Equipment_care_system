@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { secsApi } from "./services/secsApi";
-import type { AuditIncident, Budget, BudgetStatus, Lab, PortalRole, PublicIssue, StaffAccount } from "./workflowTypes";
+import type { AuditIncident, Budget, BudgetStatus, EquipmentTypeOption, Lab, PortalRole, PublicIssue, StaffAccount } from "./workflowTypes";
 
 type Role = PortalRole | "student" | "teacher" | "researcher";
 type Section = "overview" | "my-issues" | "submit-fault" | "reports" | "labs" | "budgets" | "users" | "ledger";
@@ -271,6 +271,13 @@ export default function DashboardPage({
   const [newDeptInput, setNewDeptInput] = useState("");
   const [showDeptSection, setShowDeptSection] = useState(false);
 
+  // Dynamic Equipment Types
+  const [equipmentTypes, setEquipmentTypes] = useState<EquipmentTypeOption[]>([]);
+  const [newEqInput, setNewEqInput] = useState("");
+  const [newEqIcon, setNewEqIcon] = useState("⚙️");
+  const [showEqSection, setShowEqSection] = useState(false);
+  const [customFaultEquipment, setCustomFaultEquipment] = useState("");
+
   const [showNewLabForm, setShowNewLabForm] = useState(false);
   const [newLab, setNewLab] = useState({ room: "", name: "", department: "", technicianId: "" });
 
@@ -304,7 +311,7 @@ export default function DashboardPage({
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [labsData, issuesData, budgetsData, usersData, incidentsData, notifsData, deptsData, univNameData] = await Promise.all([
+      const [labsData, issuesData, budgetsData, usersData, incidentsData, notifsData, deptsData, univNameData, eqTypesData] = await Promise.all([
         secsApi.labs.getLabs().catch(() => []),
         secsApi.issues.getIssues({ role, technicianId: currentUser?.id }).catch(() => []),
         secsApi.budgets.getBudgets().catch(() => []),
@@ -313,6 +320,7 @@ export default function DashboardPage({
         secsApi.notifications.getNotifications(role).catch(() => ({ data: [] })),
         secsApi.departments.getDepartments().catch(() => []),
         secsApi.settings.getUniversityName().catch(() => ""),
+        secsApi.equipmentTypes.getEquipmentTypes().catch(() => []),
       ]);
 
       setLabs(labsData);
@@ -321,6 +329,7 @@ export default function DashboardPage({
       setStaffAccounts(usersData);
       setIncidents(incidentsData);
       setDepartments(deptsData);
+      setEquipmentTypes(eqTypesData);
       if (typeof univNameData === "string") {
         setUniversityName(univNameData);
         setUnivInput(univNameData);
@@ -466,6 +475,10 @@ export default function DashboardPage({
       setFaultError("Please select the equipment type.");
       return;
     }
+    if (newFault.equipmentType === "Others" && !customFaultEquipment.trim()) {
+      setFaultError("Please specify the custom device / equipment name.");
+      return;
+    }
     if (!newFault.description.trim() || newFault.description.trim().length < 5) {
       setFaultError("Please provide a fault description with at least 5 characters.");
       return;
@@ -474,10 +487,11 @@ export default function DashboardPage({
     setFaultSubmitting(true);
     try {
       const selectedLab = labs.find((l) => `${l.room} · ${l.name}` === newFault.lab || l.id === newFault.lab);
+      const finalEquipmentType = newFault.equipmentType === "Others" ? customFaultEquipment.trim() : newFault.equipmentType;
       const res = await secsApi.issues.submitIssue({
         labId: selectedLab?.id,
         labName: selectedLab ? `${selectedLab.room} · ${selectedLab.name}` : newFault.lab,
-        equipmentType: newFault.equipmentType,
+        equipmentType: finalEquipmentType,
         assetTag: newFault.assetTag.trim() || undefined,
         description: newFault.description.trim(),
         priority: newFault.priority,
@@ -493,6 +507,7 @@ export default function DashboardPage({
         priority: "medium",
         description: "",
       });
+      setCustomFaultEquipment("");
       await loadData();
       setSection("my-issues");
     } catch (err: any) {
@@ -795,6 +810,40 @@ export default function DashboardPage({
       await loadData();
     } catch (err: any) {
       setNotice(err?.message || "Failed to remove department.");
+      await loadData();
+    }
+  }
+
+  async function handleAddEquipmentType(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newEqInput.trim()) {
+      setNotice("Enter an equipment name.");
+      return;
+    }
+
+    try {
+      const label = newEqInput.trim();
+      await secsApi.equipmentTypes.createEquipmentType(label, newEqIcon || "⚙️");
+      setNewEqInput("");
+      setNotice(`Equipment classification "${label}" added successfully.`);
+      await loadData();
+    } catch (err: any) {
+      setNotice(err?.message || "Failed to add equipment type.");
+    }
+  }
+
+  async function handleRemoveEquipmentType(labelOrName: string) {
+    if (!window.confirm(`Are you sure you want to delete "${labelOrName}" equipment classification?`)) {
+      return;
+    }
+
+    try {
+      setEquipmentTypes((prev) => prev.filter((eq) => eq.label.trim().toLowerCase() !== labelOrName.trim().toLowerCase()));
+      await secsApi.equipmentTypes.deleteEquipmentType(labelOrName);
+      setNotice(`Equipment classification "${labelOrName}" removed successfully.`);
+      await loadData();
+    } catch (err: any) {
+      setNotice(err?.message || "Failed to remove equipment type.");
       await loadData();
     }
   }
@@ -1422,25 +1471,36 @@ export default function DashboardPage({
                     <select
                       required
                       value={newFault.equipmentType}
-                      onChange={(e) => setNewFault({ ...newFault, equipmentType: e.target.value })}
+                      onChange={(e) => {
+                        setNewFault({ ...newFault, equipmentType: e.target.value });
+                        if (e.target.value !== "Others") setCustomFaultEquipment("");
+                      }}
                       className="w-full rounded-xl px-4 py-2.5 text-xs glass-input bg-[#0b142c] text-white"
                     >
                       <option value="">Select equipment type</option>
-                      {[
-                        "Microscopes",
-                        "Centrifuges",
-                        "Lab Computers",
-                        "Oscilloscopes",
-                        "Spectrophotometers",
-                        "Power Supplies",
-                        "Autoclaves",
-                        "Imaging Systems",
-                      ].map((eq) => (
-                        <option key={eq} value={eq}>
-                          {eq}
+                      {equipmentTypes.map((eq) => (
+                        <option key={eq.label} value={eq.label}>
+                          {eq.icon ? `${eq.icon} ` : ""}{eq.label}
                         </option>
                       ))}
+                      <option value="Others">Others</option>
                     </select>
+
+                    {newFault.equipmentType === "Others" && (
+                      <div className="mt-2.5">
+                        <label className="text-[11px] font-semibold uppercase tracking-wider text-amber-400 block mb-1">
+                          Specify Device / Equipment Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Digital Multimeter, 3D Printer, Soldering Station"
+                          value={customFaultEquipment}
+                          onChange={(e) => setCustomFaultEquipment(e.target.value)}
+                          className="w-full rounded-xl px-4 py-2 text-xs glass-input border border-amber-500/50 text-white placeholder-slate-500"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1713,9 +1773,12 @@ export default function DashboardPage({
                   </p>
                 </div>
                 {role === "admin" && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Button variant="secondary" onClick={() => setShowDeptSection(!showDeptSection)}>
                       {showDeptSection ? "Hide Departments" : "🏢 Manage Departments"}
+                    </Button>
+                    <Button variant="secondary" onClick={() => setShowEqSection(!showEqSection)}>
+                      {showEqSection ? "Hide Equipment" : "⚙️ Manage Equipment Types"}
                     </Button>
                     <Button variant="primary" onClick={() => setShowNewLabForm(!showNewLabForm)}>
                       {showNewLabForm ? "Close Form" : "+ Create New Lab Room"}
@@ -1723,6 +1786,66 @@ export default function DashboardPage({
                   </div>
                 )}
               </div>
+
+              {/* Dynamic Equipment Types Manager Card */}
+              {showEqSection && (
+                <div className="glass-card p-6 rounded-2xl space-y-4 border border-cyan-500/20 bg-cyan-950/20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-white">Equipment Classifications Directory</h3>
+                      <p className="text-xs text-slate-400">Add or remove university equipment types available for fault submissions. Zero hardcoded items.</p>
+                    </div>
+                    <button onClick={() => setShowEqSection(false)} className="text-slate-400 hover:text-white text-xs px-2 py-1">✕</button>
+                  </div>
+
+                  <form onSubmit={handleAddEquipmentType} className="flex flex-wrap sm:flex-nowrap gap-2">
+                    <select
+                      value={newEqIcon}
+                      onChange={(e) => setNewEqIcon(e.target.value)}
+                      className="rounded-xl px-3 py-2 text-sm glass-input bg-[#0b142c] text-white"
+                      title="Select icon"
+                    >
+                      {["⚙️", "🔬", "💻", "⚡", "🧪", "📊", "🌡️", "📡", "🛠️", "🖨️", "🔧", "🔋", "🔌"].map((icon) => (
+                        <option key={icon} value={icon}>{icon}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="e.g. Oscilloscope, 3D Printer, Spectrophotometer"
+                      value={newEqInput}
+                      onChange={(e) => setNewEqInput(e.target.value)}
+                      className="flex-1 rounded-xl px-4 py-2 text-xs glass-input"
+                    />
+                    <Button type="submit" variant="amber">
+                      + Add Equipment
+                    </Button>
+                  </form>
+
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {equipmentTypes.map((eq) => (
+                      <span
+                        key={eq.label}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 border border-white/10 text-slate-200"
+                      >
+                        <span>{eq.icon || "⚙️"} {eq.label}</span>
+                        {role === "admin" && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveEquipmentType(eq.label)}
+                            className="text-slate-400 hover:text-rose-400 transition-colors ml-1 font-bold text-xs"
+                            title="Remove equipment classification"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                    {equipmentTypes.length === 0 && (
+                      <p className="text-xs text-slate-500">No equipment types found. Add custom classifications above, or users can select "Others" to specify directly.</p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Dynamic Departments Manager Card */}
               {showDeptSection && (

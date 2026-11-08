@@ -115,16 +115,7 @@ function getInitialState(): DatabaseState {
     incidents: [],
     notifications: [],
     announcements: [],
-    equipmentTypes: [
-      { icon: "🔬", label: "Microscopes" },
-      { icon: "⚗️", label: "Centrifuges" },
-      { icon: "💻", label: "Lab Computers" },
-      { icon: "📡", label: "Oscilloscopes" },
-      { icon: "🧪", label: "Spectrophotometers" },
-      { icon: "🔋", label: "Power Supplies" },
-      { icon: "🌡️", label: "Autoclaves" },
-      { icon: "📷", label: "Imaging Systems" },
-    ],
+    equipmentTypes: [],
     departments: [],
     universityName: "",
     counters: {
@@ -171,6 +162,22 @@ class SECSBackendEngine {
           ]);
           parsed.departments = parsed.departments.filter(
             (d: any) => typeof d === "string" && !legacyDefaults.has(d.trim().toLowerCase())
+          );
+        }
+        if (parsed && Array.isArray(parsed.equipmentTypes)) {
+          // Remove hardcoded legacy equipment types so only admin-created types exist
+          const legacyEq = new Set([
+            "microscopes",
+            "centrifuges",
+            "lab computers",
+            "oscilloscopes",
+            "spectrophotometers",
+            "power supplies",
+            "autoclaves",
+            "imaging systems",
+          ]);
+          parsed.equipmentTypes = parsed.equipmentTypes.filter(
+            (e: any) => !legacyEq.has((e?.label || e?.name || e || "").trim().toLowerCase())
           );
         }
         return parsed;
@@ -800,7 +807,30 @@ class SECSBackendEngine {
 
   async getEquipmentTypes(): Promise<EquipmentTypeOption[]> {
     await this.delay();
-    return [...this.state.equipmentTypes];
+    return [...(this.state.equipmentTypes || [])];
+  }
+
+  async createEquipmentType(label: string, icon = "⚙️"): Promise<{ message: string }> {
+    await this.delay();
+    const trimmed = (label || "").trim();
+    if (!this.state.equipmentTypes) this.state.equipmentTypes = [];
+    if (trimmed && !this.state.equipmentTypes.some((e) => e.label.toLowerCase() === trimmed.toLowerCase())) {
+      this.state.equipmentTypes.push({ icon: icon || "⚙️", label: trimmed });
+      this.persist();
+    }
+    return { message: "Equipment type created successfully" };
+  }
+
+  async deleteEquipmentType(nameOrLabel: string): Promise<{ message: string }> {
+    await this.delay();
+    const target = (nameOrLabel || "").trim().toLowerCase();
+    if (this.state.equipmentTypes) {
+      this.state.equipmentTypes = this.state.equipmentTypes.filter(
+        (e) => e.label.toLowerCase().trim() !== target
+      );
+      this.persist();
+    }
+    return { message: "Equipment type deleted successfully" };
   }
 
   async getDepartments(): Promise<string[]> {
@@ -1408,10 +1438,31 @@ export const secsApi = {
     getEquipmentTypes: async (): Promise<EquipmentTypeOption[]> => {
       return tryApi(
         async () => {
-          const res = await apiRequest<{ data: EquipmentTypeOption[] }>("/api/v1/metadata/equipment-types");
+          const res = await apiRequest<{ data: EquipmentTypeOption[] }>("/api/v1/equipment-types");
           return res.data;
         },
         async () => engine.getEquipmentTypes()
+      );
+    },
+    createEquipmentType: async (label: string, icon = "⚙️"): Promise<{ message: string }> => {
+      return tryApi(
+        async () => {
+          return await apiRequest<{ message: string }>("/api/v1/equipment-types", {
+            method: "POST",
+            body: JSON.stringify({ label, name: label, icon }),
+          });
+        },
+        async () => engine.createEquipmentType(label, icon)
+      );
+    },
+    deleteEquipmentType: async (idOrLabel: string): Promise<{ message: string }> => {
+      return tryApi(
+        async () => {
+          return await apiRequest<{ message: string }>(`/api/v1/equipment-types/${encodeURIComponent(idOrLabel)}`, {
+            method: "DELETE",
+          });
+        },
+        async () => engine.deleteEquipmentType(idOrLabel)
       );
     },
     getDepartments: async (): Promise<string[]> => {
@@ -1474,6 +1525,38 @@ export const secsApi = {
           });
         },
         async () => engine.deleteDepartment(nameOrId)
+      );
+    },
+  },
+  equipmentTypes: {
+    getEquipmentTypes: async (): Promise<EquipmentTypeOption[]> => {
+      return tryApi(
+        async () => {
+          const res = await apiRequest<{ data: EquipmentTypeOption[] }>("/api/v1/equipment-types");
+          return res.data;
+        },
+        async () => engine.getEquipmentTypes()
+      );
+    },
+    createEquipmentType: async (label: string, icon = "⚙️"): Promise<{ message: string }> => {
+      return tryApi(
+        async () => {
+          return await apiRequest<{ message: string }>("/api/v1/equipment-types", {
+            method: "POST",
+            body: JSON.stringify({ label, name: label, icon }),
+          });
+        },
+        async () => engine.createEquipmentType(label, icon)
+      );
+    },
+    deleteEquipmentType: async (idOrLabel: string): Promise<{ message: string }> => {
+      return tryApi(
+        async () => {
+          return await apiRequest<{ message: string }>(`/api/v1/equipment-types/${encodeURIComponent(idOrLabel)}`, {
+            method: "DELETE",
+          });
+        },
+        async () => engine.deleteEquipmentType(idOrLabel)
       );
     },
   },
