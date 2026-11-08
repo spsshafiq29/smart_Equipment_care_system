@@ -90,12 +90,25 @@ export function issueRoutes(router) {
     let list = [...memoryDb.tables.issues];
     try {
       const dbRes = await query(`
-        SELECT id, lab_id, lab_name, equipment_type, asset_tag, item, description, priority, status,
-               current_stage, pending_with, budget_amount, budget_status, reporter_id,
-               reporter_email, reporter_name, assigned_technician_id,
-               created_at, updated_at
-        FROM issues
-        ORDER BY created_at DESC
+        SELECT i.id, i.lab_id, i.lab_name, i.equipment_type, i.asset_tag, i.item, i.description, i.priority, i.status,
+               i.current_stage,
+               CASE 
+                 WHEN i.status IN ('Assigned', 'In Progress', 'Funds Approved') AND (u_lab_tech.name IS NOT NULL OR u_issue_tech.name IS NOT NULL)
+                   THEN COALESCE(u_lab_tech.name, u_issue_tech.name)
+                 WHEN i.status = 'Under Review' AND u_lab_tech.name IS NOT NULL
+                   THEN u_lab_tech.name
+                 ELSE i.pending_with
+               END as pending_with,
+               COALESCE(l.technician_id, i.assigned_technician_id) as assigned_technician_id,
+               COALESCE(u_lab_tech.name, u_issue_tech.name) as technician_name,
+               i.budget_amount, i.budget_status, i.reporter_id,
+               i.reporter_email, i.reporter_name,
+               i.created_at, i.updated_at
+        FROM issues i
+        LEFT JOIN labs l ON (i.lab_id = l.id OR (l.room IS NOT NULL AND i.lab_name ILIKE ('%' || l.room || '%')))
+        LEFT JOIN users u_lab_tech ON l.technician_id = u_lab_tech.id
+        LEFT JOIN users u_issue_tech ON i.assigned_technician_id = u_issue_tech.id
+        ORDER BY i.created_at DESC
       `);
       if (dbRes && Array.isArray(dbRes.rows)) {
         list = dbRes.rows;
@@ -104,10 +117,21 @@ export function issueRoutes(router) {
       // ignore
     }
 
-    const publicList = list.map((i) => ({
-      ...i,
-      reporter: maskEmail(i.reporter_email || ''),
-    }));
+    const publicList = list.map((i) => {
+      let currentTechName = i.pending_with;
+      const lab = memoryDb.tables.labs.find((l) => l.id === i.lab_id || (l.room && i.lab_name && i.lab_name.includes(l.room)));
+      if (lab && lab.technician_id) {
+        const tech = memoryDb.tables.users.find((u) => u.id === lab.technician_id);
+        if (tech && ['Under Review', 'Assigned', 'In Progress', 'Funds Approved'].includes(i.status)) {
+          currentTechName = tech.name;
+        }
+      }
+      return {
+        ...i,
+        pending_with: currentTechName || i.pending_with,
+        reporter: maskEmail(i.reporter_email || ''),
+      };
+    });
     res.json({ data: publicList, total: publicList.length });
   });
 
@@ -121,12 +145,25 @@ export function issueRoutes(router) {
 
     try {
       const dbRes = await query(`
-        SELECT id, lab_id, lab_name, equipment_type, asset_tag, item, description, priority, status,
-               current_stage, pending_with, budget_amount, budget_status, reporter_id,
-               reporter_email, reporter_name, assigned_technician_id,
-               created_at, updated_at
-        FROM issues
-        ORDER BY created_at DESC
+        SELECT i.id, i.lab_id, i.lab_name, i.equipment_type, i.asset_tag, i.item, i.description, i.priority, i.status,
+               i.current_stage,
+               CASE 
+                 WHEN i.status IN ('Assigned', 'In Progress', 'Funds Approved') AND (u_lab_tech.name IS NOT NULL OR u_issue_tech.name IS NOT NULL)
+                   THEN COALESCE(u_lab_tech.name, u_issue_tech.name)
+                 WHEN i.status = 'Under Review' AND u_lab_tech.name IS NOT NULL
+                   THEN u_lab_tech.name
+                 ELSE i.pending_with
+               END as pending_with,
+               COALESCE(l.technician_id, i.assigned_technician_id) as assigned_technician_id,
+               COALESCE(u_lab_tech.name, u_issue_tech.name) as technician_name,
+               i.budget_amount, i.budget_status, i.reporter_id,
+               i.reporter_email, i.reporter_name,
+               i.created_at, i.updated_at
+        FROM issues i
+        LEFT JOIN labs l ON (i.lab_id = l.id OR (l.room IS NOT NULL AND i.lab_name ILIKE ('%' || l.room || '%')))
+        LEFT JOIN users u_lab_tech ON l.technician_id = u_lab_tech.id
+        LEFT JOIN users u_issue_tech ON i.assigned_technician_id = u_issue_tech.id
+        ORDER BY i.created_at DESC
       `);
       if (dbRes && Array.isArray(dbRes.rows)) {
         list = dbRes.rows;
@@ -173,13 +210,39 @@ export function issueRoutes(router) {
           // ignore
         }
 
+        // Collect labs assigned to OTHER technicians to prevent leaks across reassignments
+        const otherTechLabIds = new Set();
+        const otherTechLabRooms = [];
+        for (const lab of memoryDb.tables.labs) {
+          if (lab.technician_id && lab.technician_id !== tech) {
+            otherTechLabIds.add(lab.id);
+            if (lab.room) otherTechLabRooms.push(lab.room.toLowerCase());
+          }
+        }
+        try {
+          const oRes = await query('SELECT id, room FROM labs WHERE technician_id IS NOT NULL AND technician_id != $1', [tech]);
+          if (oRes && oRes.rows) {
+            for (const r of oRes.rows) {
+              otherTechLabIds.add(r.id);
+              if (r.room) otherTechLabRooms.push(r.room.toLowerCase());
+            }
+          }
+        } catch {}
+
         list = list.filter((i) => {
-          const tId = i.assigned_technician_id;
           const lId = i.lab_id;
           const lName = (i.lab_name || '').toLowerCase();
-          if (tId === tech) return true;
+
+          // If the issue's lab is assigned to ANOTHER technician, exclude
+          if (lId && otherTechLabIds.has(lId)) return false;
+          if (otherTechLabRooms.some((r) => lName.includes(r))) return false;
+
+          // If the issue's lab is assigned to THIS technician, include
           if (lId && assignedLabIds.has(lId)) return true;
           if (assignedLabRooms.some((r) => lName.includes(r))) return true;
+
+          // Direct assignment fallback
+          if (i.assigned_technician_id === tech) return true;
           return false;
         });
       }

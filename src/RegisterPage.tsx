@@ -228,26 +228,20 @@ export default function RegisterPage({ onNavigate }: Props) {
                 <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                   {/* Role Selector Pills */}
                   <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
-                      Academic Designation
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                      Academic Designation / Role
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <select
+                      value={form.role}
+                      onChange={(e) => set("role", e.target.value)}
+                      className="w-full rounded-xl px-4 py-2.5 text-sm glass-input bg-[#09132e] text-slate-100"
+                    >
                       {ROLES.map((r) => (
-                        <button
-                          key={r.value}
-                          type="button"
-                          onClick={() => set("role", r.value)}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all text-center flex flex-col items-center gap-1 ${
-                            form.role === r.value
-                              ? "bg-blue-600/20 border-blue-500 text-white shadow-md shadow-blue-500/15"
-                              : "border-white/5 bg-white/[0.02] text-slate-400 hover:border-white/15 hover:text-slate-200"
-                          }`}
-                        >
-                          <span className="text-base">{r.icon}</span>
-                          <span className="truncate">{r.label}</span>
-                        </button>
+                        <option key={r.value} value={r.value}>
+                          {r.icon} {r.label}
+                        </option>
                       ))}
-                    </div>
+                    </select>
                   </div>
 
                   {/* Full Name & Student ID */}

@@ -710,34 +710,25 @@ export default function LoginPage({ onNavigate, onLogin, initialView }: Props) {
                 </div>
 
                 <form onSubmit={handleRegister} className="space-y-4">
-                  {/* Academic Role Selector Pills */}
+                  {/* Academic Designation / Role Dropdown */}
                   <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
-                      Select Designation
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                      Academic Designation / Role
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {ACADEMIC_ROLES.map((r) => {
-                        const isSelected = regRole === r.value;
-                        return (
-                          <button
-                            key={r.value}
-                            type="button"
-                            onClick={() => {
-                              setRegRole(r.value);
-                              setErrors((prev) => ({ ...prev, regStudentId: "" }));
-                            }}
-                            className={`py-2 px-2 rounded-xl text-xs font-semibold border transition-all text-center flex flex-col items-center gap-1 ${
-                              isSelected
-                                ? "bg-blue-600/20 border-blue-500 text-white shadow-md shadow-blue-500/15"
-                                : "border-white/5 bg-white/[0.02] text-slate-400 hover:border-white/15 hover:text-slate-200"
-                            }`}
-                          >
-                            <span className="text-lg">{r.icon}</span>
-                            <span className="text-[11px] truncate w-full">{r.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <select
+                      value={regRole}
+                      onChange={(e) => {
+                        setRegRole(e.target.value as any);
+                        setErrors((prev) => ({ ...prev, regStudentId: "" }));
+                      }}
+                      className="w-full rounded-xl px-4 py-2.5 text-sm glass-input bg-[#09132e] text-slate-100"
+                    >
+                      {ACADEMIC_ROLES.map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.icon} {r.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Full Name */}

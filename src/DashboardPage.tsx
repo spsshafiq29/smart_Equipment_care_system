@@ -431,12 +431,20 @@ export default function DashboardPage({
 
   const technicianAssignedIssues = useMemo(() => {
     return issues.filter((issue) => {
-      if (issue.assignedTechnicianId === currentUserId) return true;
-      if (issue.labId && technicianAssignedLabIds.has(issue.labId)) return true;
-      if (issue.labName && technicianAssignedLabRooms.some((room) => issue.labName.toLowerCase().includes(room))) return true;
-      return false;
+      // 1. Find the issue's lab in the current labs directory
+      const lab = labs.find(
+        (l) =>
+          l.id === issue.labId ||
+          (l.room && issue.labName && issue.labName.toLowerCase().includes(l.room.toLowerCase()))
+      );
+      // If the lab is found in directory, its CURRENT technician assignment dictates ownership
+      if (lab) {
+        return lab.technicianId === currentUserId;
+      }
+      // 2. Fallback if lab is not in directory: direct assignedTechnicianId match
+      return issue.assignedTechnicianId === currentUserId;
     });
-  }, [issues, currentUserId, technicianAssignedLabIds, technicianAssignedLabRooms]);
+  }, [issues, labs, currentUserId]);
 
   const technicianIncomingIssues = technicianAssignedIssues.filter((issue) => issue.status === "Assigned");
   const technicianWorkIssues = technicianAssignedIssues
@@ -1383,7 +1391,7 @@ export default function DashboardPage({
                               <td className="px-5 py-3.5 text-slate-400">{issue.currentStage}</td>
                               <td className="px-5 py-3.5 text-slate-300 font-medium">
                                 <span className="px-2 py-1 rounded bg-white/[0.03] border border-white/5">
-                                  {issue.pendingWith}
+                                  {labs.find((l) => l.id === issue.labId || (l.room && issue.labName?.toLowerCase().includes(l.room.toLowerCase())))?.technicianName || issue.pendingWith || "Lab Coordinator"}
                                 </span>
                               </td>
                               <td className="px-5 py-3.5 text-slate-400">{issue.createdAt || issue.submittedAt || "Recent"}</td>
@@ -1685,7 +1693,9 @@ export default function DashboardPage({
                         <div className="text-slate-500">Current Stage:</div>
                         <div className="font-semibold text-slate-200">{issue.currentStage}</div>
                         <div className="text-slate-500 pt-1">Pending With:</div>
-                        <div className="font-semibold text-blue-400">{issue.pendingWith}</div>
+                        <div className="font-semibold text-blue-400">
+                          {labs.find((l) => l.id === issue.labId || (l.room && issue.labName?.toLowerCase().includes(l.room.toLowerCase())))?.technicianName || issue.pendingWith || "Lab Coordinator"}
+                        </div>
                       </div>
                     </div>
 

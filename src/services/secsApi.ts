@@ -558,12 +558,25 @@ class SECSBackendEngine {
     if (!lab) throw new ApiError("Lab not found.", 404);
 
     lab.technicianId = technicianId;
-    if (technicianId) {
-      const tech = this.state.users.find((u) => u.id === technicianId);
-      lab.technicianName = tech ? tech.name : "Assigned";
-    } else {
-      lab.technicianName = "Awaiting assignment";
-    }
+    const tech = technicianId ? this.state.users.find((u) => u.id === technicianId) : null;
+    lab.technicianName = tech ? tech.name : "Awaiting assignment";
+
+    // Update all matching issues for this lab
+    this.state.issues.forEach((iss) => {
+      const matches =
+        iss.labId === labId ||
+        (lab.room && iss.labName && iss.labName.toLowerCase().includes(lab.room.toLowerCase()));
+      if (matches && iss.status !== "Resolved" && !iss.status.includes("Rejected")) {
+        iss.assignedTechnicianId = technicianId || "";
+        if (tech) {
+          iss.pendingWith = tech.name;
+          if (iss.status === "Under Review") iss.status = "Assigned";
+        } else {
+          iss.pendingWith = "Awaiting assignment";
+          if (iss.status === "Assigned") iss.status = "Under Review";
+        }
+      }
+    });
 
     this.persist();
     return { message: "Technician assigned.", lab };
@@ -907,7 +920,12 @@ function normalizeIssue(issue: any): PublicIssue {
     submittedAt: issue.submittedAt || issue.created_at,
     createdAt: issue.createdAt || issue.created_at || new Date().toISOString(),
     currentStage: issue.currentStage || issue.current_stage || "Under Review",
-    pendingWith: issue.pendingWith || issue.pending_with || "Lab Coordinator",
+    pendingWith:
+      issue.technicianName ||
+      issue.technician_name ||
+      issue.pendingWith ||
+      issue.pending_with ||
+      "Lab Coordinator",
     assignedTechnicianId: issue.assignedTechnicianId || issue.assigned_technician_id || "",
     budgetAmount:
       issue.budgetAmount !== undefined

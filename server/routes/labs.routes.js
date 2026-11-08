@@ -107,22 +107,61 @@ export function labRoutes(router) {
     const { technicianId, room, name, department } = req.body || {};
 
     const lab = memoryDb.tables.labs.find((l) => l.id === id);
+    let updatedTechName = 'Awaiting assignment';
+
     if (lab) {
-      if (technicianId !== undefined) lab.technician_id = technicianId || null;
+      if (technicianId !== undefined) {
+        lab.technician_id = technicianId || null;
+        if (technicianId) {
+          const tech = memoryDb.tables.users.find((u) => u.id === technicianId);
+          if (tech) updatedTechName = tech.name;
+        }
+        for (const iss of memoryDb.tables.issues) {
+          const matches = iss.lab_id === id || (lab.room && iss.lab_name && iss.lab_name.includes(lab.room));
+          if (matches && iss.status !== 'Resolved' && !iss.status.includes('Rejected')) {
+            iss.assigned_technician_id = technicianId || null;
+            if (technicianId) {
+              if (iss.status === 'Under Review') iss.status = 'Assigned';
+              iss.pending_with = updatedTechName;
+            } else {
+              iss.pending_with = 'Awaiting assignment';
+              if (iss.status === 'Assigned') iss.status = 'Under Review';
+            }
+          }
+        }
+      }
       if (room) lab.room = room.trim();
       if (name) lab.name = name.trim();
       if (department) lab.department = department.trim();
     }
 
-    let updatedTechName = 'Awaiting assignment';
     try {
       if (technicianId !== undefined) {
         await query('UPDATE labs SET technician_id = $1 WHERE id = $2', [technicianId || null, id]);
-        // Also update open issues assigned to this lab
+        
+        let newTechName = 'Awaiting assignment';
         if (technicianId) {
+          const tRes = await query('SELECT name FROM users WHERE id = $1', [technicianId]);
+          if (tRes && tRes.rows && tRes.rows[0] && tRes.rows[0].name) {
+            newTechName = tRes.rows[0].name;
+            updatedTechName = newTechName;
+          }
           await query(
-            `UPDATE issues SET assigned_technician_id = $1 WHERE lab_id = $2 AND status NOT IN ('Resolved', 'Rejected by Higher Authority')`,
-            [technicianId, id]
+            `UPDATE issues 
+             SET assigned_technician_id = $1,
+                 pending_with = CASE WHEN status IN ('Under Review', 'Assigned') THEN $2 ELSE pending_with END,
+                 status = CASE WHEN status = 'Under Review' THEN 'Assigned' ELSE status END
+             WHERE (lab_id = $3 OR (lab_name ILIKE ('%' || $4 || '%'))) AND status NOT IN ('Resolved', 'Rejected by Higher Authority')`,
+            [technicianId, newTechName, id, lab ? lab.room : id]
+          );
+        } else {
+          await query(
+            `UPDATE issues 
+             SET assigned_technician_id = NULL,
+                 pending_with = 'Awaiting assignment',
+                 status = CASE WHEN status = 'Assigned' THEN 'Under Review' ELSE status END
+             WHERE (lab_id = $1 OR (lab_name ILIKE ('%' || $2 || '%'))) AND status NOT IN ('Resolved', 'Rejected by Higher Authority')`,
+            [id, lab ? lab.room : id]
           );
         }
       }
@@ -142,11 +181,6 @@ export function labRoutes(router) {
       }
     } catch {
       // ignore
-    }
-
-    if (technicianId && lab) {
-      const tech = memoryDb.tables.users.find((u) => u.id === technicianId);
-      if (tech) updatedTechName = tech.name;
     }
 
     res.json({

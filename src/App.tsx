@@ -21,7 +21,6 @@ const NAV_LINKS = [
   { label: "Submit Fault", href: "#submit" },
   { label: "Transparency Tracker", href: "#track" },
   { label: "Lab Directory", href: "#labs" },
-  { label: "Staff Portals", href: "#portal-access" },
   { label: "FAQ", href: "#faq" },
 ];
 
@@ -52,44 +51,6 @@ const HOW_IT_WORKS = [
   },
 ];
 
-const PORTAL_CARDS: { role: PortalRole; title: string; subtitle: string; description: string; actions: string[]; icon: string; accentColor: string }[] = [
-  {
-    role: "admin",
-    title: "System Admin",
-    subtitle: "Facilities & Operations",
-    description: "Manage laboratory rooms, technician assignments, and overall campus access control.",
-    actions: ["Manage lab assignments", "Control staff access", "Audit system workflows"],
-    icon: "🛡️",
-    accentColor: "border-blue-500/30 text-blue-400 bg-blue-500/10",
-  },
-  {
-    role: "authority",
-    title: "Higher Authority",
-    subtitle: "Institutional Governance",
-    description: "Review, approve or reject repair budget requests, and conduct financial oversight.",
-    actions: ["Approve repair budgets", "Audit payment discrepancies", "Departmental oversight"],
-    icon: "🏛️",
-    accentColor: "border-amber-500/30 text-amber-400 bg-amber-500/10",
-  },
-  {
-    role: "accounts",
-    title: "Accounts Office",
-    subtitle: "Fiscal Management",
-    description: "Verify approved purchase requisitions and disburse repair funds to technicians.",
-    actions: ["Process approved funds", "Confirm disbursements", "Uphold payment records"],
-    icon: "💳",
-    accentColor: "border-emerald-500/30 text-emerald-400 bg-emerald-500/10",
-  },
-  {
-    role: "technician",
-    title: "Lab Technician",
-    subtitle: "Technical Repair Staff",
-    description: "Diagnose faults, request parts funding, confirm fixes, and dispute false payments.",
-    actions: ["Room-specific queue", "Request parts funding", "Resolve & close tickets"],
-    icon: "🔧",
-    accentColor: "border-indigo-500/30 text-indigo-400 bg-indigo-500/10",
-  },
-];
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string; border: string; dot: string }> = {
   Resolved: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/30", dot: "bg-emerald-400" },
@@ -323,18 +284,6 @@ export default function App() {
     }
   }
 
-  function openPortal(role: PortalRole) {
-    if (currentUser) {
-      setPage("dashboard");
-    } else if (role === "admin" && adminConfigured === false) {
-      setPortalRole("admin");
-      setPage("setup-admin");
-    } else {
-      setPortalRole(role);
-      setPage("login");
-    }
-  }
-
   function handleLoginSuccess(user: StaffAccount) {
     setCurrentUser(user);
     setAdminConfigured(true);
@@ -483,12 +432,6 @@ export default function App() {
                     <span>👑</span> One-Time Admin Setup
                   </button>
                 )}
-                <button
-                  onClick={() => document.querySelector("#portal-access")?.scrollIntoView({ behavior: "smooth" })}
-                  className="hidden sm:flex text-xs font-semibold px-4 py-2 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05] text-slate-300 hover:text-white transition-all"
-                >
-                  Staff Portals
-                </button>
                 <button
                   onClick={() => setPage("register")}
                   className="hidden sm:flex text-xs font-semibold px-3.5 py-2 rounded-xl border border-white/10 text-slate-300 hover:text-white hover:bg-white/[0.04] transition-all"
@@ -790,96 +733,6 @@ export default function App() {
         </div>
       </section>
 
-      {/* ── STAFF PORTALS SECTION ── */}
-      <section id="portal-access" className="py-24 border-b border-white/5 relative bg-[#060d1f]">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-6">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-400 block mb-2">
-                Staff Authentication
-              </span>
-              <h2 className="text-3xl md:text-4xl font-extrabold font-display text-white tracking-tight">
-                Role-Gated Workspaces
-              </h2>
-              <p className="text-slate-400 text-sm mt-2 max-w-xl">
-                Each portal features permission-isolated actions, approval queues, and direct integration with our PostgreSQL database.
-              </p>
-            </div>
-            <button
-              onClick={() => setPage("login")}
-              className="self-start md:self-auto text-xs font-semibold px-4 py-2.5 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02] text-slate-300 hover:text-white transition-all"
-            >
-              Sign In with Credentials
-            </button>
-          </div>
-
-          <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
-            {PORTAL_CARDS.map((portal) => {
-              const isUnconfiguredAdmin = portal.role === "admin" && !adminConfigured;
-              return (
-                <div
-                  key={portal.role}
-                  className={`glass-card rounded-2xl p-6 flex flex-col justify-between border transition-all ${
-                    isUnconfiguredAdmin
-                      ? "border-amber-500/50 shadow-xl shadow-amber-500/15 bg-amber-500/[0.04]"
-                      : "border-white/5"
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-5">
-                      <span className="text-2xl">{portal.icon}</span>
-                      <span
-                        className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
-                          isUnconfiguredAdmin
-                            ? "bg-amber-500/20 border-amber-500/40 text-amber-300 animate-pulse"
-                            : portal.accentColor
-                        }`}
-                      >
-                        {isUnconfiguredAdmin ? "⚡ Setup Required (One-Time)" : portal.subtitle}
-                      </span>
-                    </div>
-
-                    <h3 className="text-lg font-bold text-white mb-2">{portal.title}</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed mb-5 min-h-[48px]">
-                      {isUnconfiguredAdmin
-                        ? "Master administrator account has not been set up. Click below to initialize your credentials now."
-                        : portal.description}
-                    </p>
-
-                    <div className="space-y-2 mb-6 pt-4 border-t border-white/5">
-                      {portal.actions.map((act) => (
-                        <div key={act} className="flex items-center gap-2 text-xs text-slate-300">
-                          <span className="text-emerald-400 text-[11px]">✓</span>
-                          <span>{act}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {isUnconfiguredAdmin ? (
-                    <button
-                      onClick={() => {
-                        setPortalRole("admin");
-                        setPage("setup-admin");
-                      }}
-                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold text-xs text-center shadow-lg shadow-amber-500/25 hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
-                    >
-                      <span>👑</span> Setup Master Admin (One-Time) →
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => openPortal(portal.role)}
-                      className="w-full py-2.5 rounded-xl btn-primary text-xs font-semibold text-center"
-                    >
-                      Enter {portal.title} →
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
       {/* ── LAB DIRECTORY (DYNAMIC) ── */}
       <section id="labs" className="py-24 border-b border-white/5">
@@ -1349,7 +1202,7 @@ export default function App() {
                           <td className="px-5 py-3.5 text-slate-400">{issue.currentStage}</td>
                           <td className="px-5 py-3.5">
                             <span className="px-2 py-1 rounded bg-white/[0.03] border border-white/5 text-slate-300 font-medium">
-                              {issue.pendingWith}
+                              {labs.find((l) => l.id === issue.labId || (l.room && (issue.labName || issue.lab || "").toLowerCase().includes(l.room.toLowerCase())))?.technicianName || issue.pendingWith || "Lab Coordinator"}
                             </span>
                           </td>
                         </tr>
@@ -1452,7 +1305,8 @@ export default function App() {
             <a href="#home" className="hover:text-slate-300 transition-colors">Home</a>
             <a href="#submit" className="hover:text-slate-300 transition-colors">Report</a>
             <a href="#track" className="hover:text-slate-300 transition-colors">Tracker</a>
-            <a href="#portal-access" className="hover:text-slate-300 transition-colors">Portals</a>
+            <a href="#labs" className="hover:text-slate-300 transition-colors">Labs</a>
+            <a href="#faq" className="hover:text-slate-300 transition-colors">FAQ</a>
           </div>
 
           <div className="text-slate-500 text-[11px]">
