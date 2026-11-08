@@ -2034,7 +2034,7 @@ export default function DashboardPage({
                       <span className="text-base shrink-0">⚠️</span>
                       <div className="space-y-1">
                         <p className="font-semibold text-amber-300">
-                          Brevo SMTP Notice: Email could not be delivered directly ({provisionedCredentials.emailError || "SMTP 535 Authentication"}).
+                          Email Delivery Notice: ({provisionedCredentials.emailError || "Dispatch issue"}).
                         </p>
                         <p className="text-[11px] text-amber-200/80">
                           The account has been created in the database. Please copy the credentials below to provide them to the user directly via WhatsApp or message.
@@ -2044,7 +2044,7 @@ export default function DashboardPage({
                   ) : (
                     <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
                       <span>✓</span>
-                      <span>Credentials dispatched to <strong>{provisionedCredentials.email}</strong> via Brevo email.</span>
+                      <span>Credentials dispatched to <strong>{provisionedCredentials.email}</strong> via Brevo REST API.</span>
                     </div>
                   )}
 

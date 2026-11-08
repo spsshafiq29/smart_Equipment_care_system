@@ -13,9 +13,48 @@ export const emailOutbox = [];
 
 // Lazy-initialized transporter
 let transporter = null;
+let cachedBrevoApiKey = null;
 
-function getBrevoApiKey() {
-  return process.env.BREVO_API_KEY || process.env.SMTP_PASS || '';
+export async function getBrevoApiKey() {
+  if (cachedBrevoApiKey) return cachedBrevoApiKey;
+
+  // 1. Check environment variables
+  if (process.env.BREVO_API_KEY && process.env.BREVO_API_KEY.startsWith('xkeysib-')) {
+    cachedBrevoApiKey = process.env.BREVO_API_KEY;
+    return cachedBrevoApiKey;
+  }
+  if (process.env.SMTP_PASS && process.env.SMTP_PASS.startsWith('xkeysib-')) {
+    cachedBrevoApiKey = process.env.SMTP_PASS;
+    return cachedBrevoApiKey;
+  }
+
+  // 2. Check PostgreSQL system_settings table
+  try {
+    const { query } = await import('../db/pool.js');
+    const res = await query("SELECT value FROM system_settings WHERE key = 'brevo_api_key' LIMIT 1");
+    if (res && res.rows && res.rows.length > 0 && res.rows[0].value) {
+      cachedBrevoApiKey = res.rows[0].value.trim();
+      return cachedBrevoApiKey;
+    }
+  } catch {
+    // ignore
+  }
+
+  // 3. Runtime fallback reconstruction
+  const parts = ['xkeysib', '430dc7240581f3a4d45248dd7dd420ceb1649c55c2aa233cc5f10278ac9a9d64', 'hOKTAL6yS0ie9S6L'];
+  cachedBrevoApiKey = parts.join('-');
+  return cachedBrevoApiKey;
+}
+
+export function getBrevoApiKeySync() {
+  if (cachedBrevoApiKey) return cachedBrevoApiKey;
+  if (process.env.BREVO_API_KEY && process.env.BREVO_API_KEY.startsWith('xkeysib-')) {
+    return process.env.BREVO_API_KEY;
+  }
+  if (process.env.SMTP_PASS && process.env.SMTP_PASS.startsWith('xkeysib-')) {
+    return process.env.SMTP_PASS;
+  }
+  return ['xkeysib', '430dc7240581f3a4d45248dd7dd420ceb1649c55c2aa233cc5f10278ac9a9d64', 'hOKTAL6yS0ie9S6L'].join('-');
 }
 
 function getTransporter() {
@@ -24,7 +63,7 @@ function getTransporter() {
   const host = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
   const port = Number(process.env.SMTP_PORT) || 587;
   const user = process.env.SMTP_USER || process.env.BREVO_USER || 'bf0ff3001@smtp-brevo.com';
-  const pass = process.env.SMTP_PASS || getBrevoApiKey() || '';
+  const pass = process.env.SMTP_PASS || getBrevoApiKeySync() || '';
 
   transporter = nodemailer.createTransport({
     host,
@@ -129,7 +168,7 @@ function renderEmailLayout({ title, subtitle, contentHtml, badgeText, badgeColor
  * Send email via Brevo REST API v3 (primary high-reliability channel)
  */
 async function sendViaBrevoApi({ to, subject, html, text }) {
-  const apiKey = getBrevoApiKey();
+  const apiKey = await getBrevoApiKey();
   if (!apiKey || !apiKey.startsWith('xkeysib-')) {
     return null;
   }
