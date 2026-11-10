@@ -260,6 +260,11 @@ export default function App() {
       setIsSubmitting(false);
       return;
     }
+    if (!formData.assetTag.trim()) {
+      setFormError("Device Serial Number / Workstation ID is required (e.g. PC-14, Bench-02) to pinpoint the exact computer or device in the lab.");
+      setIsSubmitting(false);
+      return;
+    }
     if (!formData.description.trim() || formData.description.trim().length < 5) {
       setFormError("Please provide an engineering symptom description of at least 5 characters.");
       setIsSubmitting(false);
@@ -1129,15 +1134,17 @@ export default function App() {
                     <div className="grid sm:grid-cols-2 gap-3.5">
                       <div>
                         <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
-                          Hardware Asset Tag / Serial (Optional)
+                          Device Serial Number / Workstation ID *
                         </label>
                         <input
                           type="text"
-                          placeholder="e.g. CSE-OSC-04 or SN-88214"
+                          required
+                          placeholder="e.g. PC-14, Lab-PC-08, Bench-02, SN-88214"
                           value={formData.assetTag}
                           onChange={(e) => setFormData({ ...formData, assetTag: e.target.value })}
                           className="w-full rounded-lg px-3.5 py-2 text-xs form-input font-mono"
                         />
+                        <span className="block text-[10px] text-slate-400 mt-1">Specify which computer, bench, or device is broken in the lab.</span>
                       </div>
 
                       <div>

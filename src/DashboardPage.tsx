@@ -3,7 +3,7 @@ import { secsApi } from "./services/secsApi";
 import type { AuditIncident, Budget, BudgetStatus, EquipmentTypeOption, Lab, PortalRole, PublicIssue, StaffAccount } from "./workflowTypes";
 
 type Role = PortalRole | "student" | "teacher" | "researcher";
-type Section = "overview" | "my-issues" | "submit-fault" | "reports" | "labs" | "budgets" | "users" | "ledger";
+type Section = "overview" | "my-issues" | "submit-fault" | "reports" | "labs" | "budgets" | "users" | "ledger" | "profile";
 type TechnicianQueue = "incoming" | "work";
 
 interface Technician {
@@ -74,6 +74,7 @@ const NAV_ITEMS: { id: Section; label: string; roles: Role[]; icon: IconName }[]
   { id: "budgets", label: "Budgets & Payments", roles: ["admin", "authority", "accounts", "technician"], icon: "wallet" },
   { id: "users", label: "Access & Staff Accounts", roles: ["admin", "authority"], icon: "users" },
   { id: "ledger", label: "Public Audit Ledger", roles: ["admin", "authority", "accounts", "technician", "student", "teacher", "researcher"], icon: "shield" },
+  { id: "profile", label: "My Profile & Account", roles: ["student", "teacher", "researcher"], icon: "users" },
 ];
 
 type IconName = "grid" | "lab" | "wallet" | "users" | "shield" | "bell" | "search" | "menu" | "close" | "check" | "alert" | "arrow";
@@ -307,6 +308,11 @@ export default function DashboardPage({
   const [faultSubmitting, setFaultSubmitting] = useState(false);
   const [faultError, setFaultError] = useState("");
 
+  // Self-Service Account Deletion State (Student, Teacher, Researcher)
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
   // Load all dynamic backend data
   const loadData = async () => {
     try {
@@ -498,6 +504,10 @@ export default function DashboardPage({
       setFaultError("Please specify the custom device / equipment name.");
       return;
     }
+    if (!newFault.assetTag.trim()) {
+      setFaultError("Device Serial Number / Workstation ID is required (e.g. PC-14, Bench-02) to pinpoint the exact computer or device in the lab.");
+      return;
+    }
     if (!newFault.description.trim() || newFault.description.trim().length < 5) {
       setFaultError("Please provide a fault description with at least 5 characters.");
       return;
@@ -511,7 +521,7 @@ export default function DashboardPage({
         labId: selectedLab?.id,
         labName: selectedLab ? `${selectedLab.room} · ${selectedLab.name}` : newFault.lab,
         equipmentType: finalEquipmentType,
-        assetTag: newFault.assetTag.trim() || undefined,
+        assetTag: newFault.assetTag.trim(),
         description: newFault.description.trim(),
         priority: newFault.priority,
         reporterName: currentUser?.name || "Campus Member",
@@ -758,6 +768,22 @@ export default function DashboardPage({
     } catch (err: any) {
       setNotice(err?.message || "Failed to remove account.");
       await loadData();
+    }
+  }
+
+  async function handleDeleteMyAccount() {
+    if (!currentUser?.id && !currentUser?.email) return;
+    setIsDeletingAccount(true);
+    setDeleteError("");
+    try {
+      const targetIdentifier = currentUser.id || currentUser.email;
+      await secsApi.users.deleteUser(targetIdentifier);
+      await secsApi.auth.logout();
+      onLogout();
+    } catch (err: any) {
+      console.error("Failed to delete account:", err);
+      setDeleteError(err?.message || "Failed to permanently delete your account. Please try again.");
+      setIsDeletingAccount(false);
     }
   }
 
@@ -1125,6 +1151,12 @@ export default function DashboardPage({
                         className="border border-white/10 hover:border-white/20 bg-white/[0.03] text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all"
                       >
                         Track My Tickets ({userSubmittedIssues.length})
+                      </button>
+                      <button
+                        onClick={() => setSection("profile")}
+                        className="border border-white/10 hover:border-white/20 bg-white/[0.03] text-slate-300 hover:text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all"
+                      >
+                        My Profile & Account
                       </button>
                     </div>
                   )}
@@ -1529,15 +1561,17 @@ export default function DashboardPage({
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
-                      Asset Tag or Serial (Optional)
+                      Device Serial Number / Workstation ID *
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. LAB-PC-04 or SPEC-2026"
+                      required
+                      placeholder="e.g. PC-14, Lab-PC-08, Bench-02, SN-88214"
                       value={newFault.assetTag}
                       onChange={(e) => setNewFault({ ...newFault, assetTag: e.target.value })}
                       className="w-full rounded-xl px-4 py-2.5 text-xs glass-input font-mono"
                     />
+                    <span className="block text-[11px] text-slate-400 mt-1">Specify which computer, bench, or device is broken in the lab.</span>
                   </div>
 
                   <div>
@@ -2491,8 +2525,188 @@ export default function DashboardPage({
               </div>
             </div>
           )}
+
+          {/* ── TAB 7: MY PROFILE & ACCOUNT SETTINGS (STUDENT, TEACHER, RESEARCHER) ── */}
+          {section === "profile" && (
+            <div className="space-y-6 max-w-4xl">
+              <div>
+                <h2 className="text-2xl font-bold font-display text-white">My Academic Profile & Account</h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Manage your institutional member credentials, review active tickets, and manage your account lifecycle.
+                </p>
+              </div>
+
+              {/* Profile Details Card */}
+              <div className="glass-card p-6 md:p-8 rounded-2xl border border-white/5 space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-xl font-bold font-display">
+                      {ROLE_META[role]?.initials || "MB"}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-white">{currentUser?.name || "Campus Member"}</h3>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${ROLE_META[role]?.badge || "border-blue-500/30 text-blue-400"}`}>
+                          {ROLE_META[role]?.label || role}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">{currentUser?.email || "—"}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-xs font-semibold text-emerald-400">Active Campus Account</span>
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+                  <div className="p-4 rounded-xl bg-slate-900/40 border border-white/5">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 block mb-1">
+                      Academic Designation
+                    </span>
+                    <span className="font-semibold text-white">
+                      {role === "student" ? "Undergraduate / Graduate Student" : role === "teacher" ? "Faculty / Lecturer" : "Academic Research Fellow"}
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-900/40 border border-white/5">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 block mb-1">
+                      Academic Department
+                    </span>
+                    <span className="font-semibold text-white">
+                      {currentUser?.department || "Campus Engineering"}
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-900/40 border border-white/5">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 block mb-1">
+                      Student / Member ID
+                    </span>
+                    <span className="font-mono font-semibold text-white">
+                      {currentUser?.student_id || currentUser?.id || "N/A"}
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-900/40 border border-white/5">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 block mb-1">
+                      Submitted Problem Tickets
+                    </span>
+                    <span className="font-bold text-white text-sm">
+                      {userSubmittedIssues.length} filed
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-900/40 border border-white/5">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 block mb-1">
+                      Resolved Equipment
+                    </span>
+                    <span className="font-bold text-emerald-400 text-sm">
+                      {userSubmittedIssues.filter((i) => i.status === "Resolved").length} completed
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-900/40 border border-white/5">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 block mb-1">
+                      Security & Privacy
+                    </span>
+                    <span className="font-semibold text-sky-400">
+                      Single Account / Verified
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* DANGER ZONE: ACCOUNT DELETION */}
+              <div className="p-6 md:p-8 rounded-2xl border border-rose-500/30 bg-gradient-to-br from-rose-950/25 via-[#0c1322] to-[#0a101d] space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0 text-lg">
+                      ⚠️
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Permanent Account Deletion</h4>
+                      <p className="text-xs text-slate-400 mt-1 leading-relaxed max-w-xl">
+                        Permanently delete your {ROLE_META[role]?.label.toLowerCase()} account and authentication credentials from the university system. Your previously reported maintenance tickets will remain safely preserved in the laboratory archive to ensure campus facilities can continue servicing equipment.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteError("");
+                      setShowDeleteModal(true);
+                    }}
+                    className="shrink-0 px-4 py-2.5 rounded-xl border border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 font-semibold text-xs transition-all flex items-center justify-center gap-2 hover:border-rose-500"
+                  >
+                    <span>🗑️</span>
+                    <span>Delete My Account</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
+
+      {/* ── PERMANENT ACCOUNT DELETION CONFIRMATION MODAL ── */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#0b1326] border border-rose-500/40 rounded-2xl max-w-md w-full p-6 md:p-7 shadow-2xl space-y-5">
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 text-xl shrink-0">
+                ⚠️
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Delete Account Permanently?</h3>
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                  Are you sure you want to permanently delete the account for <strong className="text-rose-300">{currentUser?.name}</strong> (<span className="text-slate-300 font-mono">{currentUser?.email}</span>)?
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 leading-relaxed">
+              <strong>Warning:</strong> This action cannot be undone. All your session credentials will be cleared from PostgreSQL, and you will be immediately logged out.
+            </div>
+
+            {deleteError && (
+              <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500 text-rose-200 text-xs">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                disabled={isDeletingAccount}
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteError("");
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-white/[0.05] border border-white/10 hover:border-white/20 transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingAccount}
+                onClick={handleDeleteMyAccount}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 border border-rose-500 transition-all shadow-lg shadow-rose-900/30 disabled:opacity-50 flex items-center gap-2"
+              >
+                {isDeletingAccount ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    <span>Deleting Account...</span>
+                  </>
+                ) : (
+                  <span>Yes, Permanently Delete</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

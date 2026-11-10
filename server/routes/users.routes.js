@@ -247,18 +247,20 @@ export function userRoutes(router) {
   // DELETE /api/v1/users/:id
   router.delete('/api/v1/users/:id', async (req, res) => {
     const { id } = req.params;
-    if (id === 'admin-1') {
+    if (id === 'admin-1' || id === 'SYS-ADMIN-01') {
       return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Primary System Admin account cannot be removed' } });
     }
 
     try {
       await query('UPDATE labs SET technician_id = NULL WHERE technician_id = $1', [id]);
-      await query('DELETE FROM users WHERE id = $1', [id]);
-    } catch {
-      // ignore
+      await query('DELETE FROM users WHERE id = $1 OR LOWER(email) = LOWER($1)', [id]);
+    } catch (err) {
+      console.error('[Delete User Database Error]:', err);
     }
 
-    const idx = memoryDb.tables.users.findIndex((u) => u.id === id);
+    const idx = memoryDb.tables.users.findIndex(
+      (u) => u.id === id || (u.email && u.email.toLowerCase() === id.toLowerCase())
+    );
     if (idx !== -1) {
       const removed = memoryDb.tables.users.splice(idx, 1)[0];
       if (removed.role === 'technician') {
@@ -268,7 +270,7 @@ export function userRoutes(router) {
       }
     }
 
-    res.json({ message: 'User account removed' });
+    res.json({ message: 'User account removed successfully' });
   });
 }
 

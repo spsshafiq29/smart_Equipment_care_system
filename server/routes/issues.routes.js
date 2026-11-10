@@ -297,6 +297,14 @@ export function issueRoutes(router) {
     if (!equipmentType) {
       return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Equipment type is required' } });
     }
+    if (!assetTag || !assetTag.trim()) {
+      return res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Specific device serial number or workstation ID is required (e.g. PC-14, Bench-02) to pinpoint the exact equipment in the lab.',
+        },
+      });
+    }
     if (!description || description.trim().length < 5) {
       return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Please provide a detailed problem description' } });
     }
@@ -396,7 +404,8 @@ export function issueRoutes(router) {
       minute: '2-digit',
     }).format(new Date());
 
-    const item = assetTag?.trim() || equipmentType;
+    const cleanAssetTag = assetTag.trim();
+    const item = `${equipmentType} (${cleanAssetTag})`;
 
     // Atomic / Collision-Safe PostgreSQL Persistence Loop
     let inserted = false;
@@ -413,7 +422,7 @@ export function issueRoutes(router) {
         lab_id: resolvedLabId,
         lab_name: resolvedLabName,
         equipment_type: equipmentType,
-        asset_tag: assetTag || 'N/A',
+        asset_tag: cleanAssetTag,
         item,
         description: description.trim(),
         priority: priority ? priority.charAt(0).toUpperCase() + priority.slice(1) : 'Medium',

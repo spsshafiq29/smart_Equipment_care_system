@@ -374,6 +374,16 @@ class SECSBackendEngine {
     reporterEmail?: string;
   }): Promise<{ message: string; issue: PublicIssue }> {
     await this.delay();
+
+    if (!payload.assetTag || !payload.assetTag.trim()) {
+      throw new ApiError(
+        "Device Serial Number / Workstation ID is required (e.g. PC-14, Bench-02) to identify the specific equipment in the lab.",
+        400
+      );
+    }
+    const cleanAssetTag = payload.assetTag.trim();
+    const item = `${payload.equipmentType} (${cleanAssetTag})`;
+
     const seq = this.state.counters.ticketSeq++;
     const ticketId = `TKT-${seq}`;
 
@@ -401,7 +411,6 @@ class SECSBackendEngine {
     }).format(new Date());
 
     const labDisplayName = payload.labName || (lab ? `${lab.room} · ${lab.name}` : "General University Lab");
-    const item = payload.assetTag?.trim() || payload.equipmentType;
     const email = payload.reporterEmail || "student@campus.edu";
 
     const newIssue: PublicIssue = {
@@ -410,7 +419,7 @@ class SECSBackendEngine {
       labName: labDisplayName,
       lab: labDisplayName,
       equipmentType: payload.equipmentType,
-      assetTag: payload.assetTag || "N/A",
+      assetTag: cleanAssetTag,
       item,
       description: payload.description,
       priority: (payload.priority.charAt(0).toUpperCase() + payload.priority.slice(1)) as any,
@@ -712,7 +721,9 @@ class SECSBackendEngine {
 
   async deleteUser(userId: string): Promise<{ message: string }> {
     await this.delay();
-    const idx = this.state.users.findIndex((u) => u.id === userId);
+    const idx = this.state.users.findIndex(
+      (u) => u.id === userId || (u.email && u.email.toLowerCase() === userId.toLowerCase())
+    );
     if (idx === -1) throw new ApiError("User not found.", 404);
 
     this.state.users.splice(idx, 1);
@@ -1349,7 +1360,7 @@ export const secsApi = {
     deleteUser: async (userId: string): Promise<{ message: string }> => {
       return tryApi(
         async () => {
-          return await apiRequest(`/api/v1/users/${userId}`, {
+          return await apiRequest(`/api/v1/users/${encodeURIComponent(userId)}`, {
             method: "DELETE",
           });
         },

@@ -190,6 +190,18 @@ async function runQaTestSuite() {
   const emptyIssue = await makeRequest('POST', '/api/v1/issues', { description: 'broken' });
   assert(emptyIssue.status === 400, 'Issue without lab and equipment type rejected with 400');
 
+  // 3.1b Validation - Missing mandatory device serial number
+  const noSerialIssue = await makeRequest('POST', '/api/v1/issues', {
+    labId: targetLab.id,
+    equipmentType: 'Oscilloscope',
+    description: 'CRT screen deflection horizontal amplifier drift.',
+    priority: 'High',
+  });
+  assert(
+    noSerialIssue.status === 400 && noSerialIssue.body?.error?.message?.includes('serial number or workstation ID'),
+    'Issue without device serial number/workstation ID rejected with 400 Validation Error'
+  );
+
   // 3.2 Submission
   const submitRes = await makeRequest('POST', '/api/v1/issues', {
     labId: targetLab.id,
@@ -278,6 +290,7 @@ async function runQaTestSuite() {
   const cancelTestIssue = await makeRequest('POST', '/api/v1/issues', {
     labId: 'lab-2',
     equipmentType: 'Oscilloscopes',
+    assetTag: 'OSC-CAL-02',
     description: 'Calibration error during frequency test',
     priority: 'low',
   });
@@ -336,6 +349,28 @@ async function runQaTestSuite() {
     role: 'technician',
   });
   assert(validStaffRes.status === 201 && validStaffRes.body?.user?.id, 'Creation of staff member with any valid email succeeds with 201');
+
+  // 5.4 User self-deletion / permanent account deletion
+  const delEmail = `del_test_${Date.now()}@campus.edu`;
+  const regDelUser = await makeRequest('POST', '/api/v1/auth/register', {
+    fullName: 'Temporary Student',
+    email: delEmail,
+    password: 'Password123!',
+    role: 'student',
+    department: 'Computer Science & Engineering',
+    studentId: 'ST-9988',
+  });
+  assert(regDelUser.status === 201, 'Student test account registered for deletion testing');
+  const delUserId = regDelUser.body?.user?.id;
+
+  const deleteRes = await makeRequest('DELETE', `/api/v1/users/${delUserId}`);
+  assert(deleteRes.status === 200, 'Student account permanently deleted successfully via DELETE /api/v1/users/:id');
+
+  const reLoginRes = await makeRequest('POST', '/api/v1/auth/login', {
+    email: delEmail,
+    password: 'Password123!',
+  });
+  assert(reLoginRes.status === 401, 'Login fails with 401 after user account is deleted');
 
   // -------------------------------------------------------------
   // SUITE 6: DYNAMIC AGGREGATIONS & METRICS
