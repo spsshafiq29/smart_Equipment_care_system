@@ -325,25 +325,21 @@ export default function LoginPage({ onNavigate, onLogin, initialView }: Props) {
   const currentRoleInfo = ACADEMIC_ROLES.find((r) => r.value === regRole) || ACADEMIC_ROLES[0];
 
   return (
-    <div className="min-h-screen flex bg-[#050a18] text-slate-100 selection:bg-blue-500/30">
+    <div className="min-h-screen flex bg-[#070c17] text-slate-100 selection:bg-blue-600/30">
       {/* ── LEFT SHOWCASE PANEL (Desktop) ── */}
-      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 relative flex-col justify-between p-12 overflow-hidden border-r border-white/5 bg-gradient-to-br from-[#070e24] via-[#09132e] to-[#040814]">
-        {/* Ambient atmospheric glows */}
-        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 right-0 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 relative flex-col justify-between p-12 overflow-hidden border-r border-white/[0.08] bg-[#091122]">
         {/* Brand Header */}
         <div className="relative z-10 flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20 border border-white/10">
-            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-sm">
+            <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
             </svg>
           </div>
           <div>
-            <span className="font-display font-extrabold text-xl tracking-tight text-white">
+            <span className="font-display font-extrabold text-lg tracking-tight text-white block leading-tight">
               {universityName ? `${universityName} · SECS` : "SECS"}
             </span>
-            <span className="text-xs text-blue-400 font-semibold tracking-wide block uppercase">
+            <span className="text-[11px] text-blue-400 font-semibold tracking-wider block uppercase">
               Smart Equipment Care System
             </span>
           </div>
@@ -420,7 +416,7 @@ export default function LoginPage({ onNavigate, onLogin, initialView }: Props) {
           </div>
 
           {/* Form Card */}
-          <div className="glass-card rounded-2xl p-7 sm:p-9 shadow-2xl relative border border-white/10 bg-[#070e24]/90 backdrop-blur-xl">
+          <div className="surface-card rounded-xl p-6 sm:p-8 shadow-xl relative border border-white/[0.08] bg-[#0d1629]">
             {/* ── TOP AUTH MODE TABS (When not in setup-admin or forgot-password) ── */}
             {view !== "setup-admin" && view !== "forgot-password" ? (
               <div className="mb-6">

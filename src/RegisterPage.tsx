@@ -110,23 +110,19 @@ export default function RegisterPage({ onNavigate }: Props) {
   const strengthColor = ["", "bg-rose-500", "bg-amber-400", "bg-emerald-500"];
 
   return (
-    <div className="min-h-screen flex bg-[#050a18] text-slate-100 selection:bg-blue-500/30">
+    <div className="min-h-screen flex bg-[#070c17] text-slate-100 selection:bg-blue-600/30">
       {/* ── LEFT BRAND PANEL ── */}
-      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 relative flex-col justify-between p-12 overflow-hidden border-r border-white/5 bg-gradient-to-br from-[#070e24] via-[#09132e] to-[#040814]">
-        {/* Glows */}
-        <div className="absolute top-1/3 -left-20 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 relative flex-col justify-between p-12 overflow-hidden border-r border-white/[0.08] bg-[#091122]">
         <div className="relative z-10 flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20 border border-white/10">
-            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-sm">
+            <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
             </svg>
           </div>
           <div>
-            <span className="font-display font-extrabold text-xl tracking-tight text-white">SECS</span>
-            <span className="text-xs text-blue-400 font-semibold tracking-wide block uppercase">University Care Network</span>
+            <span className="font-display font-extrabold text-lg tracking-tight text-white block leading-tight">SECS</span>
+            <span className="text-[11px] text-blue-400 font-semibold tracking-wider block uppercase">University Care Network</span>
           </div>
         </div>
 
@@ -179,7 +175,7 @@ export default function RegisterPage({ onNavigate }: Props) {
             <span className="font-display font-extrabold text-lg text-white">Create Account</span>
           </div>
 
-          <div className="glass-card rounded-2xl p-7 sm:p-9 shadow-2xl">
+          <div className="surface-card rounded-xl p-6 sm:p-8 shadow-xl border border-white/[0.08] bg-[#0d1629]">
             {submitted ? (
               <div className="text-center py-6">
                 <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/20">
