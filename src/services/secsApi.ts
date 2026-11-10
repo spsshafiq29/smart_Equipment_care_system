@@ -299,9 +299,17 @@ class SECSBackendEngine {
   async register(payload: { fullName: string; studentId?: string; email: string; department: string; role?: string; password?: string }) {
     await this.delay();
     const email = payload.email.trim().toLowerCase();
-    const existing = this.state.users.find((u) => u.email.toLowerCase() === email);
+    const existing = this.state.users.find((u) => u.email.trim().toLowerCase() === email);
     if (existing) {
-      throw new ApiError("An account with this email address already exists.", 409, "CONFLICT");
+      throw new ApiError("An account with this email address already exists. Only one account per email is allowed.", 409, "CONFLICT");
+    }
+    if (payload.studentId?.trim()) {
+      const existingId = this.state.users.find(
+        (u) => (u.studentId || (u as any).student_id) === payload.studentId?.trim()
+      );
+      if (existingId) {
+        throw new ApiError("An account with this University / Student ID already exists.", 409, "CONFLICT");
+      }
     }
 
     const newUser: StaffAccount = {
@@ -664,10 +672,15 @@ class SECSBackendEngine {
 
   async createUser(payload: { name: string; email: string; role: string; labId?: string; password?: string; department?: string }): Promise<{ message: string; user: StaffAccount }> {
     await this.delay();
+    const trimmedEmail = payload.email.trim().toLowerCase();
+    const existing = this.state.users.find((u) => u.email.trim().toLowerCase() === trimmedEmail);
+    if (existing) {
+      throw new ApiError("An account with this email address already exists in the system.", 409, "CONFLICT");
+    }
     const newUser: StaffAccount = {
       id: `${payload.role}-${Date.now()}`,
       name: payload.name.trim(),
-      email: payload.email.trim(),
+      email: trimmedEmail,
       role: payload.role as PortalRole,
       department: payload.department?.trim(),
       assignedLabs: payload.labId ? [payload.labId] : [],
@@ -974,9 +987,12 @@ async function tryApi<T>(apiFn: () => Promise<T>, fallbackFn: () => Promise<T>):
   try {
     return await apiFn();
   } catch (err: any) {
-    if (err instanceof ApiError && err.status < 500) {
+    // If the server answered with an ApiError (e.g. 400, 401, 403, 404, 409, 500), throw it directly
+    // so genuine database and validation responses are presented accurately to the user
+    if (err instanceof ApiError) {
       throw err;
     }
+    // Only fall back to local in-memory engine when network request genuinely fails (offline / unreached server)
     return await fallbackFn();
   }
 }

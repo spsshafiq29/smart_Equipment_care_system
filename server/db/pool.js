@@ -81,8 +81,14 @@ export async function query(sqlText, params = []) {
     try {
       const res = await pgClient.query(sqlText, params);
       return res;
-    } catch {
+    } catch (err) {
+      // Re-throw data integrity constraints (unique violation 23505, foreign key 23503, not-null 23502)
+      // and syntax / column errors (42xxx) so callers can handle them appropriately
+      if (err.code && (err.code.startsWith('23') || err.code.startsWith('42'))) {
+        throw err;
+      }
       // If PostgreSQL network is blocked or db not ready, seamlessly fall back to memory store
+      console.warn('[PostgreSQL Connection Fallback]:', err.message || err);
       return null;
     }
   }

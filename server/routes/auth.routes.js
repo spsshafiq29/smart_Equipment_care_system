@@ -178,20 +178,48 @@ export function authRoutes(router) {
     }
 
     const trimmedEmail = email.trim().toLowerCase();
+    const trimmedStudentId = studentId?.trim() || null;
 
-    // Check duplicate
+    // Strict Check: Exactly 1 account per email across entire system
     let existing = null;
     try {
-      const dbRes = await query('SELECT id FROM users WHERE LOWER(email) = $1', [trimmedEmail]);
+      const dbRes = await query('SELECT id, email, role FROM users WHERE LOWER(TRIM(email)) = $1', [trimmedEmail]);
       if (dbRes && dbRes.rows && dbRes.rows.length > 0) existing = dbRes.rows[0];
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('[Register Email Check Error]:', err);
     }
     if (!existing) {
-      existing = memoryDb.tables.users.find((u) => u.email.toLowerCase() === trimmedEmail);
+      existing = memoryDb.tables.users.find((u) => (u.email || '').trim().toLowerCase() === trimmedEmail);
     }
     if (existing) {
-      return res.status(409).json({ error: { code: 'CONFLICT', message: 'An account with this email already exists' } });
+      return res.status(409).json({
+        error: {
+          code: 'CONFLICT',
+          message: 'An account with this email address already exists. Only one account per email is permitted.',
+        },
+      });
+    }
+
+    // Check duplicate student / university ID if provided
+    if (trimmedStudentId) {
+      let existingId = null;
+      try {
+        const sRes = await query('SELECT id FROM users WHERE student_id = $1', [trimmedStudentId]);
+        if (sRes && sRes.rows && sRes.rows.length > 0) existingId = sRes.rows[0];
+      } catch (err) {
+        console.error('[Register Student ID Check Error]:', err);
+      }
+      if (!existingId) {
+        existingId = memoryDb.tables.users.find((u) => u.student_id === trimmedStudentId);
+      }
+      if (existingId) {
+        return res.status(409).json({
+          error: {
+            code: 'CONFLICT',
+            message: 'An account with this University / Student ID already exists.',
+          },
+        });
+      }
     }
 
     const newUser = {
@@ -201,7 +229,7 @@ export function authRoutes(router) {
       password_hash: hashPassword(password),
       role: role || 'student',
       department: department || 'General Engineering',
-      student_id: studentId || null,
+      student_id: trimmedStudentId,
       is_active: true,
       created_at: new Date().toISOString(),
     };
@@ -214,8 +242,24 @@ export function authRoutes(router) {
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [newUser.id, newUser.name, newUser.email, newUser.password_hash, newUser.role, newUser.department, newUser.student_id, true]
       );
-    } catch {
-      // ignore
+    } catch (err) {
+      // Remove from memory if DB rejected
+      memoryDb.tables.users = memoryDb.tables.users.filter((u) => u.id !== newUser.id);
+      if (err.code === '23505') {
+        return res.status(409).json({
+          error: {
+            code: 'CONFLICT',
+            message: 'An account with this email address or Student ID already exists.',
+          },
+        });
+      }
+      console.error('[PostgreSQL User Insert Error]:', err);
+      return res.status(500).json({
+        error: {
+          code: 'DATABASE_ERROR',
+          message: 'Database registration error. Please try again.',
+        },
+      });
     }
 
     const token = generateToken(newUser);

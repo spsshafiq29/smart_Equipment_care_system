@@ -37,9 +37,25 @@ export function userRoutes(router) {
     }
 
     const trimmedEmail = email.trim().toLowerCase();
-    const existing = memoryDb.tables.users.find((u) => u.email.toLowerCase() === trimmedEmail);
+
+    // Strict 1-account-per-email enforcement across PostgreSQL and memoryDb
+    let existing = null;
+    try {
+      const dbRes = await query('SELECT id, email, role FROM users WHERE LOWER(TRIM(email)) = $1', [trimmedEmail]);
+      if (dbRes && dbRes.rows && dbRes.rows.length > 0) existing = dbRes.rows[0];
+    } catch (err) {
+      console.error('[Users Email Check Error]:', err);
+    }
+    if (!existing) {
+      existing = memoryDb.tables.users.find((u) => (u.email || '').trim().toLowerCase() === trimmedEmail);
+    }
     if (existing) {
-      return res.status(409).json({ error: { code: 'CONFLICT', message: 'An account with this email already exists' } });
+      return res.status(409).json({
+        error: {
+          code: 'CONFLICT',
+          message: 'An account with this email address already exists. Only one account per email is allowed.',
+        },
+      });
     }
 
     // Determine initial password (provided or generated)
@@ -60,16 +76,30 @@ export function userRoutes(router) {
 
     memoryDb.tables.users.push(newUser);
 
-    // Save to PostgreSQL if available
+    // Save to PostgreSQL if available (strict insert, reject duplicates)
     try {
       await query(
         `INSERT INTO users (id, name, email, password_hash, role, department, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6, true)
-         ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = EXCLUDED.role, is_active = true`,
+         VALUES ($1, $2, $3, $4, $5, $6, true)`,
         [newUser.id, newUser.name, newUser.email, newUser.password_hash, newUser.role, newUser.department]
       );
-    } catch {
-      // ignore
+    } catch (err) {
+      memoryDb.tables.users = memoryDb.tables.users.filter((u) => u.id !== newUser.id);
+      if (err.code === '23505') {
+        return res.status(409).json({
+          error: {
+            code: 'CONFLICT',
+            message: 'An account with this email address already exists in the system.',
+          },
+        });
+      }
+      console.error('[PostgreSQL Staff User Insert Error]:', err);
+      return res.status(500).json({
+        error: {
+          code: 'DATABASE_ERROR',
+          message: 'Failed to create user account in database. Please try again.',
+        },
+      });
     }
 
     let assignedLabName = '';

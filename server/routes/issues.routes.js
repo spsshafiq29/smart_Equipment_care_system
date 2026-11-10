@@ -84,6 +84,40 @@ export async function checkAndSend7DayReminders(forceAll = false) {
   return sent;
 }
 
+// Helper: Generate collision-free Ticket IDs dynamically from PostgreSQL & memory
+export async function getNextTicketId() {
+  let nextSeq = 1001;
+  try {
+    const res = await query(`
+      SELECT COALESCE(MAX(CAST(SUBSTRING(id FROM 5) AS INTEGER)), 1000) AS max_seq
+      FROM issues
+      WHERE id ~ '^TKT-[0-9]+$'
+    `);
+    if (res && res.rows && res.rows[0]?.max_seq) {
+      const dbMax = parseInt(res.rows[0].max_seq, 10);
+      if (!isNaN(dbMax)) {
+        nextSeq = Math.max(nextSeq, dbMax + 1);
+      }
+    }
+  } catch (err) {
+    console.error('[Ticket ID Sequence Query Error]:', err);
+  }
+
+  // Verify against memoryDb store to guarantee uniqueness
+  for (const iss of memoryDb.tables.issues) {
+    if (iss.id && iss.id.startsWith('TKT-')) {
+      const num = parseInt(iss.id.replace('TKT-', ''), 10);
+      if (!isNaN(num) && num >= nextSeq) {
+        nextSeq = num + 1;
+      }
+    }
+  }
+
+  nextSeq = Math.max(nextSeq, memoryDb.counters.ticketSeq);
+  memoryDb.counters.ticketSeq = nextSeq + 1;
+  return `TKT-${nextSeq}`;
+}
+
 export function issueRoutes(router) {
   // GET /api/v1/issues/public
   router.get('/api/v1/issues/public', async (req, res) => {
@@ -300,6 +334,10 @@ export function issueRoutes(router) {
       // ignore
     }
 
+    const finalReporterEmail = (reporterEmail || req.user?.email || 'student@campus.edu').trim().toLowerCase();
+    const finalReporterName = reporterName || req.user?.name || 'Campus Member';
+    const finalTechId = assignedTechnicianId || null;
+
     // Safe reporter resolution (foreign key checks)
     let validReporterId = null;
     let pgReporterId = null;
@@ -308,6 +346,15 @@ export function issueRoutes(router) {
       try {
         const uRes = await query('SELECT id FROM users WHERE id = $1', [req.user.id]);
         if (uRes && uRes.rows && uRes.rows[0]) pgReporterId = uRes.rows[0].id;
+      } catch {}
+    }
+    if (!pgReporterId && finalReporterEmail) {
+      try {
+        const uRes = await query('SELECT id FROM users WHERE LOWER(TRIM(email)) = $1', [finalReporterEmail]);
+        if (uRes && uRes.rows && uRes.rows[0]) {
+          pgReporterId = uRes.rows[0].id;
+          validReporterId = pgReporterId;
+        }
       } catch {}
     }
 
@@ -341,8 +388,6 @@ export function issueRoutes(router) {
       } catch {}
     }
 
-    const ticketSeq = memoryDb.counters.ticketSeq++;
-    const ticketId = `TKT-${ticketSeq}`;
     const nowFormatted = new Intl.DateTimeFormat('en-GB', {
       day: '2-digit',
       month: 'short',
@@ -352,64 +397,93 @@ export function issueRoutes(router) {
     }).format(new Date());
 
     const item = assetTag?.trim() || equipmentType;
-    const finalReporterEmail = reporterEmail || req.user?.email || 'student@campus.edu';
-    const finalReporterName = reporterName || req.user?.name || 'Campus Member';
-    const finalTechId = assignedTechnicianId || null;
 
-    const newIssue = {
-      id: ticketId,
-      lab_id: resolvedLabId,
-      lab_name: resolvedLabName,
-      equipment_type: equipmentType,
-      asset_tag: assetTag || 'N/A',
-      item,
-      description: description.trim(),
-      priority: priority ? priority.charAt(0).toUpperCase() + priority.slice(1) : 'Medium',
-      status: finalTechId ? 'Assigned' : 'Under Review',
-      current_stage: currentStage,
-      pending_with: pendingWith,
-      reporter_id: validReporterId,
-      reporter_email: finalReporterEmail,
-      reporter_name: finalReporterName,
-      assigned_technician_id: finalTechId,
-      created_at: nowFormatted,
-      updated_at: nowFormatted,
-    };
+    // Atomic / Collision-Safe PostgreSQL Persistence Loop
+    let inserted = false;
+    let attempts = 0;
+    let lastError = null;
+    let newIssue = null;
+
+    while (!inserted && attempts < 5) {
+      attempts++;
+      const ticketId = await getNextTicketId();
+
+      newIssue = {
+        id: ticketId,
+        lab_id: resolvedLabId,
+        lab_name: resolvedLabName,
+        equipment_type: equipmentType,
+        asset_tag: assetTag || 'N/A',
+        item,
+        description: description.trim(),
+        priority: priority ? priority.charAt(0).toUpperCase() + priority.slice(1) : 'Medium',
+        status: finalTechId ? 'Assigned' : 'Under Review',
+        current_stage: currentStage,
+        pending_with: pendingWith,
+        reporter_id: validReporterId,
+        reporter_email: finalReporterEmail,
+        reporter_name: finalReporterName,
+        assigned_technician_id: finalTechId,
+        created_at: nowFormatted,
+        updated_at: nowFormatted,
+      };
+
+      try {
+        const insertRes = await query(
+          `INSERT INTO issues (id, lab_id, lab_name, equipment_type, asset_tag, item, description, priority, status, current_stage, pending_with, reporter_id, reporter_email, reporter_name, assigned_technician_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+           RETURNING *`,
+          [
+            newIssue.id,
+            pgLabId,
+            newIssue.lab_name,
+            newIssue.equipment_type,
+            newIssue.asset_tag,
+            newIssue.item,
+            newIssue.description,
+            newIssue.priority,
+            newIssue.status,
+            newIssue.current_stage,
+            newIssue.pending_with,
+            pgReporterId,
+            newIssue.reporter_email,
+            newIssue.reporter_name,
+            pgTechId,
+          ]
+        );
+        if (insertRes && insertRes.rows && insertRes.rows[0]) {
+          newIssue.created_at = insertRes.rows[0].created_at;
+          newIssue.updated_at = insertRes.rows[0].updated_at;
+        }
+        inserted = true;
+      } catch (err) {
+        lastError = err;
+        if (err.code === '23505') {
+          console.warn(`[Ticket ID Collision]: ${ticketId} exists, retrying with next sequence...`);
+          continue;
+        }
+        console.error('[PostgreSQL Issue Insert Error]:', err);
+        break;
+      }
+    }
+
+    if (!inserted && lastError) {
+      return res.status(500).json({
+        error: {
+          code: 'DATABASE_ERROR',
+          message: 'Failed to record equipment fault ticket in database. Please try again.',
+        },
+      });
+    }
 
     memoryDb.tables.issues.unshift(newIssue);
-
-    try {
-      await query(
-        `INSERT INTO issues (id, lab_id, lab_name, equipment_type, asset_tag, item, description, priority, status, current_stage, pending_with, reporter_id, reporter_email, reporter_name, assigned_technician_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
-        [
-          newIssue.id,
-          pgLabId,
-          newIssue.lab_name,
-          newIssue.equipment_type,
-          newIssue.asset_tag,
-          newIssue.item,
-          newIssue.description,
-          newIssue.priority,
-          newIssue.status,
-          newIssue.current_stage,
-          newIssue.pending_with,
-          pgReporterId,
-          newIssue.reporter_email,
-          newIssue.reporter_name,
-          pgTechId,
-        ]
-      );
-    } catch (err) {
-      console.error('PostgreSQL issue insert error:', err);
-    }
 
     if (finalTechId) {
       memoryDb.tables.notifications.unshift({
         id: `notif-${Date.now()}`,
         user_id: finalTechId,
         target_role: 'technician',
-        message: `New report ${ticketId} assigned for ${newIssue.lab_name}.`,
+        message: `New report ${newIssue.id} assigned for ${newIssue.lab_name}.`,
         read: false,
         created_at: nowFormatted,
       });
