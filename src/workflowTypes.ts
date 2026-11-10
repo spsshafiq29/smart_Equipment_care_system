@@ -77,6 +77,7 @@ export interface StaffAccount {
   department?: string;
   assignedLabs?: string[];
   studentId?: string;
+  student_id?: string;
   isActive?: boolean;
 }
 

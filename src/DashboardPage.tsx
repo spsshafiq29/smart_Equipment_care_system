@@ -2584,7 +2584,7 @@ export default function DashboardPage({
                       Student / Member ID
                     </span>
                     <span className="font-mono font-semibold text-white">
-                      {currentUser?.student_id || currentUser?.id || "N/A"}
+                      {currentUser?.studentId || (currentUser as any)?.student_id || currentUser?.id || "N/A"}
                     </span>
                   </div>
 
