@@ -382,11 +382,11 @@ export default function App() {
           <div className="flex items-center gap-4 text-slate-400">
             <span className="flex items-center gap-1">
               <span className="text-amber-400">⚠️</span>
-              Emergency Desk: <strong className="text-slate-200">Ext. 4410 / (02) 880-9201</strong>
+              Emergency Support: <strong className="text-slate-200">24/7 Priority SLA Alert</strong>
             </span>
             <span className="text-slate-600 hidden sm:inline">|</span>
             <span className="hidden sm:inline font-mono text-[10px] text-slate-400">
-              Active Term 2026
+              Active Operations
             </span>
           </div>
         </div>
