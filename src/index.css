@@ -104,19 +104,31 @@ body {
   transform: translateY(-1.5px);
 }
 
+/* Architectural technical line pattern for subtle structure */
+.bg-grid-technical {
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
 /* Institutional Form Inputs */
 .form-input {
-  background-color: #0a1122;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #091122;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #f8fafc;
   transition: all 0.18s ease;
 }
 
 .form-input:focus {
-  background-color: #0e1830;
+  background-color: #0d172e;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
   outline: none;
+}
+
+/* Tabular figures for monospace data rows */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Solid Action Buttons */

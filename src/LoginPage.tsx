@@ -354,7 +354,7 @@ export default function LoginPage({ onNavigate, onLogin, initialView }: Props) {
 
           <h2 className="text-3xl xl:text-4xl font-extrabold font-display text-white tracking-tight leading-[1.2] mb-6">
             Universal Access for <br />
-            <span className="gradient-brand">Campus Labs & Operations</span>
+            <span className="text-blue-400">Campus Labs & Operations</span>
           </h2>
 
           <p className="text-slate-400 text-sm leading-relaxed mb-8">
@@ -364,23 +364,39 @@ export default function LoginPage({ onNavigate, onLogin, initialView }: Props) {
           <div className="space-y-4">
             {[
               {
-                icon: "🔑",
-                title: "Unified Single Login",
-                desc: "One login form for everyone. Your role and authorized workspace are identified automatically.",
+                icon: (
+                  <svg className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                ),
+                title: "Unified Single Sign-On",
+                desc: "Universal authentication for all roles. Your workspace permissions and routing are identified automatically.",
               },
               {
-                icon: "🎓",
+                icon: (
+                  <svg className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                    <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                  </svg>
+                ),
                 title: "Open Academic Registration",
                 desc: "Students, teachers, and researchers can create verified accounts to submit and track equipment tickets.",
               },
               {
-                icon: "⚡",
-                title: "Live Neon Database & Brevo Alerts",
-                desc: "Continuous ticket synchronization with automatic email updates on dispatch and resolution.",
+                icon: (
+                  <svg className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                ),
+                title: "Live Database & Automated Alerts",
+                desc: "Continuous ticket synchronization with automatic email updates on dispatch, funding, and resolution.",
               },
             ].map((f) => (
-              <div key={f.title} className="flex items-start gap-3.5 p-3.5 rounded-xl bg-white/[0.02] border border-white/5 backdrop-blur-sm">
-                <span className="text-xl shrink-0 mt-0.5">{f.icon}</span>
+              <div key={f.title} className="flex items-start gap-3.5 p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
+                <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 shrink-0 mt-0.5">
+                  {f.icon}
+                </div>
                 <div>
                   <h4 className="text-xs font-semibold text-white tracking-tight">{f.title}</h4>
                   <p className="text-[11px] text-slate-400 leading-normal mt-0.5">{f.desc}</p>
@@ -404,7 +420,7 @@ export default function LoginPage({ onNavigate, onLogin, initialView }: Props) {
         <div className="w-full max-w-md">
           {/* Mobile brand header */}
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white font-black text-base shadow-lg shadow-blue-500/20">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-base shadow-sm">
               S
             </div>
             <div>
@@ -416,7 +432,7 @@ export default function LoginPage({ onNavigate, onLogin, initialView }: Props) {
           </div>
 
           {/* Form Card */}
-          <div className="surface-card rounded-xl p-6 sm:p-8 shadow-xl relative border border-white/[0.08] bg-[#0d1629]">
+          <div className="surface-card rounded-xl p-6 sm:p-8 shadow-xl relative border border-white/[0.08] bg-[#0b1222]">
             {/* ── TOP AUTH MODE TABS (When not in setup-admin or forgot-password) ── */}
             {view !== "setup-admin" && view !== "forgot-password" ? (
               <div className="mb-6">
@@ -431,11 +447,10 @@ export default function LoginPage({ onNavigate, onLogin, initialView }: Props) {
                     }}
                     className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                       view === "login"
-                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
+                        ? "bg-blue-600 text-white shadow-sm"
                         : "text-slate-400 hover:text-white"
                     }`}
                   >
-                    <span>🔑</span>
                     <span>Sign In</span>
                   </button>
 
@@ -449,11 +464,10 @@ export default function LoginPage({ onNavigate, onLogin, initialView }: Props) {
                     }}
                     className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                       view === "register"
-                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
+                        ? "bg-blue-600 text-white shadow-sm"
                         : "text-slate-400 hover:text-white"
                     }`}
                   >
-                    <span>📝</span>
                     <span>Create Account</span>
                   </button>
                 </div>

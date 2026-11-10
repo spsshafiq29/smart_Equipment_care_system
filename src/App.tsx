@@ -28,26 +28,34 @@ const PROTOCOL_STEPS = [
   {
     step: "01",
     tag: "IDENTIFICATION",
+    icon: "inspect",
     title: "Inspect & Note Asset ID",
     desc: "Examine the malfunctioning lab instrument, locate its official university asset barcode or serial tag, and note the room number.",
+    guarantee: "Physical Inspection Required",
   },
   {
     step: "02",
     tag: "REQUISITION",
+    icon: "requisition",
     title: "Submit Technical Fault",
     desc: "File the defect through this portal with hardware classification, symptom details, and operational urgency tier.",
+    guarantee: "< 60s Fast Submission",
   },
   {
     step: "03",
     tag: "DISPATCH",
+    icon: "dispatch",
     title: "Automated Room Assignment",
     desc: "A verified sequential TKT ID is generated in PostgreSQL. The assigned laboratory technician is instantly alerted in their queue.",
+    guarantee: "Automated Tech Routing",
   },
   {
     step: "04",
     tag: "RESOLUTION",
+    icon: "resolution",
     title: "Audit & Verified Signoff",
     desc: "Technician performs diagnosis and repair. Budget approvals and parts funding are logged, and email notice is dispatched to the reporter.",
+    guarantee: "100% Ledger Audited",
   },
 ];
 
@@ -124,6 +132,146 @@ function FAQAccordionItem({ q, a }: { q: string; a: string }) {
       )}
     </div>
   );
+}
+
+function TechnicalIcon({ name, className = "w-4 h-4" }: { name: string; className?: string }) {
+  switch (name) {
+    case "oscilloscope":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="4" width="20" height="15" rx="2" />
+          <path d="M6 12h2l2-4 3 8 2-6 2 4 3-2h2" />
+        </svg>
+      );
+    case "microscope":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 18h12M10 21h4M9 3h3a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9M9 7h6M14 11l4 7M11 11a4 4 0 1 0 0-8" />
+        </svg>
+      );
+    case "computer":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" />
+          <line x1="8" y1="21" x2="16" y2="21" />
+          <line x1="12" y1="17" x2="12" y2="21" />
+        </svg>
+      );
+    case "centrifuge":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="9" />
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
+        </svg>
+      );
+    case "spectrophotometer":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 18l7-12 7 12H4z" />
+          <line x1="2" y1="21" x2="22" y2="21" />
+          <line x1="11" y1="6" x2="17" y2="10" />
+        </svg>
+      );
+    case "power":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <circle cx="8" cy="10" r="2" />
+          <circle cx="16" cy="10" r="2" />
+          <line x1="6" y1="16" x2="10" y2="16" />
+          <line x1="14" y1="16" x2="18" y2="16" />
+        </svg>
+      );
+    case "autoclave":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="4" y="3" width="16" height="18" rx="3" />
+          <circle cx="12" cy="10" r="3" />
+          <line x1="8" y1="17" x2="16" y2="17" />
+        </svg>
+      );
+    case "imaging":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+          <circle cx="12" cy="13" r="4" />
+        </svg>
+      );
+    case "hazard-electrical":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      );
+    case "hazard-laser":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2L2 22h20L12 2z" />
+          <line x1="12" y1="9" x2="12" y2="14" />
+          <line x1="12" y1="18" x2="12.01" y2="18" />
+        </svg>
+      );
+    case "hazard-pressure":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="9" />
+          <polyline points="12 7 12 12 15 15" />
+        </svg>
+      );
+    case "inspect":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <line x1="11" y1="8" x2="11" y2="14" />
+          <line x1="8" y1="11" x2="14" y2="11" />
+        </svg>
+      );
+    case "requisition":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+      );
+    case "dispatch":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </svg>
+      );
+    case "resolution":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      );
+    default:
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+        </svg>
+      );
+  }
+}
+
+function getEquipmentIconName(label: string): string {
+  const l = (label || "").toLowerCase();
+  if (l.includes("computer") || l.includes("pc")) return "computer";
+  if (l.includes("oscilloscope")) return "oscilloscope";
+  if (l.includes("microscope")) return "microscope";
+  if (l.includes("centrifuge")) return "centrifuge";
+  if (l.includes("spectro")) return "spectrophotometer";
+  if (l.includes("power") || l.includes("supply")) return "power";
+  if (l.includes("autoclave") || l.includes("pressure")) return "autoclave";
+  if (l.includes("imaging") || l.includes("camera")) return "imaging";
+  return "tools";
 }
 
 export default function App() {
@@ -571,31 +719,31 @@ export default function App() {
       </nav>
 
       {/* ── HERO SECTION: ARCHITECTURAL & PURPOSEFUL ── */}
-      <header id="overview" className="border-b border-white/[0.08] relative overflow-hidden bg-gradient-to-b from-[#091122] via-[#070c17] to-[#070c17]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14 lg:py-20">
+      <header id="overview" className="border-b border-white/[0.08] relative overflow-hidden bg-[#060a12] bg-grid-technical">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14 lg:py-20 relative z-10">
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">
             {/* Left Narrative */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-blue-500/10 border border-blue-500/25 text-blue-300 text-xs font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                <span>Centralized University Laboratory Maintenance Infrastructure</span>
+              <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-md bg-blue-500/10 border border-blue-500/25 text-blue-300 text-xs font-semibold">
+                <span className="w-2 h-2 rounded-full bg-blue-400 radar-indicator" />
+                <span className="tracking-wide">Centralized University Laboratory Maintenance Infrastructure</span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-display text-white tracking-tight leading-[1.16]">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-display text-white tracking-tight leading-[1.14]">
                 Precision Equipment Care, <br />
                 <span className="text-blue-400">Verifiable Accountability,</span> <br />
                 Zero Laboratory Downtime.
               </h1>
 
               <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl font-normal">
-                An authoritative university platform connecting students, researchers, faculty, certified lab technicians, and fiscal administrators. Log instrument defects with instant automated dispatch, transparent audit trails, and strict SLA resolution timelines.
+                An authoritative campus platform connecting students, researchers, faculty, certified lab technicians, and fiscal leadership. Log instrument defects with instant room-level dispatch, transparent audit trails, and verified SLA resolution guarantees.
               </p>
 
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <a
                   href="#requisition"
-                  className="px-5 py-2.5 rounded-lg btn-institutional-primary text-xs font-semibold flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-lg btn-institutional-primary text-xs font-semibold flex items-center gap-2 shadow-md"
                 >
                   <span>File Equipment Requisition</span>
                   <span>↓</span>
@@ -608,40 +756,41 @@ export default function App() {
                 </a>
                 <button
                   onClick={() => setPage("login")}
-                  className="px-4 py-2.5 text-xs text-slate-400 hover:text-white transition-colors"
+                  className="px-4 py-2.5 text-xs text-slate-400 hover:text-white transition-colors font-medium flex items-center gap-1.5"
                 >
-                  Staff Portal Sign In →
+                  <span>Staff Portal Sign In</span>
+                  <span>→</span>
                 </button>
               </div>
 
               {/* Concrete Key Operational Standards */}
               <div className="pt-6 border-t border-white/[0.08] grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div>
-                  <div className="text-xs text-slate-400 font-medium">Max Response Time</div>
+                <div className="p-3 rounded-lg bg-[#091224] border border-white/5">
+                  <div className="text-[11px] text-slate-400 font-medium">Max Response SLA</div>
                   <div className="text-lg font-bold font-mono text-white mt-0.5">&lt; 24 Hours</div>
-                  <div className="text-[10px] text-blue-400 mt-0.5">Automated tech dispatch</div>
+                  <div className="text-[10px] text-blue-400 mt-0.5 font-medium">Automated tech dispatch</div>
                 </div>
-                <div>
-                  <div className="text-xs text-slate-400 font-medium">Connected Labs</div>
+                <div className="p-3 rounded-lg bg-[#091224] border border-white/5">
+                  <div className="text-[11px] text-slate-400 font-medium">Connected Labs</div>
                   <div className="text-lg font-bold font-mono text-white mt-0.5">{labs.length || "12"} Facilities</div>
-                  <div className="text-[10px] text-emerald-400 mt-0.5">Active research rooms</div>
+                  <div className="text-[10px] text-emerald-400 mt-0.5 font-medium">Active research rooms</div>
                 </div>
-                <div>
-                  <div className="text-xs text-slate-400 font-medium">Audit Compliance</div>
+                <div className="p-3 rounded-lg bg-[#091224] border border-white/5">
+                  <div className="text-[11px] text-slate-400 font-medium">Audit Compliance</div>
                   <div className="text-lg font-bold font-mono text-white mt-0.5">100% Verified</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">PostgreSQL ledger</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5 font-medium">PostgreSQL ledger</div>
                 </div>
-                <div>
-                  <div className="text-xs text-slate-400 font-medium">Resolved Hardware</div>
+                <div className="p-3 rounded-lg bg-[#091224] border border-white/5">
+                  <div className="text-[11px] text-slate-400 font-medium">Resolved Hardware</div>
                   <div className="text-lg font-bold font-mono text-emerald-400 mt-0.5">{stats?.issuesResolvedCount ?? issues.filter(i => i.status === "Resolved").length} Units</div>
-                  <div className="text-[10px] text-emerald-400 mt-0.5">Back in operation</div>
+                  <div className="text-[10px] text-emerald-400 mt-0.5 font-medium">Back in operation</div>
                 </div>
               </div>
             </div>
 
             {/* Right: Operational Dispatch Monitor & Instant Lookup */}
             <div className="lg:col-span-5 space-y-4">
-              <div className="surface-card rounded-xl p-5 border border-white/[0.1] shadow-xl">
+              <div className="surface-card rounded-xl p-5 border border-white/[0.1] shadow-xl bg-[#0b1222]">
                 <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.08]">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 radar-indicator" />
@@ -649,7 +798,7 @@ export default function App() {
                       Live Operations Monitor
                     </span>
                   </div>
-                  <span className="font-mono text-[11px] text-slate-400">
+                  <span className="font-mono text-[11px] text-blue-400 font-bold px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
                     {issues.length} Active Tickets
                   </span>
                 </div>
@@ -684,7 +833,7 @@ export default function App() {
                   {issues.slice(0, 3).map((iss) => (
                     <div
                       key={iss.id}
-                      className="p-3 rounded-lg bg-[#0b1325] border border-white/[0.06] flex items-center justify-between gap-3 text-xs"
+                      className="p-3 rounded-lg bg-[#070e1c] border border-white/[0.06] flex items-center justify-between gap-3 text-xs hover:border-white/10 transition-colors"
                     >
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
@@ -705,32 +854,33 @@ export default function App() {
 
                 {/* Direct Help Desk Note */}
                 <div className="mt-4 pt-3.5 border-t border-white/[0.08] flex items-center justify-between text-[11px] text-slate-400">
-                  <span>Facilities Staff on Duty: <strong className="text-slate-200">Available</strong></span>
-                  <a href="#facilities" className="text-blue-400 hover:text-blue-300 font-semibold">
-                    Browse All Labs →
+                  <span>Facilities Staff on Duty: <strong className="text-emerald-400">Online</strong></span>
+                  <a href="#facilities" className="text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1">
+                    <span>Browse All Labs</span>
+                    <span>→</span>
                   </a>
                 </div>
               </div>
 
               {/* Priority Standards Strip */}
-              <div className="surface-card rounded-xl p-3.5 border border-white/[0.08] text-xs">
+              <div className="surface-card rounded-xl p-3.5 border border-white/[0.08] text-xs bg-[#091122]">
                 <div className="text-[11px] font-semibold text-slate-300 mb-2">Priority Response Protocol (SLA)</div>
                 <div className="grid grid-cols-4 gap-2 text-center text-[10px]">
                   <div className="p-2 rounded bg-rose-500/10 border border-rose-500/20 text-rose-300">
                     <div className="font-bold">Critical</div>
-                    <div className="text-slate-400">24 Hours</div>
+                    <div className="text-slate-400 mt-0.5">24 Hours</div>
                   </div>
                   <div className="p-2 rounded bg-orange-500/10 border border-orange-500/20 text-orange-300">
                     <div className="font-bold">High</div>
-                    <div className="text-slate-400">3 Days</div>
+                    <div className="text-slate-400 mt-0.5">3 Days</div>
                   </div>
                   <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300">
                     <div className="font-bold">Medium</div>
-                    <div className="text-slate-400">7 Days</div>
+                    <div className="text-slate-400 mt-0.5">7 Days</div>
                   </div>
                   <div className="p-2 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
                     <div className="font-bold">Low</div>
-                    <div className="text-slate-400">14 Days</div>
+                    <div className="text-slate-400 mt-0.5">14 Days</div>
                   </div>
                 </div>
               </div>
@@ -752,43 +902,64 @@ export default function App() {
       )}
 
       {/* ── WORKFLOW: 4-STAGE ARCHITECTURAL PROTOCOL ── */}
-      <section className="py-16 border-b border-white/[0.08] bg-[#080f1e]">
+      <section className="py-16 border-b border-white/[0.08] bg-[#070d1a]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="max-w-2xl mb-12">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-blue-400 block mb-1">
-              Standard Operating Procedure
+              Standard Operating Procedure (SOP)
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold font-display text-white tracking-tight">
               Lifecycle of an Equipment Requisition
             </h2>
-            <p className="text-slate-400 text-xs sm:text-sm mt-1.5">
-              Clear institutional protocols ensure every report is assigned to an identifiable laboratory technician with verified funding milestones.
+            <p className="text-slate-400 text-xs sm:text-sm mt-1.5 leading-relaxed">
+              Standardized four-phase maintenance protocol guarantees that every instrument defect is identified, routed to a certified room technician, funded under dual fiscal sign-off, and verified before closing.
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {PROTOCOL_STEPS.map((step, idx) => (
-              <div key={step.step} className="surface-card rounded-xl p-5 flex flex-col justify-between relative">
-                <div>
-                  <div className="flex items-center justify-between mb-3 text-xs">
-                    <span className="font-mono font-bold text-blue-400 text-sm">Step {step.step}</span>
-                    <span className="text-[10px] font-mono uppercase text-slate-500">{step.tag}</span>
+          <div className="relative">
+            {/* Architectural Connecting Guide Line (Desktop) */}
+            <div className="hidden lg:block absolute top-[28px] left-[5%] right-[5%] h-[2px] bg-gradient-to-r from-blue-500/20 via-blue-500/40 to-blue-500/20 z-0" />
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
+              {PROTOCOL_STEPS.map((step, idx) => (
+                <div
+                  key={step.step}
+                  className="surface-card rounded-xl p-5 flex flex-col justify-between border border-white/[0.08] hover:border-blue-500/30 transition-all duration-200 bg-[#091122]"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-10 h-10 rounded-lg bg-[#0e1830] border border-blue-500/30 flex items-center justify-center font-mono font-bold text-blue-400 text-sm shadow-sm">
+                        {step.step}
+                      </div>
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 px-2 py-0.5 rounded bg-white/[0.03] border border-white/5">
+                        {step.tag}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-2 text-blue-400">
+                      <TechnicalIcon name={step.icon} className="w-4 h-4 shrink-0" />
+                      <h3 className="text-sm font-bold text-white tracking-tight">{step.title}</h3>
+                    </div>
+
+                    <p className="text-xs text-slate-400 leading-relaxed mt-1">{step.desc}</p>
                   </div>
-                  <h3 className="text-sm font-bold text-white mb-2">{step.title}</h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">{step.desc}</p>
+
+                  <div className="mt-5 pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] font-mono">
+                    <span className="text-slate-500">Stage {idx + 1} of 4</span>
+                    <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      {step.guarantee}
+                    </span>
+                  </div>
                 </div>
-                <div className="mt-4 pt-3 border-t border-white/[0.06] text-[11px] text-slate-500 flex items-center justify-between font-mono">
-                  <span>Phase {idx + 1} of 4</span>
-                  <span>✓ Standardized</span>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ── LABORATORY DIRECTORY & ROOM ASSIGNMENTS ── */}
-      <section id="facilities" className="py-16 border-b border-white/[0.08]">
+      <section id="facilities" className="py-16 border-b border-white/[0.08] bg-[#060a12]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
             <div>
@@ -832,14 +1003,14 @@ export default function App() {
           {/* Laboratory Cards Grid */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
             {filteredLabs.map((lab) => (
-              <div key={lab.id} className="surface-card rounded-xl p-5 flex flex-col justify-between">
+              <div key={lab.id} className="surface-card rounded-xl p-5 flex flex-col justify-between border border-white/[0.08] bg-[#091122]">
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <span className="font-mono text-xs font-bold text-amber-300 px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/25">
                       Room {lab.room}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400 font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 radar-indicator" />
                       Active Coverage
                     </span>
                   </div>
@@ -868,34 +1039,44 @@ export default function App() {
 
           {/* Quick Category Picker */}
           {equipmentTypes.length > 0 && (
-            <div className="p-5 rounded-xl bg-[#091224] border border-white/[0.06]">
-              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 block mb-3">
-                Quick Requisition by Equipment Classification
-              </span>
+            <div className="p-5 rounded-xl bg-[#081020] border border-white/[0.08]">
+              <div className="flex items-center justify-between mb-3.5 pb-2.5 border-b border-white/5">
+                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300 block">
+                  Quick Requisition by Equipment Classification
+                </span>
+                <span className="text-[10px] text-slate-500 font-mono">Select instrument to pre-fill</span>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
-                {equipmentTypes.map((eq) => (
-                  <button
-                    key={eq.label}
-                    type="button"
-                    onClick={() => {
-                      setFormData((prev) => ({ ...prev, equipmentType: eq.label }));
-                      document.querySelector("#requisition")?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    className="p-3 rounded-lg bg-[#0e1933] hover:bg-[#15254a] border border-white/5 hover:border-blue-500/30 text-center transition-all flex flex-col items-center gap-1.5"
-                  >
-                    <span className="text-xl">{eq.icon}</span>
-                    <span className="text-xs font-medium text-slate-300 leading-tight truncate w-full">{eq.label}</span>
-                  </button>
-                ))}
+                {equipmentTypes.map((eq) => {
+                  const iconName = getEquipmentIconName(eq.label);
+                  return (
+                    <button
+                      key={eq.label}
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({ ...prev, equipmentType: eq.label }));
+                        document.querySelector("#requisition")?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      className="p-3 rounded-lg bg-[#0d162d] hover:bg-[#142244] border border-white/5 hover:border-blue-500/30 text-center transition-all flex flex-col items-center gap-2 group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:text-blue-300 group-hover:scale-105 transition-all">
+                        <TechnicalIcon name={iconName} className="w-4 h-4" />
+                      </div>
+                      <span className="text-xs font-medium text-slate-300 leading-tight truncate w-full">{eq.label}</span>
+                    </button>
+                  );
+                })}
                 <button
                   type="button"
                   onClick={() => {
                     setFormData((prev) => ({ ...prev, equipmentType: "Others" }));
                     document.querySelector("#requisition")?.scrollIntoView({ behavior: "smooth" });
                   }}
-                  className="p-3 rounded-lg bg-[#0e1933] hover:bg-[#15254a] border border-amber-500/30 text-center transition-all flex flex-col items-center gap-1.5"
+                  className="p-3 rounded-lg bg-[#0d162d] hover:bg-[#142244] border border-amber-500/30 text-center transition-all flex flex-col items-center gap-2 group"
                 >
-                  <span className="text-xl">➕</span>
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:text-amber-300 group-hover:scale-105 transition-all">
+                    <TechnicalIcon name="tools" className="w-4 h-4" />
+                  </div>
                   <span className="text-xs font-semibold text-amber-300 leading-tight">Others</span>
                 </button>
               </div>
@@ -1028,175 +1209,203 @@ export default function App() {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                    <div className="border-b border-white/[0.08] pb-3 mb-2">
-                      <h3 className="text-base font-bold text-white">Lab Equipment Fault Report Form</h3>
-                      <p className="text-xs text-slate-400 mt-0.5">Please provide accurate facility and hardware details.</p>
+                    <div className="border-b border-white/[0.08] pb-3 mb-2 flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <h3 className="text-base font-bold text-white">Lab Equipment Fault Requisition</h3>
+                        <p className="text-xs text-slate-400 mt-0.5">Please provide accurate facility and hardware specifications.</p>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold">
+                        ISO 17025 Compliant
+                      </span>
                     </div>
 
                     {formError && (
-                      <div className="p-3 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs">
-                        {formError}
+                      <div className="p-3 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
+                        <span>{formError}</span>
                       </div>
                     )}
 
-                    {/* Reporter Name & Email */}
-                    <div className="grid sm:grid-cols-2 gap-3.5">
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
-                          Reporter Full Name *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. Shafiq Mollah or Dr. Tanvir"
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          className="w-full rounded-lg px-3.5 py-2 text-xs form-input"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
-                          Reporter Email Address *
-                        </label>
-                        <input
-                          type="email"
-                          required
-                          placeholder="e.g. shafiq@campus.edu or user@gmail.com"
-                          value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          className="w-full rounded-lg px-3.5 py-2 text-xs form-input"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Laboratory & Equipment Selection */}
-                    <div className="grid sm:grid-cols-2 gap-3.5">
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
-                          Laboratory Facility *
-                        </label>
-                        <select
-                          required
-                          value={formData.lab}
-                          onChange={(e) => setFormData({ ...formData, lab: e.target.value })}
-                          className="w-full rounded-lg px-3.5 py-2 text-xs form-input bg-[#0a1122]"
-                        >
-                          <option value="">Select campus lab room</option>
-                          {labs.map((lab) => (
-                            <option key={lab.id} value={`${lab.room} · ${lab.name}`}>
-                              Room {lab.room} · {lab.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
-                          Equipment Classification *
-                        </label>
-                        <select
-                          required
-                          value={formData.equipmentType}
-                          onChange={(e) => {
-                            setFormData({ ...formData, equipmentType: e.target.value });
-                            if (e.target.value !== "Others") setCustomEquipmentName("");
-                          }}
-                          className="w-full rounded-lg px-3.5 py-2 text-xs form-input bg-[#0a1122]"
-                        >
-                          <option value="">Select equipment type</option>
-                          {equipmentTypes.map((eq) => (
-                            <option key={eq.label} value={eq.label}>
-                              {eq.label}
-                            </option>
-                          ))}
-                          <option value="Others">Others (Custom Device)</option>
-                        </select>
-
-                        {formData.equipmentType === "Others" && (
-                          <div className="mt-2">
-                            <label className="text-[11px] font-semibold uppercase tracking-wider text-amber-300 block mb-1">
-                              Custom Equipment / Device Name *
+                    <div className="space-y-4">
+                      {/* Step 1: Reporter Identity */}
+                      <div className="p-4 rounded-xl bg-[#091122] border border-white/[0.08] space-y-3">
+                        <div className="flex items-center gap-2 text-xs font-mono font-bold text-blue-400 pb-1.5 border-b border-white/5">
+                          <span className="w-5 h-5 rounded bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-[10px]">01</span>
+                          <span>REPORTER CREDENTIALS & IDENTITY</span>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-3.5">
+                          <div>
+                            <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
+                              Reporter Full Name *
                             </label>
                             <input
                               type="text"
                               required
-                              placeholder="e.g. Optical Spectrum Analyzer, 3D Printer"
-                              value={customEquipmentName}
-                              onChange={(e) => setCustomEquipmentName(e.target.value)}
-                              className="w-full rounded-lg px-3 py-1.5 text-xs form-input border-amber-500/40 text-amber-100 placeholder-slate-500"
+                              placeholder="e.g. Shafiq Mollah or Dr. Tanvir"
+                              value={formData.name}
+                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                              className="w-full rounded-lg px-3.5 py-2 text-xs form-input"
                             />
                           </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Asset Tag & Urgency Tier */}
-                    <div className="grid sm:grid-cols-2 gap-3.5">
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
-                          Device Serial Number / Workstation ID *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. PC-14, Lab-PC-08, Bench-02, SN-88214"
-                          value={formData.assetTag}
-                          onChange={(e) => setFormData({ ...formData, assetTag: e.target.value })}
-                          className="w-full rounded-lg px-3.5 py-2 text-xs form-input font-mono"
-                        />
-                        <span className="block text-[10px] text-slate-400 mt-1">Specify which computer, bench, or device is broken in the lab.</span>
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
-                          Urgency Priority Tier *
-                        </label>
-                        <div className="grid grid-cols-4 gap-1.5">
-                          {["low", "medium", "high", "critical"].map((p) => {
-                            const isSelected = formData.priority === p;
-                            return (
-                              <button
-                                key={p}
-                                type="button"
-                                onClick={() => setFormData({ ...formData, priority: p })}
-                                className={`py-1.5 rounded text-[11px] font-bold uppercase transition-all ${isSelected
-                                    ? p === "critical"
-                                      ? "bg-rose-600 text-white"
-                                      : p === "high"
-                                        ? "bg-orange-600 text-white"
-                                        : p === "medium"
-                                          ? "bg-amber-500 text-slate-950"
-                                          : "bg-emerald-600 text-white"
-                                    : "bg-white/[0.03] text-slate-400 hover:text-white border border-white/5"
-                                  }`}
-                              >
-                                {p}
-                              </button>
-                            );
-                          })}
+                          <div>
+                            <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
+                              Official University Email *
+                            </label>
+                            <input
+                              type="email"
+                              required
+                              placeholder="e.g. shafiq@campus.edu or user@gmail.com"
+                              value={formData.email}
+                              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                              className="w-full rounded-lg px-3.5 py-2 text-xs form-input"
+                            />
+                            <span className="block text-[10px] text-slate-500 mt-1">Masked publicly to protect identity.</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Defect Description */}
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
-                        Technical Symptom Description *
-                      </label>
-                      <textarea
-                        required
-                        rows={3}
-                        placeholder="Detail the failure mode, error codes, burning smell, power supply failure, or broken cables..."
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        className="w-full rounded-lg px-3.5 py-2 text-xs form-input resize-none"
-                      />
+                      {/* Step 2: Facility & Equipment */}
+                      <div className="p-4 rounded-xl bg-[#091122] border border-white/[0.08] space-y-3">
+                        <div className="flex items-center gap-2 text-xs font-mono font-bold text-blue-400 pb-1.5 border-b border-white/5">
+                          <span className="w-5 h-5 rounded bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-[10px]">02</span>
+                          <span>FACILITY & HARDWARE SPECIFICATION</span>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-3.5">
+                          <div>
+                            <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
+                              Laboratory Facility *
+                            </label>
+                            <select
+                              required
+                              value={formData.lab}
+                              onChange={(e) => setFormData({ ...formData, lab: e.target.value })}
+                              className="w-full rounded-lg px-3.5 py-2 text-xs form-input bg-[#0a1122]"
+                            >
+                              <option value="">Select campus lab room</option>
+                              {labs.map((lab) => (
+                                <option key={lab.id} value={`${lab.room} · ${lab.name}`}>
+                                  Room {lab.room} · {lab.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
+                              Equipment Classification *
+                            </label>
+                            <select
+                              required
+                              value={formData.equipmentType}
+                              onChange={(e) => {
+                                setFormData({ ...formData, equipmentType: e.target.value });
+                                if (e.target.value !== "Others") setCustomEquipmentName("");
+                              }}
+                              className="w-full rounded-lg px-3.5 py-2 text-xs form-input bg-[#0a1122]"
+                            >
+                              <option value="">Select equipment type</option>
+                              {equipmentTypes.map((eq) => (
+                                <option key={eq.label} value={eq.label}>
+                                  {eq.label}
+                                </option>
+                              ))}
+                              <option value="Others">Others (Custom Device)</option>
+                            </select>
+
+                            {formData.equipmentType === "Others" && (
+                              <div className="mt-2">
+                                <label className="text-[11px] font-semibold uppercase tracking-wider text-amber-300 block mb-1">
+                                  Custom Equipment / Device Name *
+                                </label>
+                                <input
+                                  type="text"
+                                  required
+                                  placeholder="e.g. Optical Spectrum Analyzer, 3D Printer"
+                                  value={customEquipmentName}
+                                  onChange={(e) => setCustomEquipmentName(e.target.value)}
+                                  className="w-full rounded-lg px-3 py-1.5 text-xs form-input border-amber-500/40 text-amber-100 placeholder-slate-500"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
+                            Device Serial Number / Workstation ID *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. PC-14, Lab-PC-08, Bench-02, SN-88214"
+                            value={formData.assetTag}
+                            onChange={(e) => setFormData({ ...formData, assetTag: e.target.value })}
+                            className="w-full rounded-lg px-3.5 py-2 text-xs form-input font-mono"
+                          />
+                          <span className="block text-[10px] text-slate-400 mt-1">Specify which computer, bench, or device is broken in the lab.</span>
+                        </div>
+                      </div>
+
+                      {/* Step 3: Defect & Urgency SLA */}
+                      <div className="p-4 rounded-xl bg-[#091122] border border-white/[0.08] space-y-3">
+                        <div className="flex items-center gap-2 text-xs font-mono font-bold text-blue-400 pb-1.5 border-b border-white/5">
+                          <span className="w-5 h-5 rounded bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-[10px]">03</span>
+                          <span>DIAGNOSIS & OPERATIONAL SLA TIER</span>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
+                            Urgency Priority Tier *
+                          </label>
+                          <div className="grid grid-cols-4 gap-1.5">
+                            {["low", "medium", "high", "critical"].map((p) => {
+                              const isSelected = formData.priority === p;
+                              return (
+                                <button
+                                  key={p}
+                                  type="button"
+                                  onClick={() => setFormData({ ...formData, priority: p })}
+                                  className={`py-2 px-1 text-center rounded-lg text-xs font-bold uppercase transition-all border ${isSelected
+                                      ? p === "critical"
+                                        ? "bg-rose-500/20 border-rose-500 text-rose-300"
+                                        : p === "high"
+                                          ? "bg-orange-500/20 border-orange-500 text-orange-300"
+                                          : p === "medium"
+                                            ? "bg-amber-500/20 border-amber-500 text-amber-300"
+                                            : "bg-emerald-500/20 border-emerald-500 text-emerald-300"
+                                      : "border-white/5 bg-white/[0.02] text-slate-400 hover:text-white"
+                                    }`}
+                                >
+                                  <div>{p}</div>
+                                  <div className="text-[9px] opacity-75 font-normal mt-0.5">
+                                    {p === "critical" ? "24h SLA" : p === "high" ? "72h SLA" : p === "medium" ? "7d SLA" : "14d SLA"}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
+                            Technical Symptom Description *
+                          </label>
+                          <textarea
+                            required
+                            rows={3}
+                            placeholder="Detail the failure mode, error codes, burning smell, power supply failure, or broken cables..."
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            className="w-full rounded-lg px-3.5 py-2 text-xs form-input resize-none"
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full py-2.5 rounded-lg btn-institutional-primary text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 mt-2"
+                      className="w-full py-2.5 rounded-lg btn-institutional-primary text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 mt-4 shadow-md"
                     >
                       {isSubmitting ? "Persisting Requisition to Database…" : "Submit Equipment Fault Ticket →"}
                     </button>
@@ -1366,21 +1575,24 @@ export default function App() {
 
           <div className="grid md:grid-cols-2 gap-4">
             {incidents.map((incident) => (
-              <div key={incident.id} className="surface-card rounded-xl p-4 border border-rose-500/20 bg-rose-500/[0.02]">
-                <div className="flex items-center justify-between mb-2">
+              <div key={incident.id} className="surface-card rounded-xl p-5 border border-rose-500/25 bg-[#0d1424]">
+                <div className="flex items-center justify-between mb-2.5 pb-2.5 border-b border-white/5">
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[10px] font-bold uppercase">
+                    <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[10px] font-bold uppercase tracking-wider border border-rose-500/30">
                       Payment Disputed
                     </span>
                     <span className="font-mono text-xs text-amber-300 font-bold">{incident.ticketId}</span>
                   </div>
-                  <span className="text-[10px] text-slate-500">{incident.createdAt}</span>
+                  <span className="text-[11px] font-mono text-slate-500">{incident.createdAt}</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed mb-3">{incident.message}</p>
                 <div className="pt-2.5 border-t border-white/[0.06] flex items-center justify-between text-xs text-slate-400">
-                  <span>Author: Verified Technician</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                    <span>Author: Verified Technician</span>
+                  </span>
                   {incident.amount && (
-                    <span className="font-mono font-bold text-amber-300">৳{incident.amount.toLocaleString("en-BD")}</span>
+                    <span className="font-mono font-bold text-amber-300 text-sm">৳{incident.amount.toLocaleString("en-BD")}</span>
                   )}
                 </div>
               </div>
@@ -1388,7 +1600,8 @@ export default function App() {
           </div>
 
           {incidents.length === 0 && (
-            <div className="surface-card p-6 rounded-xl text-center text-xs text-slate-400 border border-white/[0.06]">
+            <div className="surface-card p-8 rounded-xl text-center text-xs text-slate-400 border border-white/[0.06] bg-[#091122]">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block mr-2" />
               All repair budgets and accounts disbursements have been reconciled and verified without discrepancy.
             </div>
           )}
@@ -1396,49 +1609,79 @@ export default function App() {
       </section>
 
       {/* ── SAFETY PROTOCOLS & HAZARD MITIGATION ── */}
-      <section id="safety" className="py-16 border-b border-white/[0.08]">
+      <section id="safety" className="py-16 border-b border-white/[0.08] bg-[#060a12]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="max-w-2xl mb-8">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400 block mb-1">
-              Safety Compliance
+              Safety Compliance Protocols
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold font-display text-white tracking-tight">
-              Campus Laboratory Emergency Protocols
+              Campus Laboratory Emergency Procedures
             </h2>
             <p className="text-slate-400 text-xs sm:text-sm mt-1">
-              Mandatory steps for handling hazardous malfunctions, electrical sparks, and chemical spill risks.
+              Mandatory physical protocols for handling hazardous malfunctions, electrical sparks, and chemical autoclave risks.
             </p>
           </div>
 
           <div className="grid sm:grid-cols-3 gap-4">
-            <div className="surface-card rounded-xl p-5 border border-rose-500/20">
-              <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center font-bold text-sm mb-3">
-                ⚡
+            <div className="surface-card rounded-xl p-5 border border-rose-500/25 bg-[#0c1424] flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/30 flex items-center justify-center">
+                    <TechnicalIcon name="hazard-electrical" className="w-4 h-4" />
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 font-bold">
+                    CODE: EPO-01
+                  </span>
+                </div>
+                <h3 className="text-sm font-bold text-white mb-1.5">Electrical Arc & Spark Hazard</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Immediately hit the room&apos;s Emergency Power Off (EPO) button. Cease all device operations, evacuate the immediate workstation, and submit a Critical 24h ticket.
+                </p>
               </div>
-              <h3 className="text-sm font-bold text-white mb-1.5">Electrical / Spark Hazard</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Immediately hit the room&apos;s Emergency Power Off (EPO) button. Cease all device operations, evacuate the immediate workstation, and submit a Critical ticket.
-              </p>
+              <div className="mt-4 pt-3 border-t border-white/5 text-[11px] text-rose-300 font-mono">
+                Immediate Power Cutoff Required
+              </div>
             </div>
 
-            <div className="surface-card rounded-xl p-5 border border-amber-500/20">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-sm mb-3">
-                ⚠️
+            <div className="surface-card rounded-xl p-5 border border-amber-500/25 bg-[#0c1424] flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center">
+                    <TechnicalIcon name="hazard-laser" className="w-4 h-4" />
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 font-bold">
+                    CODE: LAS-02
+                  </span>
+                </div>
+                <h3 className="text-sm font-bold text-white mb-1.5">Laser & Optical Alignment</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  De-energize optical sources. Do not attempt manual calibration of misaligned laser optics or high-voltage supplies without a certified laboratory technician.
+                </p>
               </div>
-              <h3 className="text-sm font-bold text-white mb-1.5">Laser & Optical Alignment</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                De-energize optical sources. Do not attempt manual calibration of misaligned laser optics or high-voltage supplies without a certified technician.
-              </p>
+              <div className="mt-4 pt-3 border-t border-white/5 text-[11px] text-amber-300 font-mono">
+                Optical Beam Shutter Required
+              </div>
             </div>
 
-            <div className="surface-card rounded-xl p-5 border border-blue-500/20">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-sm mb-3">
-                🛡️
+            <div className="surface-card rounded-xl p-5 border border-blue-500/25 bg-[#0c1424] flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/30 flex items-center justify-center">
+                    <TechnicalIcon name="hazard-pressure" className="w-4 h-4" />
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 font-bold">
+                    CODE: PRS-03
+                  </span>
+                </div>
+                <h3 className="text-sm font-bold text-white mb-1.5">Centrifuge & Autoclave Vessel</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  If excessive vibration or pressure seal leakage is detected, abort cycle immediately. Allow chamber to depressurize completely before reporting.
+                </p>
               </div>
-              <h3 className="text-sm font-bold text-white mb-1.5">Centrifuge & Autoclave</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                If excessive vibration or pressure seal leakage is detected, abort cycle immediately. Allow chamber to depressurize before reporting.
-              </p>
+              <div className="mt-4 pt-3 border-t border-white/5 text-[11px] text-blue-300 font-mono">
+                Pressure Relief Verification
+              </div>
             </div>
           </div>
         </div>
