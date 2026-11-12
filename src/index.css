@@ -174,3 +174,88 @@ body {
 .radar-indicator {
   animation: radar-ping 3s infinite ease-in-out;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PRINT MEDIA STYLES: Standardized Physical QR Asset Sticker Sheets
+   Formatted for standard A4 sticker/label sheets (85mm x 55mm / 70mm x 38mm grids)
+   ───────────────────────────────────────────────────────────────────────────── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 11pt;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide all dashboard chrome, navigation, headers, and UI controls */
+  header,
+  nav,
+  aside,
+  footer,
+  .no-print,
+  button,
+  .dashboard-sidebar,
+  .dashboard-header {
+    display: none !important;
+  }
+
+  /* Target container for print stickers */
+  #printable-sticker-sheet,
+  .printable-sticker-sheet {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6mm !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  #printable-sticker-sheet.print-grid-3,
+  .printable-sticker-sheet.print-grid-3 {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4mm !important;
+  }
+
+  .sticker-card-print {
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    border: 1.5px solid #0f172a !important;
+    border-radius: 6px !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    padding: 3.5mm !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+
+  .sticker-card-print * {
+    color: #0f172a !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .sticker-card-print .qr-box {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+
+  .sticker-card-print .badge-black {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+

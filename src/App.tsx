@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import DashboardPage from "./DashboardPage";
 import LoginPage from "./LoginPage";
+import EquipmentQrScannerModal from "./components/EquipmentQrScannerModal";
+import { parseQrPayload, type ParsedEquipmentData } from "./utils/qrPayload";
 import { getCurrentUser, getToken, secsApi } from "./services/secsApi";
 import type {
   Announcement,
@@ -306,11 +308,101 @@ export default function App() {
   const [submittedTicket, setSubmittedTicket] = useState<string | null>(null);
   const [formError, setFormError] = useState("");
 
+  // QR Scanner & Scanned Asset State
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scannedAsset, setScannedAsset] = useState<ParsedEquipmentData | null>(null);
+
   // Search & Filter State
   const [ticketSearch, setTicketSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [labDeptFilter, setLabDeptFilter] = useState<string>("all");
   const [quickSearchId, setQuickSearchId] = useState("");
+
+  function applyScannedEquipment(parsed: ParsedEquipmentData) {
+    const cleanLabId = parsed.labId.toLowerCase().replace(/^(lab|room)[-\s]*/i, "");
+    let matchedLab = labs.find(
+      (l) =>
+        l.id === parsed.labId ||
+        l.room.toLowerCase() === parsed.labId.toLowerCase() ||
+        l.room.toLowerCase() === cleanLabId ||
+        (l.room && parsed.room && l.room.toLowerCase() === parsed.room.toLowerCase()) ||
+        (l.name && parsed.labName && l.name.toLowerCase() === parsed.labName.toLowerCase()) ||
+        l.name.toLowerCase().includes(parsed.labId.toLowerCase()) ||
+        parsed.labId.toLowerCase().includes(l.room.toLowerCase())
+    );
+
+    if (matchedLab) {
+      setFormData((prev) => ({
+        ...prev,
+        lab: `${matchedLab.room} · ${matchedLab.name}`,
+      }));
+    } else if (parsed.labName) {
+      setFormData((prev) => ({ ...prev, lab: parsed.labName! }));
+    } else if (parsed.labId) {
+      setFormData((prev) => ({ ...prev, lab: parsed.labId }));
+    }
+
+    if (parsed.equipmentType) {
+      const matchEq = equipmentTypes.find(
+        (e) => e.label.toLowerCase() === parsed.equipmentType.toLowerCase()
+      );
+      if (matchEq) {
+        setFormData((prev) => ({ ...prev, equipmentType: matchEq.label }));
+        setCustomEquipmentName("");
+      } else {
+        setFormData((prev) => ({ ...prev, equipmentType: "Others" }));
+        setCustomEquipmentName(parsed.equipmentType);
+      }
+    }
+
+    if (parsed.serialNumber || parsed.assetTag) {
+      const serialOrTag = parsed.serialNumber || parsed.assetTag || "";
+      setFormData((prev) => ({ ...prev, assetTag: serialOrTag }));
+    }
+
+    setScannedAsset({
+      ...parsed,
+      room: matchedLab ? matchedLab.room : parsed.room,
+      labName: matchedLab ? matchedLab.name : parsed.labName,
+    });
+
+    setPage("landing");
+
+    setTimeout(() => {
+      const reqEl = document.querySelector("#requisition");
+      if (reqEl) {
+        reqEl.scrollIntoView({ behavior: "smooth" });
+        const descInput = document.getElementById("requisition-description");
+        if (descInput) (descInput as HTMLTextAreaElement).focus();
+      }
+    }, 150);
+  }
+
+  // Deep-Link Listener: Auto-populate from URL when user scans physical sticker with smartphone camera
+  useEffect(() => {
+    function checkDeepLinkUrl() {
+      if (typeof window === "undefined") return;
+      const href = window.location.href;
+      const hash = window.location.hash;
+      const search = window.location.search;
+
+      if (
+        hash.includes("report?") ||
+        hash.includes("requisition?") ||
+        search.includes("lab=") ||
+        search.includes("serial=")
+      ) {
+        const parsed = parseQrPayload(href);
+        if (parsed) {
+          applyScannedEquipment(parsed);
+        }
+      }
+    }
+
+    checkDeepLinkUrl();
+    window.addEventListener("hashchange", checkDeepLinkUrl);
+    return () => window.removeEventListener("hashchange", checkDeepLinkUrl);
+  }, [labs, equipmentTypes]);
 
   const loadDynamicData = async () => {
     try {
@@ -748,6 +840,20 @@ export default function App() {
                   <span>File Equipment Requisition</span>
                   <span>↓</span>
                 </a>
+                <button
+                  type="button"
+                  onClick={() => setIsScannerOpen(true)}
+                  className="px-4 py-2.5 rounded-lg bg-blue-600/15 hover:bg-blue-600/30 text-blue-300 hover:text-white border border-blue-500/40 text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                    <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                    <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                    <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                    <rect x="7" y="7" width="10" height="10" rx="1" />
+                  </svg>
+                  <span>Scan Physical QR Sticker</span>
+                </button>
                 <a
                   href="#transparency"
                   className="px-5 py-2.5 rounded-lg btn-institutional-secondary text-xs font-semibold"
@@ -1214,10 +1320,62 @@ export default function App() {
                         <h3 className="text-base font-bold text-white">Lab Equipment Fault Requisition</h3>
                         <p className="text-xs text-slate-400 mt-0.5">Please provide accurate facility and hardware specifications.</p>
                       </div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold">
-                        ISO 17025 Compliant
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsScannerOpen(true)}
+                          className="px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+                          title="Scan physical equipment QR code using webcam, camera, or photo"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                            <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                            <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                            <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                            <rect x="7" y="7" width="10" height="10" rx="1" />
+                          </svg>
+                          <span>Scan Equipment QR</span>
+                        </button>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold">
+                          ISO 17025 Compliant
+                        </span>
+                      </div>
                     </div>
+
+                    {/* Scanned Physical QR Asset Verification Banner */}
+                    {scannedAsset && (
+                      <div className="p-3.5 rounded-xl bg-gradient-to-r from-blue-950/80 via-[#0d1c3a] to-slate-900 border border-blue-500/40 text-blue-200 text-xs flex items-center justify-between gap-3 shadow-lg">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-300 font-bold shrink-0">
+                            QR
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-mono uppercase tracking-wider text-blue-300 font-bold">
+                                ✓ Physical Asset QR Identified
+                              </span>
+                              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                Pre-Filled
+                              </span>
+                            </div>
+                            <div className="text-xs font-bold text-white mt-0.5">
+                              {scannedAsset.equipmentType} · <span className="font-mono text-blue-300">{scannedAsset.serialNumber}</span>
+                              <span className="text-slate-300 font-normal"> in Room {scannedAsset.room || scannedAsset.labId}</span>
+                              {scannedAsset.assetTag && scannedAsset.assetTag !== scannedAsset.serialNumber && (
+                                <span className="text-slate-400 font-mono text-[11px]"> (Tag: {scannedAsset.assetTag})</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setScannedAsset(null)}
+                          className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-white/5 hover:bg-white/10 shrink-0"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    )}
 
                     {formError && (
                       <div className="p-3 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs flex items-center gap-2">
@@ -1391,6 +1549,7 @@ export default function App() {
                             Technical Symptom Description *
                           </label>
                           <textarea
+                            id="requisition-description"
                             required
                             rows={3}
                             placeholder="Detail the failure mode, error codes, burning smell, power supply failure, or broken cables..."
@@ -1733,6 +1892,13 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Equipment QR Scanner Modal */}
+      <EquipmentQrScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScanSuccess={applyScannedEquipment}
+      />
     </div>
   );
 }

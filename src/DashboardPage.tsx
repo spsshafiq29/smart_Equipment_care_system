@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { secsApi } from "./services/secsApi";
+import EquipmentQrGenerator from "./components/EquipmentQrGenerator";
+import EquipmentQrScannerModal from "./components/EquipmentQrScannerModal";
+import { parseQrPayload, type ParsedEquipmentData } from "./utils/qrPayload";
 import type { AuditIncident, Budget, BudgetStatus, EquipmentTypeOption, Lab, PortalRole, PublicIssue, StaffAccount } from "./workflowTypes";
 
 type Role = PortalRole | "student" | "teacher" | "researcher";
-type Section = "overview" | "my-issues" | "submit-fault" | "reports" | "labs" | "budgets" | "users" | "ledger" | "profile";
+type Section = "overview" | "my-issues" | "submit-fault" | "reports" | "labs" | "budgets" | "users" | "ledger" | "profile" | "qr-generator";
 type TechnicianQueue = "incoming" | "work";
 
 interface Technician {
@@ -70,6 +73,7 @@ const NAV_ITEMS: { id: Section; label: string; roles: Role[]; icon: IconName }[]
   { id: "my-issues", label: "My Reported Issues", roles: ["student", "teacher", "researcher"], icon: "alert" },
   { id: "submit-fault", label: "Report Equipment Fault", roles: ["student", "teacher", "researcher"], icon: "alert" },
   { id: "reports", label: "Issue Workflow", roles: ["admin", "authority", "accounts", "technician"], icon: "alert" },
+  { id: "qr-generator", label: "QR Asset Generator", roles: ["admin", "technician"], icon: "qrcode" },
   { id: "labs", label: "Lab Directory", roles: ["admin", "authority", "technician", "student", "teacher", "researcher"], icon: "lab" },
   { id: "budgets", label: "Budgets & Payments", roles: ["admin", "authority", "accounts", "technician"], icon: "wallet" },
   { id: "users", label: "Access & Staff Accounts", roles: ["admin", "authority"], icon: "users" },
@@ -77,9 +81,18 @@ const NAV_ITEMS: { id: Section; label: string; roles: Role[]; icon: IconName }[]
   { id: "profile", label: "My Profile & Account", roles: ["student", "teacher", "researcher"], icon: "users" },
 ];
 
-type IconName = "grid" | "lab" | "wallet" | "users" | "shield" | "bell" | "search" | "menu" | "close" | "check" | "alert" | "arrow";
+type IconName = "grid" | "lab" | "wallet" | "users" | "shield" | "bell" | "search" | "menu" | "close" | "check" | "alert" | "arrow" | "qrcode";
 
 const ICON_PATHS: Record<IconName, ReactNode> = {
+  qrcode: (
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <path d="M7 7h.01M18 7h.01M7 18h.01M18 18h.01" />
+    </>
+  ),
   grid: (
     <>
       <rect x="3" y="3" width="7" height="7" rx="1.5" />
@@ -307,6 +320,79 @@ export default function DashboardPage({
   });
   const [faultSubmitting, setFaultSubmitting] = useState(false);
   const [faultError, setFaultError] = useState("");
+
+  // QR Asset Generator & Scanner State
+  const [selectedQrLabId, setSelectedQrLabId] = useState<string>("");
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scannedAsset, setScannedAsset] = useState<ParsedEquipmentData | null>(null);
+
+  function handleScanSuccess(data: ParsedEquipmentData) {
+    const cleanLabId = data.labId.toLowerCase().replace(/^(lab|room)[-\s]*/i, "");
+    let matchedLab = labs.find(
+      (l) =>
+        l.id === data.labId ||
+        l.room.toLowerCase() === data.labId.toLowerCase() ||
+        l.room.toLowerCase() === cleanLabId ||
+        (l.room && data.room && l.room.toLowerCase() === data.room.toLowerCase()) ||
+        (l.name && data.labName && l.name.toLowerCase() === data.labName.toLowerCase()) ||
+        l.name.toLowerCase().includes(data.labId.toLowerCase()) ||
+        data.labId.toLowerCase().includes(l.room.toLowerCase())
+    );
+
+    if (matchedLab) {
+      setNewFault((prev) => ({ ...prev, lab: `${matchedLab.room} · ${matchedLab.name}` }));
+    } else if (data.labName) {
+      setNewFault((prev) => ({ ...prev, lab: data.labName! }));
+    } else if (data.labId) {
+      setNewFault((prev) => ({ ...prev, lab: data.labId }));
+    }
+
+    if (data.equipmentType) {
+      const matchEq = equipmentTypes.find(
+        (e) => e.label.toLowerCase() === data.equipmentType.toLowerCase()
+      );
+      if (matchEq) {
+        setNewFault((prev) => ({ ...prev, equipmentType: matchEq.label }));
+        setCustomFaultEquipment("");
+      } else {
+        setNewFault((prev) => ({ ...prev, equipmentType: "Others" }));
+        setCustomFaultEquipment(data.equipmentType);
+      }
+    }
+
+    if (data.serialNumber || data.assetTag) {
+      setNewFault((prev) => ({ ...prev, assetTag: data.serialNumber || data.assetTag || "" }));
+    }
+
+    setScannedAsset({
+      ...data,
+      room: matchedLab ? matchedLab.room : data.room,
+      labName: matchedLab ? matchedLab.name : data.labName,
+    });
+
+    setSection("submit-fault");
+  }
+
+  useEffect(() => {
+    function checkDeepLink() {
+      if (typeof window === "undefined") return;
+      const href = window.location.href;
+      if (
+        href.includes("report?") ||
+        href.includes("requisition?") ||
+        href.includes("lab=") ||
+        href.includes("serial=")
+      ) {
+        const parsed = parseQrPayload(href);
+        if (parsed) {
+          handleScanSuccess(parsed);
+        }
+      }
+    }
+    checkDeepLink();
+    window.addEventListener("hashchange", checkDeepLink);
+    return () => window.removeEventListener("hashchange", checkDeepLink);
+  }, [labs, equipmentTypes]);
 
   // Self-Service Account Deletion State (Student, Teacher, Researcher)
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -983,8 +1069,8 @@ export default function DashboardPage({
                   setMobileNav(false);
                 }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${isActive
-                    ? "bg-blue-600/15 border border-blue-500/30 text-blue-400 shadow-sm shadow-blue-500/10"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]"
+                  ? "bg-blue-600/15 border border-blue-500/30 text-blue-400 shadow-sm shadow-blue-500/10"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]"
                   }`}
               >
                 <Icon name={item.icon} className="h-4 w-4 shrink-0" />
@@ -1194,11 +1280,10 @@ export default function DashboardPage({
 
                   {univFeedback && (
                     <div
-                      className={`p-3 rounded-xl text-xs font-semibold ${
-                        univFeedback.startsWith("✓")
+                      className={`p-3 rounded-xl text-xs font-semibold ${univFeedback.startsWith("✓")
                           ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
                           : "bg-rose-500/10 border border-rose-500/30 text-rose-300"
-                      }`}
+                        }`}
                     >
                       {univFeedback}
                     </div>
@@ -1458,12 +1543,63 @@ export default function DashboardPage({
           {/* ── TAB: SUBMIT FAULT REPORT (STUDENT / FACULTY WORKSPACE) ── */}
           {section === "submit-fault" && (
             <div className="space-y-6 max-w-3xl">
-              <div>
-                <h2 className="text-2xl font-bold font-display text-white">Report Laboratory Equipment Fault</h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Logged in as <strong className="text-blue-400">{currentUser?.name || "Campus Member"}</strong> ({currentUser?.email}). Ticket will automatically route to the assigned lab technician.
-                </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold font-display text-white">Report Laboratory Equipment Fault</h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Logged in as <strong className="text-blue-400">{currentUser?.name || "Campus Member"}</strong> ({currentUser?.email}). Ticket will automatically route to the assigned lab technician.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsScannerOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 text-xs font-semibold flex items-center gap-2 shadow-sm transition-all shrink-0"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                    <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                    <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                    <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                    <rect x="7" y="7" width="10" height="10" rx="1" />
+                  </svg>
+                  <span>Scan Equipment QR</span>
+                </button>
               </div>
+
+              {/* Scanned Physical QR Asset Verification Banner */}
+              {scannedAsset && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-950/80 via-[#0d1c3a] to-slate-900 border border-blue-500/40 text-blue-200 text-xs flex items-center justify-between gap-3 shadow-lg">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-300 font-bold shrink-0">
+                      QR
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-blue-300 font-bold">
+                          ✓ Physical Equipment QR Identified
+                        </span>
+                        <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          Pre-Filled
+                        </span>
+                      </div>
+                      <div className="text-xs font-bold text-white mt-0.5">
+                        {scannedAsset.equipmentType} · <span className="font-mono text-blue-300">{scannedAsset.serialNumber}</span>
+                        <span className="text-slate-300 font-normal"> in Room {scannedAsset.room || scannedAsset.labId}</span>
+                        {scannedAsset.assetTag && scannedAsset.assetTag !== scannedAsset.serialNumber && (
+                          <span className="text-slate-400 font-mono text-[11px]"> (Tag: {scannedAsset.assetTag})</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setScannedAsset(null)}
+                    className="text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 shrink-0"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
 
               {faultError && (
                 <div className="p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs">
@@ -1587,14 +1723,14 @@ export default function DashboardPage({
                             type="button"
                             onClick={() => setNewFault({ ...newFault, priority: p })}
                             className={`py-2 px-1 text-center rounded-xl text-xs font-bold uppercase transition-all border ${isSelected
-                                ? p === "critical"
-                                  ? "bg-rose-500/20 border-rose-500 text-rose-300"
-                                  : p === "high"
-                                    ? "bg-orange-500/20 border-orange-500 text-orange-300"
-                                    : p === "medium"
-                                      ? "bg-amber-500/20 border-amber-500 text-amber-300"
-                                      : "bg-emerald-500/20 border-emerald-500 text-emerald-300"
-                                : "border-white/5 bg-white/[0.02] text-slate-400 hover:text-white"
+                              ? p === "critical"
+                                ? "bg-rose-500/20 border-rose-500 text-rose-300"
+                                : p === "high"
+                                  ? "bg-orange-500/20 border-orange-500 text-orange-300"
+                                  : p === "medium"
+                                    ? "bg-amber-500/20 border-amber-500 text-amber-300"
+                                    : "bg-emerald-500/20 border-emerald-500 text-emerald-300"
+                              : "border-white/5 bg-white/[0.02] text-slate-400 hover:text-white"
                               }`}
                           >
                             {p}
@@ -1666,8 +1802,8 @@ export default function DashboardPage({
                   <button
                     onClick={() => setTechnicianQueue("incoming")}
                     className={`p-4 rounded-2xl text-left border transition-all ${technicianQueue === "incoming"
-                        ? "bg-blue-600/15 border-blue-500 text-white"
-                        : "glass-card border-white/5 text-slate-400 hover:text-white"
+                      ? "bg-blue-600/15 border-blue-500 text-white"
+                      : "glass-card border-white/5 text-slate-400 hover:text-white"
                       }`}
                   >
                     <div className="flex items-center justify-between">
@@ -1682,8 +1818,8 @@ export default function DashboardPage({
                   <button
                     onClick={() => setTechnicianQueue("work")}
                     className={`p-4 rounded-2xl text-left border transition-all ${technicianQueue === "work"
-                        ? "bg-blue-600/15 border-blue-500 text-white"
-                        : "glass-card border-white/5 text-slate-400 hover:text-white"
+                      ? "bg-blue-600/15 border-blue-500 text-white"
+                      : "glass-card border-white/5 text-slate-400 hover:text-white"
                       }`}
                   >
                     <div className="flex items-center justify-between">
@@ -1817,6 +1953,19 @@ export default function DashboardPage({
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* ── TAB: QR ASSET STICKER GENERATOR (TECHNICIAN & ADMIN WORKSPACE) ── */}
+          {section === "qr-generator" && (
+            <div className="space-y-6">
+              <EquipmentQrGenerator
+                currentUser={currentUser}
+                labs={labs}
+                equipmentTypes={equipmentTypes}
+                universityName={universityName}
+                initialLabId={selectedQrLabId}
+              />
             </div>
           )}
 
@@ -2097,6 +2246,25 @@ export default function DashboardPage({
                                 ✕ Remove Lab
                               </button>
                             </div>
+                          )}
+
+                          {(role === "admin" || (role === "technician" && lab.technicianId === currentUserId)) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedQrLabId(lab.id);
+                                setSection("qr-generator");
+                              }}
+                              className="w-full text-center py-2 rounded-xl bg-blue-600/15 hover:bg-blue-600/25 border border-blue-500/30 text-blue-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all mt-2"
+                            >
+                              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                                <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                                <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                                <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                              </svg>
+                              <span>Generate Equipment QR Stickers</span>
+                            </button>
                           )}
                         </>
                       )}
@@ -2707,6 +2875,13 @@ export default function DashboardPage({
           </div>
         </div>
       )}
+
+      {/* Equipment QR Scanner Modal */}
+      <EquipmentQrScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScanSuccess={handleScanSuccess}
+      />
     </div>
   );
 }
