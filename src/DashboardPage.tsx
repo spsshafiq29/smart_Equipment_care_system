@@ -73,7 +73,7 @@ const NAV_ITEMS: { id: Section; label: string; roles: Role[]; icon: IconName }[]
   { id: "my-issues", label: "My Reported Issues", roles: ["student", "teacher", "researcher"], icon: "alert" },
   { id: "submit-fault", label: "Report Equipment Fault", roles: ["student", "teacher", "researcher"], icon: "alert" },
   { id: "reports", label: "Issue Workflow", roles: ["admin", "authority", "accounts", "technician"], icon: "alert" },
-  { id: "qr-generator", label: "QR Asset Generator", roles: ["admin", "technician"], icon: "qrcode" },
+  { id: "qr-generator", label: "QR Asset Generator", roles: ["technician"], icon: "qrcode" },
   { id: "labs", label: "Lab Directory", roles: ["admin", "authority", "technician", "student", "teacher", "researcher"], icon: "lab" },
   { id: "budgets", label: "Budgets & Payments", roles: ["admin", "authority", "accounts", "technician"], icon: "wallet" },
   { id: "users", label: "Access & Staff Accounts", roles: ["admin", "authority"], icon: "users" },
@@ -2248,7 +2248,7 @@ export default function DashboardPage({
                             </div>
                           )}
 
-                          {(role === "admin" || (role === "technician" && lab.technicianId === currentUserId)) && (
+                          {(role === "technician" && lab.technicianId === currentUserId) && (
                             <button
                               type="button"
                               onClick={() => {
@@ -2598,8 +2598,15 @@ export default function DashboardPage({
                     </div>
                   </div>
 
-                  <Button type="submit" variant="primary" className="w-full py-2.5">
-                    Save Account & Generate Credentials →
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="w-full py-3 text-xs font-bold uppercase tracking-wider bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer border border-blue-400/30"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span>Save Account & Send Credentials to Email →</span>
                   </Button>
                 </form>
               )}

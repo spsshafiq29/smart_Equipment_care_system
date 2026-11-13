@@ -39,19 +39,19 @@ export default function EquipmentQrGenerator({
   initialLabId,
 }: EquipmentQrGeneratorProps) {
   const currentUserId = currentUser?.id || "";
-  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "authority";
+  const isTechnician = currentUser?.role === "technician";
 
-  // 1. Assigned Lab Filter: Only allow technicians to generate QR codes for laboratories they are actively assigned to
+  // 1. Assigned Lab Filter: Exclusively allow technicians to generate QR codes for laboratories they are actively assigned to
   const authorizedLabs = useMemo(() => {
-    if (isAdmin) {
-      return labs;
+    if (!isTechnician) {
+      return [];
     }
     return labs.filter(
       (l) =>
         l.technicianId === currentUserId ||
         (currentUser?.assignedLabs && currentUser.assignedLabs.includes(l.id))
     );
-  }, [labs, currentUserId, isAdmin, currentUser?.assignedLabs]);
+  }, [labs, currentUserId, isTechnician, currentUser?.assignedLabs]);
 
   // Selected Lab
   const [selectedLabId, setSelectedLabId] = useState<string>(() => {
@@ -268,7 +268,21 @@ export default function EquipmentQrGenerator({
       </div>
 
       {/* ── ASSIGNED LAB FILTER RESTRICTION ── */}
-      {authorizedLabs.length === 0 ? (
+      {!isTechnician ? (
+        <div className="p-6 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 space-y-2 no-print">
+          <div className="flex items-center gap-2 text-sm font-bold">
+            <svg className="w-5 h-5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <span>Technician Portal Restricted Access</span>
+          </div>
+          <p className="text-xs text-slate-300 leading-relaxed">
+            Equipment QR Code generation is exclusively designated for certified <strong>Laboratory Technicians</strong> for their assigned laboratory rooms. Please log in with an assigned Technician account.
+          </p>
+        </div>
+      ) : authorizedLabs.length === 0 ? (
         <div className="p-6 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-2 no-print">
           <div className="flex items-center gap-2 text-sm font-bold">
             <svg className="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -298,7 +312,7 @@ export default function EquipmentQrGenerator({
                 </div>
                 <div>
                   <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
-                    {isAdmin ? "Institutional Lab Scope (Administrator)" : "Your Assigned Laboratory Facility"}
+                    Your Assigned Laboratory Facility
                   </span>
                   <div className="flex items-center gap-2 mt-0.5">
                     <select
