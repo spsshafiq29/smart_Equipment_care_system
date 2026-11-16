@@ -450,7 +450,7 @@ export default function App() {
     if (token) {
       secsApi.auth.me().then((user) => {
         if (user) setCurrentUser(user);
-      }).catch(() => {});
+      }).catch(() => { });
     }
     loadDynamicData();
   }, []);
@@ -1086,8 +1086,8 @@ export default function App() {
               <button
                 onClick={() => setLabDeptFilter("all")}
                 className={`text-xs px-3 py-1.5 rounded-md font-medium whitespace-nowrap transition-colors ${labDeptFilter === "all"
-                    ? "bg-blue-600 text-white font-semibold"
-                    : "bg-white/[0.03] text-slate-400 hover:text-white border border-white/5"
+                  ? "bg-blue-600 text-white font-semibold"
+                  : "bg-white/[0.03] text-slate-400 hover:text-white border border-white/5"
                   }`}
               >
                 All Facilities ({labs.length})
@@ -1097,8 +1097,8 @@ export default function App() {
                   key={dept}
                   onClick={() => setLabDeptFilter(dept)}
                   className={`text-xs px-3 py-1.5 rounded-md font-medium whitespace-nowrap transition-colors ${labDeptFilter === dept
-                      ? "bg-blue-600 text-white font-semibold"
-                      : "bg-white/[0.03] text-slate-400 hover:text-white border border-white/5"
+                    ? "bg-blue-600 text-white font-semibold"
+                    : "bg-white/[0.03] text-slate-400 hover:text-white border border-white/5"
                     }`}
                 >
                   {dept}
@@ -1525,14 +1525,14 @@ export default function App() {
                                   type="button"
                                   onClick={() => setFormData({ ...formData, priority: p })}
                                   className={`py-2 px-1 text-center rounded-lg text-xs font-bold uppercase transition-all border ${isSelected
-                                      ? p === "critical"
-                                        ? "bg-rose-500/20 border-rose-500 text-rose-300"
-                                        : p === "high"
-                                          ? "bg-orange-500/20 border-orange-500 text-orange-300"
-                                          : p === "medium"
-                                            ? "bg-amber-500/20 border-amber-500 text-amber-300"
-                                            : "bg-emerald-500/20 border-emerald-500 text-emerald-300"
-                                      : "border-white/5 bg-white/[0.02] text-slate-400 hover:text-white"
+                                    ? p === "critical"
+                                      ? "bg-rose-500/20 border-rose-500 text-rose-300"
+                                      : p === "high"
+                                        ? "bg-orange-500/20 border-orange-500 text-orange-300"
+                                        : p === "medium"
+                                          ? "bg-amber-500/20 border-amber-500 text-amber-300"
+                                          : "bg-emerald-500/20 border-emerald-500 text-emerald-300"
+                                    : "border-white/5 bg-white/[0.02] text-slate-400 hover:text-white"
                                     }`}
                                 >
                                   <div>{p}</div>
@@ -1632,8 +1632,8 @@ export default function App() {
                   key={status}
                   onClick={() => setStatusFilter(status)}
                   className={`text-xs px-3 py-1 rounded-md font-medium whitespace-nowrap transition-colors ${statusFilter === status
-                      ? "bg-blue-600 text-white font-semibold"
-                      : "bg-white/[0.02] text-slate-400 hover:text-white border border-white/5"
+                    ? "bg-blue-600 text-white font-semibold"
+                    : "bg-white/[0.02] text-slate-400 hover:text-white border border-white/5"
                     }`}
                 >
                   {status === "all" ? "All Statuses" : status}
