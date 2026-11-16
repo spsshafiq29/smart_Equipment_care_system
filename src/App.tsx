@@ -713,9 +713,10 @@ export default function App() {
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="hidden sm:inline-block text-xs text-slate-400 hover:text-white px-2.5 py-1.5"
+                  className="px-2.5 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-white text-xs font-semibold transition-colors flex items-center gap-1"
                 >
-                  Sign Out
+                  <span>⎋</span>
+                  <span>Sign Out</span>
                 </button>
               </div>
             ) : (
