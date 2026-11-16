@@ -1281,8 +1281,8 @@ export default function DashboardPage({
                   {univFeedback && (
                     <div
                       className={`p-3 rounded-xl text-xs font-semibold ${univFeedback.startsWith("✓")
-                          ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
-                          : "bg-rose-500/10 border border-rose-500/30 text-rose-300"
+                        ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
+                        : "bg-rose-500/10 border border-rose-500/30 text-rose-300"
                         }`}
                     >
                       {univFeedback}
